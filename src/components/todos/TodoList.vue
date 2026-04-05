@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useTodos } from '@/composables/useTodos'
 import type { Couple } from '@/types'
 import TodoItem from './TodoItem.vue'
@@ -10,8 +9,8 @@ const props = defineProps<{
   couple: Couple | null
 }>()
 
-const coupleIdRef = ref(props.coupleId) as Ref<string | null>
-const { todos, loading, addTodo, toggleTodo, updateTodo, deleteTodo } = useTodos(coupleIdRef)
+const coupleIdRef = computed<string | null>(() => props.coupleId)
+const { todos, loading, error, addTodo, toggleTodo, updateTodo, deleteTodo } = useTodos(coupleIdRef)
 
 const newTitle = ref('')
 
@@ -41,6 +40,9 @@ async function handleAdd() {
         Add
       </button>
     </form>
+
+    <!-- Error -->
+    <p v-if="error" class="text-center text-red-500 text-sm py-2">{{ error }}</p>
 
     <!-- Loading -->
     <p v-if="loading" class="text-center text-gray-400 text-sm py-4">Loading...</p>

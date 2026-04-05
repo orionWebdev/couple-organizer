@@ -6,6 +6,8 @@ import AppHeader from '@/components/layout/AppHeader.vue'
 import AppNav from '@/components/layout/AppNav.vue'
 import OverviewTab from '@/components/overview/OverviewTab.vue'
 import TodoList from '@/components/todos/TodoList.vue'
+import RecipeManager from '@/components/recipes/RecipeManager.vue'
+import MealPlanBoard from '@/components/meal-plan/MealPlanBoard.vue'
 import ShoppingList from '@/components/shopping/ShoppingList.vue'
 import ExpenseList from '@/components/expenses/ExpenseList.vue'
 
@@ -48,6 +50,23 @@ const activeTab = ref('overview')
       <div v-show="activeTab === 'shopping'">
         <h2 class="text-lg font-bold mb-3 text-slate-100">Einkaufsliste</h2>
         <ShoppingList
+          v-if="user?.coupleId"
+          :couple-id="user.coupleId"
+          :couple="couple"
+        />
+      </div>
+
+      <div v-show="activeTab === 'recipes'">
+        <h2 class="text-lg font-bold mb-3 text-slate-100">Rezepte</h2>
+        <RecipeManager
+          v-if="user?.coupleId"
+          :couple-id="user.coupleId"
+        />
+      </div>
+
+      <div v-show="activeTab === 'mealPlan'">
+        <h2 class="text-lg font-bold mb-3 text-slate-100">Wochenplan</h2>
+        <MealPlanBoard
           v-if="user?.coupleId"
           :couple-id="user.coupleId"
         />

@@ -6,7 +6,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  toggle: [id: string, bought: boolean]
+  toggle: [id: string, checked: boolean]
   delete: [id: string]
 }>()
 </script>
@@ -14,17 +14,23 @@ const emit = defineEmits<{
 <template>
   <div
     class="flex items-center gap-3 p-4 bg-slate-800 rounded-2xl border border-slate-700"
-    :class="{ 'opacity-50': item.bought }"
+    :class="{ 'opacity-60': item.checked }"
   >
     <input
       type="checkbox"
-      :checked="item.bought"
-      @change="emit('toggle', item.id, !item.bought)"
+      :checked="item.checked"
+      @change="emit('toggle', item.id, !item.checked)"
       class="h-5 w-5 rounded border-slate-500 text-green-500 focus:ring-green-500 cursor-pointer"
     />
-    <span class="flex-1 text-sm text-slate-100" :class="{ 'line-through text-slate-500': item.bought }">
-      {{ item.name }}
-    </span>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm text-slate-100 truncate" :class="{ 'line-through text-slate-500': item.checked }">
+        {{ item.name }}
+      </p>
+      <p class="text-xs text-slate-500">
+        {{ item.category }}
+        <span v-if="item.expenseId" class="text-green-400">· als Ausgabe erfasst</span>
+      </p>
+    </div>
     <button
       @click="emit('delete', item.id)"
       class="text-slate-600 hover:text-red-400 transition-colors"

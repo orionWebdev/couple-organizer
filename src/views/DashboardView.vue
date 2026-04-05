@@ -4,6 +4,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppNav from '@/components/layout/AppNav.vue'
+import OverviewTab from '@/components/overview/OverviewTab.vue'
 import TodoList from '@/components/todos/TodoList.vue'
 import ShoppingList from '@/components/shopping/ShoppingList.vue'
 import ExpenseList from '@/components/expenses/ExpenseList.vue'
@@ -15,17 +16,28 @@ if (user.value?.coupleId) {
   watchCouple(user.value.coupleId)
 }
 
-const activeTab = ref('todos')
+const activeTab = ref('overview')
 </script>
 
 <template>
-  <div class="min-h-screen pb-16">
+  <div class="min-h-screen pb-24">
     <AppHeader />
 
     <main class="max-w-lg mx-auto px-4 py-4">
+      <!-- Übersicht -->
+      <div v-show="activeTab === 'overview'">
+        <h2 class="text-lg font-bold mb-3 text-slate-100">Übersicht</h2>
+        <OverviewTab
+          v-if="user?.coupleId"
+          :couple-id="user.coupleId"
+          :couple="couple"
+          @switch-tab="activeTab = $event"
+        />
+      </div>
+
       <!-- Use v-show to keep components alive so onSnapshot listeners persist -->
       <div v-show="activeTab === 'todos'">
-        <h2 class="text-lg font-bold mb-3">Todos</h2>
+        <h2 class="text-lg font-bold mb-3 text-slate-100">Aufgaben</h2>
         <TodoList
           v-if="user?.coupleId"
           :couple-id="user.coupleId"
@@ -34,7 +46,7 @@ const activeTab = ref('todos')
       </div>
 
       <div v-show="activeTab === 'shopping'">
-        <h2 class="text-lg font-bold mb-3">Shopping List</h2>
+        <h2 class="text-lg font-bold mb-3 text-slate-100">Einkaufsliste</h2>
         <ShoppingList
           v-if="user?.coupleId"
           :couple-id="user.coupleId"
@@ -42,7 +54,7 @@ const activeTab = ref('todos')
       </div>
 
       <div v-show="activeTab === 'expenses'">
-        <h2 class="text-lg font-bold mb-3">Expenses</h2>
+        <h2 class="text-lg font-bold mb-3 text-slate-100">Finanzen</h2>
         <ExpenseList
           v-if="user?.coupleId"
           :couple-id="user.coupleId"

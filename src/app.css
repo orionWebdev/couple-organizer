@@ -3,7 +3,15 @@
 /* Custom base styles */
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-slate-900 text-slate-100 antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  input, select, textarea {
+    @apply bg-slate-700 text-slate-100 border-slate-600 placeholder-slate-400;
+  }
+
+  input[type="checkbox"] {
+    @apply bg-slate-700 border-slate-500;
   }
 }

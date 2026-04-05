@@ -1,0 +1,132 @@
+[debug] [2026-04-05T21:21:02.126Z] ----------------------------------------------------------------------
+[debug] [2026-04-05T21:21:02.131Z] Command:       /usr/local/Cellar/node/25.9.0_1/bin/node /Users/christianmueller/.npm/_npx/7750544ccf494d8b/node_modules/.bin/firebase deploy --only firestore:rules,firestore:indexes
+[debug] [2026-04-05T21:21:02.131Z] CLI Version:   15.13.0
+[debug] [2026-04-05T21:21:02.132Z] Platform:      darwin
+[debug] [2026-04-05T21:21:02.132Z] Node Version:  v25.9.0
+[debug] [2026-04-05T21:21:02.132Z] Time:          Sun Apr 05 2026 23:21:02 GMT+0200 (Central European Summer Time)
+[debug] [2026-04-05T21:21:02.132Z] ----------------------------------------------------------------------
+[debug] 
+[error] 
+[error] Error: No currently active project.
+To run this command, you need to specify a project. You have two options:
+- Run this command with --project <alias_or_project_id>.
+- Set an active project by running firebase use --add, then rerun this command.
+To list all the Firebase projects to which you have access, run firebase projects:list.
+To learn about active projects for the CLI, visit https://firebase.google.com/docs/cli#project_aliases
+
+
+[debug] [2026-04-05T21:22:59.674Z] ----------------------------------------------------------------------
+[debug] [2026-04-05T21:22:59.678Z] Command:       /usr/local/Cellar/node/25.9.0_1/bin/node /Users/christianmueller/.npm/_npx/7750544ccf494d8b/node_modules/.bin/firebase deploy --project couple-organizer-8b245 --only firestore:rules,firestore:indexes
+[debug] [2026-04-05T21:22:59.679Z] CLI Version:   15.13.0
+[debug] [2026-04-05T21:22:59.679Z] Platform:      darwin
+[debug] [2026-04-05T21:22:59.679Z] Node Version:  v25.9.0
+[debug] [2026-04-05T21:22:59.679Z] Time:          Sun Apr 05 2026 23:22:59 GMT+0200 (Central European Summer Time)
+[debug] [2026-04-05T21:22:59.680Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-05T21:23:01.772Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-05T21:23:01.773Z] > authorizing via signed-in user (mueller.webdev@gmail.com)
+[debug] [2026-04-05T21:23:01.773Z] [iam] checking project couple-organizer-8b245 for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2026-04-05T21:23:01.775Z] Checked if tokens are valid: false, expires at: 1775421033252
+[debug] [2026-04-05T21:23:01.775Z] Checked if tokens are valid: false, expires at: 1775421033252
+[debug] [2026-04-05T21:23:01.775Z] > refreshing access token with scopes: []
+[debug] [2026-04-05T21:23:01.778Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-04-05T21:23:01.778Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-04-05T21:23:01.921Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-04-05T21:23:01.921Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-04-05T21:23:01.970Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/couple-organizer-8b245:testIamPermissions [none]
+[debug] [2026-04-05T21:23:01.970Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/couple-organizer-8b245:testIamPermissions  x-goog-user-project=couple-organizer-8b245
+[debug] [2026-04-05T21:23:01.970Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/couple-organizer-8b245:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[debug] [2026-04-05T21:23:02.175Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/couple-organizer-8b245:testIamPermissions 200
+[debug] [2026-04-05T21:23:02.175Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/couple-organizer-8b245:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[info] 
+[info] === Deploying to 'couple-organizer-8b245'...
+[info] 
+[info] i  deploying firestore 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-04-05T21:23:02.184Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:02.185Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:02.185Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default) [none]
+[debug] [2026-04-05T21:23:02.341Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default) 200
+[debug] [2026-04-05T21:23:02.342Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default) {"name":"projects/couple-organizer-8b245/databases/(default)","uid":"5fb6a941-3d7a-4e96-947f-d4915802d066","createTime":"2026-04-05T16:36:38.866387Z","updateTime":"2026-04-05T16:36:38.866387Z","locationId":"eur3","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-04-05T20:23:02.477537Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"e","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IMvC473S15MDMNOByb2S15MD"}
+[info] i  firestore: reading indexes from firestore.indexes.json... 
+[info] i  cloud.firestore: checking firestore.rules for compilation errors... 
+[debug] [2026-04-05T21:23:02.346Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:02.346Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:02.347Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245:test [none]
+[debug] [2026-04-05T21:23:02.347Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245:test [omitted]
+[debug] [2026-04-05T21:23:03.121Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245:test 200
+[debug] [2026-04-05T21:23:03.121Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245:test {}
+[info] ✔  cloud.firestore: rules file firestore.rules compiled successfully 
+[debug] [2026-04-05T21:23:03.123Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:03.124Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:03.124Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/releases pageSize=10&pageToken=
+[debug] [2026-04-05T21:23:03.350Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/releases 200
+[debug] [2026-04-05T21:23:03.350Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/releases {"releases":[{"name":"projects/couple-organizer-8b245/releases/cloud.firestore","rulesetName":"projects/couple-organizer-8b245/rulesets/18a81a37-324f-4beb-83ff-abee9e07a588","createTime":"2026-04-05T16:36:41.231886Z","updateTime":"2026-04-05T19:36:05.335996Z"}]}
+[debug] [2026-04-05T21:23:03.351Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:03.351Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:03.351Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/rulesets/18a81a37-324f-4beb-83ff-abee9e07a588 [none]
+[debug] [2026-04-05T21:23:03.642Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/rulesets/18a81a37-324f-4beb-83ff-abee9e07a588 200
+[debug] [2026-04-05T21:23:03.642Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/rulesets/18a81a37-324f-4beb-83ff-abee9e07a588 [omitted]
+[info] i  firestore: uploading rules firestore.rules... 
+[debug] [2026-04-05T21:23:03.644Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:03.644Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:03.644Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/rulesets [none]
+[debug] [2026-04-05T21:23:03.644Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/rulesets [omitted]
+[debug] [2026-04-05T21:23:04.502Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/rulesets 200
+[debug] [2026-04-05T21:23:04.502Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/rulesets {"name":"projects/couple-organizer-8b245/rulesets/7ebf8aee-6f4c-4103-9583-53dee871f87a","source":{"files":[{"content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    function signedIn() {\n      return request.auth != null;\n    }\n\n    function isSelf(userId) {\n      return signedIn() && request.auth.uid == userId;\n    }\n\n    function isCoupleMember(coupleId) {\n      return signedIn()\n        && exists(/databases/$(database)/documents/couples/$(coupleId))\n        && request.auth.uid in get(/databases/$(database)/documents/couples/$(coupleId)).data.memberIds;\n    }\n\n    match /users/{userId} {\n      allow create, read, update: if isSelf(userId);\n    }\n\n    match /couples/{coupleId} {\n      // Read is open to authenticated users because the current join flow\n      // looks up a couple by inviteCode before the user becomes a member.\n      allow read: if signedIn();\n\n      allow create: if signedIn()\n        && request.resource.data.memberIds is list\n        && request.resource.data.memberIds.size() == 1\n        && request.resource.data.memberIds[0] == request.auth.uid\n        && request.resource.data.memberNames[request.auth.uid] is string\n        && request.resource.data.inviteCode is string;\n\n      allow update: if signedIn()\n        && request.resource.data.memberIds is list\n        && request.resource.data.memberIds.size() <= 2\n        && request.auth.uid in request.resource.data.memberIds;\n    }\n\n    match /todos/{todoId} {\n      allow read: if isCoupleMember(resource.data.coupleId);\n      allow create: if signedIn()\n        && request.resource.data.createdBy == request.auth.uid\n        && isCoupleMember(request.resource.data.coupleId);\n      allow update, delete: if isCoupleMember(resource.data.coupleId);\n    }\n\n    match /shoppingItems/{itemId} {\n      allow read: if isCoupleMember(resource.data.coupleId);\n      allow create: if signedIn()\n        && request.resource.data.addedBy == request.auth.uid\n        && isCoupleMember(request.resource.data.coupleId);\n      allow update, delete: if isCoupleMember(resource.data.coupleId);\n    }\n\n    match /shoppingLists/{listId} {\n      allow read: if isCoupleMember(resource.data.coupleId);\n      allow create: if signedIn()\n        && request.resource.data.createdBy == request.auth.uid\n        && isCoupleMember(request.resource.data.coupleId);\n      allow update, delete: if isCoupleMember(resource.data.coupleId);\n    }\n\n    match /recipes/{recipeId} {\n      allow read: if isCoupleMember(resource.data.coupleId);\n      allow create: if signedIn()\n        && request.resource.data.createdBy == request.auth.uid\n        && isCoupleMember(request.resource.data.coupleId);\n      allow update, delete: if isCoupleMember(resource.data.coupleId);\n    }\n\n    match /mealPlans/{planId} {\n      allow read: if isCoupleMember(resource.data.coupleId);\n      allow create: if signedIn()\n        && request.resource.data.createdBy == request.auth.uid\n        && isCoupleMember(request.resource.data.coupleId);\n      allow update, delete: if isCoupleMember(resource.data.coupleId);\n    }\n\n    match /expenses/{expenseId} {\n      allow read: if isCoupleMember(resource.data.coupleId);\n      allow create: if signedIn()\n        && request.resource.data.createdBy == request.auth.uid\n        && isCoupleMember(request.resource.data.coupleId);\n      allow update, delete: if isCoupleMember(resource.data.coupleId);\n    }\n\n    match /financeEvents/{eventId} {\n      allow read: if isCoupleMember(resource.data.coupleId);\n      allow create: if signedIn()\n        && request.resource.data.createdBy == request.auth.uid\n        && isCoupleMember(request.resource.data.coupleId);\n      allow update, delete: if isCoupleMember(resource.data.coupleId);\n    }\n  }\n}\n","name":"firestore.rules"}]},"createTime":"2026-04-05T21:23:04.561439Z","metadata":{"services":["cloud.firestore"]}}
+[debug] [2026-04-05T21:23:04.502Z] [rules] created ruleset projects/couple-organizer-8b245/rulesets/7ebf8aee-6f4c-4103-9583-53dee871f87a
+[info] i  firestore: deploying indexes... 
+[debug] [2026-04-05T21:23:04.504Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:04.504Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:04.504Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/-/indexes [none]
+[debug] [2026-04-05T21:23:04.560Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/-/indexes 200
+[debug] [2026-04-05T21:23:04.560Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/-/indexes {"indexes":[{"name":"projects/couple-organizer-8b245/databases/(default)/collectionGroups/expenses/indexes/CICAgJim14AK","queryScope":"COLLECTION","fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"},{"fieldPath":"__name__","order":"DESCENDING"}],"state":"READY","density":"SPARSE_ALL"},{"name":"projects/couple-organizer-8b245/databases/(default)/collectionGroups/todos/indexes/CICAgOjXh4EK","queryScope":"COLLECTION","fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"},{"fieldPath":"__name__","order":"DESCENDING"}],"state":"READY","density":"SPARSE_ALL"},{"name":"projects/couple-organizer-8b245/databases/(default)/collectionGroups/shoppingItems/indexes/CICAgJiUpoMK","queryScope":"COLLECTION","fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"},{"fieldPath":"__name__","order":"DESCENDING"}],"state":"READY","density":"SPARSE_ALL"}]}
+[debug] [2026-04-05T21:23:04.560Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:04.561Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:04.563Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* [none]
+[debug] [2026-04-05T21:23:04.611Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* 200
+[debug] [2026-04-05T21:23:04.611Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* {"fields":[{"name":"projects/couple-organizer-8b245/databases/(default)/collectionGroups/__default__/fields/*","indexConfig":{"indexes":[{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","order":"ASCENDING"}],"state":"READY"},{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","order":"DESCENDING"}],"state":"READY"},{"queryScope":"COLLECTION","fields":[{"fieldPath":"*","arrayConfig":"CONTAINS"}],"state":"READY"}]}}]}
+[debug] [2026-04-05T21:23:04.611Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:04.612Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:04.612Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default) [none]
+[debug] [2026-04-05T21:23:04.656Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default) 200
+[debug] [2026-04-05T21:23:04.656Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default) {"name":"projects/couple-organizer-8b245/databases/(default)","uid":"5fb6a941-3d7a-4e96-947f-d4915802d066","createTime":"2026-04-05T16:36:38.866387Z","updateTime":"2026-04-05T16:36:38.866387Z","locationId":"eur3","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-04-05T20:23:04.793078Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"e","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IOzq8L7S15MDMNOByb2S15MD"}
+[debug] [2026-04-05T21:23:04.657Z] Skipping existing index: {"collectionGroup":"todos","queryScope":"COLLECTION","fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"},{"fieldPath":"__name__","order":"DESCENDING"}]}
+[debug] [2026-04-05T21:23:04.657Z] Skipping existing index: {"collectionGroup":"shoppingItems","queryScope":"COLLECTION","fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"},{"fieldPath":"__name__","order":"DESCENDING"}]}
+[debug] [2026-04-05T21:23:04.657Z] Skipping existing index: {"collectionGroup":"expenses","queryScope":"COLLECTION","fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"},{"fieldPath":"__name__","order":"DESCENDING"}]}
+[debug] [2026-04-05T21:23:04.658Z] Creating new index: {"collectionGroup":"shoppingLists","queryScope":"COLLECTION","fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"updatedAt","order":"DESCENDING"}]}
+[debug] [2026-04-05T21:23:04.658Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:04.658Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:04.658Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/shoppingLists/indexes [none]
+[debug] [2026-04-05T21:23:04.659Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/shoppingLists/indexes {"fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"updatedAt","order":"DESCENDING"}],"queryScope":"COLLECTION"}
+[debug] [2026-04-05T21:23:05.014Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/shoppingLists/indexes 200
+[debug] [2026-04-05T21:23:05.015Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/shoppingLists/indexes {"name":"projects/couple-organizer-8b245/databases/(default)/operations/S0lvOUZqSmdBQ0lDDCoDIDU1MzM0ZjFiYmQ3Mi0xYTU4LWJkNTQtODcyMi1mMDBiYTg2NSQac2VuaWxlcGlwCQpBEg","metadata":{"@type":"type.googleapis.com/google.firestore.admin.v1.IndexOperationMetadata","startTime":"2026-04-05T21:23:04.932869Z","index":"projects/couple-organizer-8b245/databases/(default)/collectionGroups/shoppingLists/indexes/CICAgJjF9oIK","state":"INITIALIZING"}}
+[debug] [2026-04-05T21:23:05.015Z] Creating new index: {"collectionGroup":"recipes","queryScope":"COLLECTION","fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"updatedAt","order":"DESCENDING"}]}
+[debug] [2026-04-05T21:23:05.015Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:05.015Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:05.015Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/recipes/indexes [none]
+[debug] [2026-04-05T21:23:05.015Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/recipes/indexes {"fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"updatedAt","order":"DESCENDING"}],"queryScope":"COLLECTION"}
+[debug] [2026-04-05T21:23:05.318Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/recipes/indexes 200
+[debug] [2026-04-05T21:23:05.318Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/recipes/indexes {"name":"projects/couple-organizer-8b245/databases/(default)/operations/S0U0ejdqSmdBQ0lDDCoDIDc1MWIyNzBiZjBjOC0yODc5LTg2ODQtZDQ4Ni1iMjIzMmRjMyQac2VuaWxlcGlwCQpBEg","metadata":{"@type":"type.googleapis.com/google.firestore.admin.v1.IndexOperationMetadata","startTime":"2026-04-05T21:23:05.291488Z","index":"projects/couple-organizer-8b245/databases/(default)/collectionGroups/recipes/indexes/CICAgJj7z4EK","state":"INITIALIZING"}}
+[debug] [2026-04-05T21:23:05.319Z] Creating new index: {"collectionGroup":"financeEvents","queryScope":"COLLECTION","fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]}
+[debug] [2026-04-05T21:23:05.319Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:05.319Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:05.319Z] >>> [apiv2][query] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/financeEvents/indexes [none]
+[debug] [2026-04-05T21:23:05.319Z] >>> [apiv2][body] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/financeEvents/indexes {"fields":[{"fieldPath":"coupleId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}],"queryScope":"COLLECTION"}
+[debug] [2026-04-05T21:23:05.477Z] <<< [apiv2][status] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/financeEvents/indexes 200
+[debug] [2026-04-05T21:23:05.477Z] <<< [apiv2][body] POST https://firestore.googleapis.com/v1/projects/couple-organizer-8b245/databases/(default)/collectionGroups/financeEvents/indexes {"name":"projects/couple-organizer-8b245/databases/(default)/operations/S01vNzRpTmdBQ0lDDCoDIDg1ZDQzMzQ3Mjg1Yi0wNmE4LTVlYTQtNmU3NS05OTUyNjFlNCQac2VuaWxlcGlwCQpBEg","metadata":{"@type":"type.googleapis.com/google.firestore.admin.v1.IndexOperationMetadata","startTime":"2026-04-05T21:23:05.573975Z","index":"projects/couple-organizer-8b245/databases/(default)/collectionGroups/financeEvents/indexes/CICAgNi47oMK","state":"INITIALIZING"}}
+[info] ✔  firestore: deployed indexes in firestore.indexes.json successfully for (default) database 
+[debug] [2026-04-05T21:23:05.478Z] [rules] releasing cloud.firestore/(default) with ruleset projects/couple-organizer-8b245/rulesets/7ebf8aee-6f4c-4103-9583-53dee871f87a
+[debug] [2026-04-05T21:23:05.478Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:05.478Z] Checked if tokens are valid: true, expires at: 1775427780921
+[debug] [2026-04-05T21:23:05.479Z] >>> [apiv2][query] PATCH https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/releases/cloud.firestore/(default) [none]
+[debug] [2026-04-05T21:23:05.479Z] >>> [apiv2][body] PATCH https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/releases/cloud.firestore/(default) {"release":{"name":"projects/couple-organizer-8b245/releases/cloud.firestore/(default)","rulesetName":"projects/couple-organizer-8b245/rulesets/7ebf8aee-6f4c-4103-9583-53dee871f87a"}}
+[debug] [2026-04-05T21:23:06.345Z] <<< [apiv2][status] PATCH https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/releases/cloud.firestore/(default) 200
+[debug] [2026-04-05T21:23:06.345Z] <<< [apiv2][body] PATCH https://firebaserules.googleapis.com/v1/projects/couple-organizer-8b245/releases/cloud.firestore/(default) {"name":"projects/couple-organizer-8b245/releases/cloud.firestore","rulesetName":"projects/couple-organizer-8b245/rulesets/7ebf8aee-6f4c-4103-9583-53dee871f87a","createTime":"2026-04-05T16:36:41.231886Z","updateTime":"2026-04-05T21:23:06.397968Z"}
+[debug] [2026-04-05T21:23:06.345Z] [rules] updated release projects/couple-organizer-8b245/releases/cloud.firestore
+[info] ✔  firestore: released rules firestore.rules to cloud.firestore 
+[info] 
+[info] ✔  Deploy complete! 
+[info] 
+[info] Project Console: https://console.firebase.google.com/project/couple-organizer-8b245/overview

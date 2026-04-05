@@ -20,7 +20,7 @@ const { items: shoppingItems } = useShopping(coupleIdRef)
 const { balanceInfo } = useExpenses(coupleIdRef)
 
 const openTodos = computed(() => todos.value.filter(t => !t.done))
-const unboughtItems = computed(() => shoppingItems.value.filter(i => !i.bought))
+const unboughtItems = computed(() => shoppingItems.value.filter(i => !i.checked))
 
 const balanceSummary = computed(() => {
   if (!props.couple || Object.keys(balanceInfo.value.balances).length === 0) return null

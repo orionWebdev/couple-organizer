@@ -1,6 +1,11 @@
-import { initializeApp } from 'firebase/app'
+import { getApp, getApps, initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: "AIzaSyBdkkBd9l2SD7A9MuMpsAllw9ZU5rZgNOk",
@@ -11,16 +16,20 @@ const firebaseConfig = {
   appId: "1:156866789081:web:5762540f7bbd597ed488c8"
 }
 
-const app = initializeApp(firebaseConfig)
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
-export const db = getFirestore(app)
 
-// Enable offline persistence for Firestore
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Firestore persistence failed: multiple tabs open')
-  } else if (err.code === 'unimplemented') {
-    console.warn('Firestore persistence not available in this browser')
+// Use initializeFirestore with persistent cache (replaces deprecated enableIndexedDbPersistence).
+// Falls back to getFirestore if already initialized (e.g. HMR).
+export const db = (() => {
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    })
+  } catch {
+    return getFirestore(app)
   }
-})
+})()

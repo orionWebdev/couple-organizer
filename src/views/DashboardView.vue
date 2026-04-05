@@ -11,7 +11,6 @@ import ExpenseList from '@/components/expenses/ExpenseList.vue'
 const { user } = useAuth()
 const { couple, watchCouple } = useCouple()
 
-// Start watching couple data
 if (user.value?.coupleId) {
   watchCouple(user.value.coupleId)
 }
@@ -24,8 +23,8 @@ const activeTab = ref('todos')
     <AppHeader />
 
     <main class="max-w-lg mx-auto px-4 py-4">
-      <!-- Todos -->
-      <div v-if="activeTab === 'todos'">
+      <!-- Use v-show to keep components alive so onSnapshot listeners persist -->
+      <div v-show="activeTab === 'todos'">
         <h2 class="text-lg font-bold mb-3">Todos</h2>
         <TodoList
           v-if="user?.coupleId"
@@ -34,8 +33,7 @@ const activeTab = ref('todos')
         />
       </div>
 
-      <!-- Shopping -->
-      <div v-if="activeTab === 'shopping'">
+      <div v-show="activeTab === 'shopping'">
         <h2 class="text-lg font-bold mb-3">Shopping List</h2>
         <ShoppingList
           v-if="user?.coupleId"
@@ -43,8 +41,7 @@ const activeTab = ref('todos')
         />
       </div>
 
-      <!-- Expenses -->
-      <div v-if="activeTab === 'expenses'">
+      <div v-show="activeTab === 'expenses'">
         <h2 class="text-lg font-bold mb-3">Expenses</h2>
         <ExpenseList
           v-if="user?.coupleId"

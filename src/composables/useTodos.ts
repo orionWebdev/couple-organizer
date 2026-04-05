@@ -11,11 +11,13 @@ export function useTodos(coupleId: Ref<string | null>) {
   const { user } = useAuth()
   const todos = ref<Todo[]>([])
   const loading = ref(true)
+  const error = ref<string | null>(null)
   let unsubscribe: (() => void) | null = null
 
   function startListening(id: string) {
     if (unsubscribe) unsubscribe()
     loading.value = true
+    error.value = null
 
     const q = query(
       collection(db, 'todos'),
@@ -23,40 +25,67 @@ export function useTodos(coupleId: Ref<string | null>) {
       orderBy('createdAt', 'desc')
     )
 
-    unsubscribe = onSnapshot(q, (snap) => {
-      todos.value = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Todo))
-      loading.value = false
-    })
+    unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        todos.value = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Todo))
+        loading.value = false
+      },
+      (err) => {
+        console.error('Todos listener error:', err)
+        error.value = err.message
+        loading.value = false
+      }
+    )
   }
 
-  // Watch coupleId and restart listener when it changes
   watch(coupleId, (id) => {
     if (id) startListening(id)
   }, { immediate: true })
 
   async function addTodo(title: string, assignedTo: string | null = null) {
     if (!coupleId.value || !user.value) return
-    await addDoc(collection(db, 'todos'), {
-      coupleId: coupleId.value,
-      title,
-      done: false,
-      assignedTo,
-      createdBy: user.value.uid,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    })
+    try {
+      await addDoc(collection(db, 'todos'), {
+        coupleId: coupleId.value,
+        title,
+        done: false,
+        assignedTo,
+        createdBy: user.value.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    } catch (err: any) {
+      console.error('Failed to add todo:', err)
+      error.value = err.message
+    }
   }
 
   async function toggleTodo(id: string, done: boolean) {
-    await updateDoc(doc(db, 'todos', id), { done, updatedAt: serverTimestamp() })
+    try {
+      await updateDoc(doc(db, 'todos', id), { done, updatedAt: serverTimestamp() })
+    } catch (err: any) {
+      console.error('Failed to toggle todo:', err)
+      error.value = err.message
+    }
   }
 
   async function updateTodo(id: string, updates: Partial<Pick<Todo, 'title' | 'assignedTo'>>) {
-    await updateDoc(doc(db, 'todos', id), { ...updates, updatedAt: serverTimestamp() })
+    try {
+      await updateDoc(doc(db, 'todos', id), { ...updates, updatedAt: serverTimestamp() })
+    } catch (err: any) {
+      console.error('Failed to update todo:', err)
+      error.value = err.message
+    }
   }
 
   async function deleteTodo(id: string) {
-    await deleteDoc(doc(db, 'todos', id))
+    try {
+      await deleteDoc(doc(db, 'todos', id))
+    } catch (err: any) {
+      console.error('Failed to delete todo:', err)
+      error.value = err.message
+    }
   }
 
   onScopeDispose(() => {
@@ -66,6 +95,7 @@ export function useTodos(coupleId: Ref<string | null>) {
   return {
     todos: readonly(todos),
     loading: readonly(loading),
+    error: readonly(error),
     addTodo,
     toggleTodo,
     updateTodo,

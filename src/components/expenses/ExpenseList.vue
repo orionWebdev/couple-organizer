@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { computed } from 'vue'
 import { useExpenses } from '@/composables/useExpenses'
 import type { Couple } from '@/types'
 import BalanceSummary from './BalanceSummary.vue'
@@ -11,8 +10,8 @@ const props = defineProps<{
   couple: Couple | null
 }>()
 
-const coupleIdRef = ref(props.coupleId) as Ref<string | null>
-const { expenses, loading, balanceInfo, addExpense, deleteExpense } = useExpenses(coupleIdRef)
+const coupleIdRef = computed<string | null>(() => props.coupleId)
+const { expenses, loading, error, balanceInfo, addExpense, deleteExpense } = useExpenses(coupleIdRef)
 
 function formatCents(cents: number): string {
   return (cents / 100).toFixed(2)
@@ -37,6 +36,9 @@ function getMemberName(uid: string): string {
       :couple="couple"
       @add="addExpense"
     />
+
+    <!-- Error -->
+    <p v-if="error" class="text-center text-red-500 text-sm py-2">{{ error }}</p>
 
     <!-- Expense list -->
     <div>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { ref, computed, watchEffect } from 'vue'
 import { useShopping } from '@/composables/useShopping'
 import ShoppingItem from './ShoppingItem.vue'
 
@@ -8,8 +7,8 @@ const props = defineProps<{
   coupleId: string
 }>()
 
-const coupleIdRef = ref(props.coupleId) as Ref<string | null>
-const { items, loading, addItem, toggleBought, deleteItem, clearBought } = useShopping(coupleIdRef)
+const coupleIdRef = computed<string | null>(() => props.coupleId)
+const { items, loading, error, addItem, toggleBought, deleteItem, clearBought } = useShopping(coupleIdRef)
 
 const newName = ref('')
 
@@ -21,8 +20,6 @@ async function handleAdd() {
 }
 
 const hasBought = ref(false)
-// Update hasBought reactively based on items
-import { watchEffect } from 'vue'
 watchEffect(() => {
   hasBought.value = items.value.some((i) => i.bought)
 })
@@ -55,6 +52,9 @@ watchEffect(() => {
     >
       Clear bought items
     </button>
+
+    <!-- Error -->
+    <p v-if="error" class="text-center text-red-500 text-sm py-2">{{ error }}</p>
 
     <!-- Loading -->
     <p v-if="loading" class="text-center text-gray-400 text-sm py-4">Loading...</p>

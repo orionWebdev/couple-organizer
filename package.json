@@ -9,7 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ionic/vue": "^8.8.3",
+    "@ionic/vue-router": "^8.8.3",
     "firebase": "^11.0.0",
+    "ionicons": "^8.0.13",
     "vue": "^3.5.0",
     "vue-router": "^4.4.0"
   },

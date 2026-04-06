@@ -1,5 +1,21 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import {
+  IonList,
+  IonFab,
+  IonFabButton,
+  IonIcon,
+  IonModal,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButtons,
+  IonButton,
+  IonInput,
+  IonSpinner
+} from '@ionic/vue'
+import { addOutline } from 'ionicons/icons'
 import { useTodos } from '@/composables/useTodos'
 import type { Couple } from '@/types'
 import TodoItem from './TodoItem.vue'
@@ -13,39 +29,26 @@ const coupleIdRef = computed<string | null>(() => props.coupleId)
 const { todos, loading, error, addTodo, toggleTodo, updateTodo, deleteTodo } = useTodos(coupleIdRef)
 
 const newTitle = ref('')
+const showAddModal = ref(false)
 
 async function handleAdd() {
   const title = newTitle.value.trim()
   if (!title) return
   await addTodo(title)
   newTitle.value = ''
+  showAddModal.value = false
 }
 </script>
 
 <template>
-  <div class="space-y-3">
-    <!-- Add form -->
-    <form @submit.prevent="handleAdd" class="flex gap-2">
-      <input
-        v-model="newTitle"
-        type="text"
-        placeholder="Neue Aufgabe..."
-        class="flex-1 px-3 py-2.5 border border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
-      />
-      <button
-        type="submit"
-        :disabled="!newTitle.trim()"
-        class="px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
-      >
-        Hinzufügen
-      </button>
-    </form>
-
+  <div>
     <!-- Error -->
     <p v-if="error" class="text-center text-red-400 text-sm py-2">{{ error }}</p>
 
     <!-- Loading -->
-    <p v-if="loading" class="text-center text-slate-500 text-sm py-4">Laden...</p>
+    <div v-if="loading" class="flex justify-center py-8">
+      <ion-spinner name="crescent" color="primary" />
+    </div>
 
     <!-- Empty state -->
     <div v-else-if="todos.length === 0" class="text-center py-12">
@@ -56,14 +59,59 @@ async function handleAdd() {
     </div>
 
     <!-- Todo items -->
-    <TodoItem
-      v-for="todo in todos"
-      :key="todo.id"
-      :todo="todo"
-      :couple="couple"
-      @toggle="toggleTodo"
-      @assign="(id, to) => updateTodo(id, { assignedTo: to })"
-      @delete="deleteTodo"
-    />
+    <ion-list v-else lines="none" class="space-y-2">
+      <TodoItem
+        v-for="todo in todos"
+        :key="todo.id"
+        :todo="todo"
+        :couple="couple"
+        @toggle="toggleTodo"
+        @assign="(id, to) => updateTodo(id, { assignedTo: to })"
+        @delete="deleteTodo"
+      />
+    </ion-list>
+
+    <!-- FAB to open add modal -->
+    <ion-fab vertical="bottom" horizontal="end" slot="fixed" class="mb-2 mr-2">
+      <ion-fab-button @click="showAddModal = true" color="primary">
+        <ion-icon :icon="addOutline" />
+      </ion-fab-button>
+    </ion-fab>
+
+    <!-- Add Todo Modal (bottom sheet) -->
+    <ion-modal
+      :is-open="showAddModal"
+      :breakpoints="[0, 0.35]"
+      :initial-breakpoint="0.35"
+      @did-dismiss="showAddModal = false"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Neue Aufgabe</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showAddModal = false">Fertig</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <form @submit.prevent="handleAdd" class="space-y-4">
+          <ion-input
+            v-model="newTitle"
+            placeholder="Aufgabe eingeben..."
+            :clear-input="true"
+            fill="outline"
+            label="Aufgabe"
+            label-placement="floating"
+          />
+          <ion-button
+            expand="block"
+            type="submit"
+            :disabled="!newTitle.trim()"
+          >
+            Hinzufügen
+          </ion-button>
+        </form>
+      </ion-content>
+    </ion-modal>
   </div>
 </template>

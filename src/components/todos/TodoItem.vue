@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import {
+  IonItemSliding,
+  IonItem,
+  IonItemOptions,
+  IonItemOption,
+  IonCheckbox,
+  IonLabel,
+  IonSelect,
+  IonSelectOption
+} from '@ionic/vue'
 import type { Todo, Couple } from '@/types'
 
 defineProps<{
@@ -14,48 +24,44 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div
-    class="flex items-center gap-3 p-4 bg-slate-800 rounded-2xl border border-slate-700"
-    :class="{ 'opacity-50': todo.done }"
-  >
-    <!-- Checkbox -->
-    <input
-      type="checkbox"
-      :checked="todo.done"
-      @change="emit('toggle', todo.id, !todo.done)"
-      class="h-5 w-5 rounded border-slate-500 text-green-500 focus:ring-green-500 cursor-pointer"
-    />
-
-    <!-- Title -->
-    <span class="flex-1 text-sm text-slate-100" :class="{ 'line-through text-slate-500': todo.done }">
-      {{ todo.title }}
-    </span>
-
-    <!-- Assignee selector -->
-    <select
-      v-if="couple"
-      :value="todo.assignedTo || ''"
-      @change="emit('assign', todo.id, ($event.target as HTMLSelectElement).value || null)"
-      class="text-xs border border-slate-600 rounded-lg px-2 py-1 bg-slate-700 text-slate-300"
-    >
-      <option value="">Nicht zugewiesen</option>
-      <option
-        v-for="(name, uid) in couple.memberNames"
-        :key="uid"
-        :value="uid"
+  <ion-item-sliding>
+    <ion-item :class="{ 'opacity-50': todo.done }" class="rounded-xl mb-1">
+      <ion-checkbox
+        slot="start"
+        :checked="todo.done"
+        @ion-change="emit('toggle', todo.id, !todo.done)"
+        color="primary"
+      />
+      <ion-label :class="{ 'line-through text-slate-500': todo.done }">
+        <h3 class="text-sm">{{ todo.title }}</h3>
+        <p v-if="couple && todo.assignedTo" class="text-xs text-slate-400">
+          {{ couple.memberNames[todo.assignedTo] || 'Nicht zugewiesen' }}
+        </p>
+      </ion-label>
+      <ion-select
+        v-if="couple"
+        :value="todo.assignedTo || ''"
+        interface="action-sheet"
+        placeholder="Zuweisen"
+        @ion-change="emit('assign', todo.id, ($event.detail.value as string) || null)"
+        slot="end"
+        class="text-xs max-w-30"
       >
-        {{ name }}
-      </option>
-    </select>
+        <ion-select-option value="">Nicht zugewiesen</ion-select-option>
+        <ion-select-option
+          v-for="(name, uid) in couple.memberNames"
+          :key="uid"
+          :value="uid"
+        >
+          {{ name }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
 
-    <!-- Delete -->
-    <button
-      @click="emit('delete', todo.id)"
-      class="text-slate-600 hover:text-red-400 transition-colors"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  </div>
+    <ion-item-options side="end">
+      <ion-item-option color="danger" @click="emit('delete', todo.id)">
+        Löschen
+      </ion-item-option>
+    </ion-item-options>
+  </ion-item-sliding>
 </template>

@@ -1,5 +1,25 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import {
+  IonFab,
+  IonFabButton,
+  IonIcon,
+  IonModal,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButtons,
+  IonButton,
+  IonInput,
+  IonTextarea,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonSpinner
+} from '@ionic/vue'
+import { addOutline } from 'ionicons/icons'
 import { useRecipes } from '@/composables/useRecipes'
 import type { RecipeIngredient } from '@/types'
 
@@ -23,6 +43,7 @@ const formError = ref<string | null>(null)
 const ingredientRows = ref<IngredientFormRow[]>([
   { name: '', amount: '', unit: '' }
 ])
+const showFormModal = ref(false)
 
 function resetForm() {
   editingRecipeId.value = null
@@ -58,12 +79,19 @@ function startEdit(recipe: {
     amount: String(ingredient.amount),
     unit: ingredient.unit
   }))
+  showFormModal.value = true
+}
+
+function openNewRecipe() {
+  resetForm()
+  showFormModal.value = true
 }
 
 async function handleDelete(recipeId: string) {
   await deleteRecipe(recipeId)
   if (editingRecipeId.value === recipeId) {
     resetForm()
+    showFormModal.value = false
   }
 }
 
@@ -128,6 +156,7 @@ async function handleSubmit() {
   }
 
   resetForm()
+  showFormModal.value = false
 }
 
 function formatIngredient(ingredient: RecipeIngredient): string {
@@ -137,127 +166,32 @@ function formatIngredient(ingredient: RecipeIngredient): string {
 
 <template>
   <div class="space-y-4">
-    <form @submit.prevent="handleSubmit" class="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide">
-          {{ editingRecipeId ? 'Rezept bearbeiten' : 'Rezept erstellen' }}
-        </h3>
-        <button
-          v-if="editingRecipeId"
-          type="button"
-          @click="resetForm"
-          class="text-xs text-slate-400 hover:text-slate-200 transition-colors"
-        >
-          Abbrechen
-        </button>
-      </div>
+    <!-- Recipe list -->
+    <div v-if="loading" class="flex justify-center py-8">
+      <ion-spinner name="crescent" color="primary" />
+    </div>
 
-      <input
-        v-model="title"
-        type="text"
-        placeholder="Rezepttitel"
-        class="w-full px-3 py-2.5 border border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-      />
+    <div v-else-if="recipes.length === 0" class="text-center py-8 text-sm text-slate-500">
+      Noch keine Rezepte vorhanden.
+    </div>
 
-      <div class="space-y-2">
-        <p class="text-xs font-medium text-slate-400 uppercase tracking-wide">Zutaten</p>
-
-        <div
-          v-for="(row, index) in ingredientRows"
-          :key="index"
-          class="grid grid-cols-12 gap-2"
-        >
-          <input
-            v-model="row.name"
-            type="text"
-            placeholder="Name"
-            class="col-span-5 px-3 py-2.5 border border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-          />
-          <input
-            v-model="row.amount"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="Menge"
-            class="col-span-3 px-3 py-2.5 border border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-          />
-          <input
-            v-model="row.unit"
-            type="text"
-            placeholder="Einheit"
-            class="col-span-3 px-3 py-2.5 border border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-          />
-          <button
-            type="button"
-            @click="removeIngredientRow(index)"
-            class="col-span-1 flex items-center justify-center text-slate-500 hover:text-red-400 transition-colors"
-            aria-label="Zutat entfernen"
-          >
-            ×
-          </button>
-        </div>
-
-        <button
-          type="button"
-          @click="addIngredientRow"
-          class="text-sm text-green-400 hover:text-green-300 transition-colors"
-        >
-          + Zutat hinzufügen
-        </button>
-      </div>
-
-      <textarea
-        v-model="instructions"
-        rows="4"
-        placeholder="Zubereitungsschritte"
-        class="w-full px-3 py-2.5 border border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-      />
-
-      <p v-if="formError" class="text-sm text-red-400">{{ formError }}</p>
-      <p v-if="error" class="text-sm text-red-400">{{ error }}</p>
-
-      <button
-        type="submit"
-        class="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors"
-      >
-        {{ editingRecipeId ? 'Änderungen speichern' : 'Rezept speichern' }}
-      </button>
-    </form>
-
-    <div class="space-y-2">
-      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide">Rezepte</h3>
-
-      <p v-if="loading" class="text-center text-slate-500 text-sm py-4">Laden...</p>
-
-      <div v-else-if="recipes.length === 0" class="text-center py-8 text-sm text-slate-500">
-        Noch keine Rezepte vorhanden.
-      </div>
-
-      <div v-else class="space-y-3">
-        <article
-          v-for="recipe in recipes"
-          :key="recipe.id"
-          class="bg-slate-800 rounded-2xl border border-slate-700 p-4"
-        >
+    <div v-else class="space-y-3">
+      <ion-card v-for="recipe in recipes" :key="recipe.id">
+        <ion-card-header>
           <div class="flex items-start justify-between gap-3">
-            <h4 class="text-base font-semibold text-slate-100">{{ recipe.title }}</h4>
-            <div class="flex items-center gap-2">
-              <button
-                @click="startEdit(recipe)"
-                class="text-xs text-slate-300 hover:text-green-300 transition-colors"
-              >
+            <ion-card-title class="text-base font-semibold">{{ recipe.title }}</ion-card-title>
+            <div class="flex items-center gap-1 shrink-0">
+              <ion-button fill="clear" size="small" @click="startEdit(recipe)">
                 Bearbeiten
-              </button>
-              <button
-                @click="handleDelete(recipe.id)"
-                class="text-xs text-slate-500 hover:text-red-400 transition-colors"
-              >
+              </ion-button>
+              <ion-button fill="clear" size="small" color="danger" @click="handleDelete(recipe.id)">
                 Löschen
-              </button>
+              </ion-button>
             </div>
           </div>
-
-          <div class="mt-3">
+        </ion-card-header>
+        <ion-card-content>
+          <div class="mb-3">
             <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Zutaten</p>
             <ul class="space-y-1 text-sm text-slate-200">
               <li v-for="(ingredient, index) in recipe.ingredients" :key="index">
@@ -265,13 +199,106 @@ function formatIngredient(ingredient: RecipeIngredient): string {
               </li>
             </ul>
           </div>
-
-          <div class="mt-3">
+          <div>
             <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Zubereitung</p>
             <p class="text-sm text-slate-300 whitespace-pre-line">{{ recipe.instructions }}</p>
           </div>
-        </article>
-      </div>
+        </ion-card-content>
+      </ion-card>
     </div>
+
+    <p v-if="error" class="text-sm text-red-400 text-center">{{ error }}</p>
+
+    <!-- FAB to add recipe -->
+    <ion-fab vertical="bottom" horizontal="end" slot="fixed" class="mb-2 mr-2">
+      <ion-fab-button @click="openNewRecipe" color="primary">
+        <ion-icon :icon="addOutline" />
+      </ion-fab-button>
+    </ion-fab>
+
+    <!-- Recipe Form Modal (fullscreen) -->
+    <ion-modal
+      :is-open="showFormModal"
+      @did-dismiss="showFormModal = false"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-buttons slot="start">
+            <ion-button @click="showFormModal = false">Abbrechen</ion-button>
+          </ion-buttons>
+          <ion-title>{{ editingRecipeId ? 'Rezept bearbeiten' : 'Neues Rezept' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="handleSubmit" :strong="true">Speichern</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <div class="space-y-4">
+          <ion-input
+            v-model="title"
+            placeholder="Rezepttitel"
+            fill="outline"
+            label="Titel"
+            label-placement="floating"
+            :clear-input="true"
+          />
+
+          <div class="space-y-2">
+            <p class="text-xs font-medium text-slate-400 uppercase tracking-wide">Zutaten</p>
+
+            <div
+              v-for="(row, index) in ingredientRows"
+              :key="index"
+              class="flex gap-2 items-center"
+            >
+              <ion-input
+                v-model="row.name"
+                placeholder="Name"
+                fill="outline"
+                class="flex-1"
+              />
+              <ion-input
+                v-model="row.amount"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Menge"
+                fill="outline"
+                class="max-w-20"
+              />
+              <ion-input
+                v-model="row.unit"
+                placeholder="Einheit"
+                fill="outline"
+                class="max-w-20"
+              />
+              <ion-button
+                fill="clear"
+                size="small"
+                color="danger"
+                @click="removeIngredientRow(index)"
+              >
+                ×
+              </ion-button>
+            </div>
+
+            <ion-button fill="clear" size="small" @click="addIngredientRow">
+              + Zutat hinzufügen
+            </ion-button>
+          </div>
+
+          <ion-textarea
+            v-model="instructions"
+            :rows="6"
+            placeholder="Zubereitungsschritte"
+            fill="outline"
+            label="Zubereitung"
+            label-placement="floating"
+          />
+
+          <p v-if="formError" class="text-sm text-red-400">{{ formError }}</p>
+        </div>
+      </ion-content>
+    </ion-modal>
   </div>
 </template>

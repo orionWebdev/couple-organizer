@@ -1,5 +1,19 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import {
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonButton,
+  IonButtons,
+  IonToolbar,
+  IonSelect,
+  IonSelectOption,
+  IonSpinner,
+  IonIcon
+} from '@ionic/vue'
+import { chevronBackOutline, chevronForwardOutline } from 'ionicons/icons'
 import { MEAL_PLAN_DAYS, useMealPlan } from '@/composables/useMealPlan'
 import { useRecipes } from '@/composables/useRecipes'
 import { useShopping } from '@/composables/useShopping'
@@ -79,79 +93,91 @@ async function handleGenerateShoppingList() {
 
 <template>
   <div class="space-y-4">
-    <section class="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <button
-          @click="shiftWeek(-1)"
-          class="px-3 py-2 text-sm rounded-xl border border-slate-600 text-slate-200 hover:border-slate-500"
-        >
-          ← Vorherige
-        </button>
-        <div class="text-center">
-          <p class="text-xs text-slate-400 uppercase tracking-wide">Woche</p>
-          <p class="text-sm font-semibold text-slate-100">{{ weekLabel }}</p>
-        </div>
-        <button
-          @click="shiftWeek(1)"
-          class="px-3 py-2 text-sm rounded-xl border border-slate-600 text-slate-200 hover:border-slate-500"
-        >
-          Nächste →
-        </button>
-      </div>
+    <!-- Week navigation -->
+    <ion-card>
+      <ion-card-content>
+        <ion-toolbar class="--background: transparent">
+          <ion-buttons slot="start">
+            <ion-button @click="shiftWeek(-1)">
+              <ion-icon :icon="chevronBackOutline" slot="icon-only" />
+            </ion-button>
+          </ion-buttons>
+          <div class="text-center">
+            <p class="text-xs text-slate-400 uppercase tracking-wide">Woche</p>
+            <p class="text-sm font-semibold">{{ weekLabel }}</p>
+          </div>
+          <ion-buttons slot="end">
+            <ion-button @click="shiftWeek(1)">
+              <ion-icon :icon="chevronForwardOutline" slot="icon-only" />
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+        <ion-button expand="block" fill="outline" size="small" @click="goToCurrentWeek" class="mt-2">
+          Zur aktuellen Woche
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
 
-      <button
-        @click="goToCurrentWeek"
-        class="w-full py-2 text-sm rounded-xl bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors"
-      >
-        Zur aktuellen Woche
-      </button>
-    </section>
-
+    <!-- Days -->
     <section class="space-y-2">
-      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide">Rezepte pro Tag</h3>
-      <p v-if="loading" class="text-sm text-slate-500 py-2">Laden...</p>
+      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide px-1">Rezepte pro Tag</h3>
+
+      <div v-if="loading" class="flex justify-center py-4">
+        <ion-spinner name="crescent" color="primary" />
+      </div>
       <p v-if="error" class="text-sm text-red-400 py-2">{{ error }}</p>
 
-      <div v-for="day in MEAL_PLAN_DAYS" :key="day.key" class="bg-slate-800 rounded-2xl border border-slate-700 p-4">
-        <p class="text-sm font-semibold text-slate-200 mb-2">{{ day.label }}</p>
-        <select
-          :value="days[day.key] || ''"
-          @change="handleRecipeChange(day.key, ($event.target as HTMLSelectElement).value)"
-          class="w-full px-3 py-2.5 border border-slate-600 rounded-xl text-sm bg-slate-700 text-slate-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+      <ion-card v-for="day in MEAL_PLAN_DAYS" :key="day.key">
+        <ion-card-content>
+          <p class="text-sm font-semibold mb-2">{{ day.label }}</p>
+          <ion-select
+            :value="days[day.key] || ''"
+            @ion-change="handleRecipeChange(day.key, ($event.detail.value as string))"
+            label="Rezept"
+            label-placement="floating"
+            fill="outline"
+            interface="action-sheet"
+          >
+            <ion-select-option value="">Kein Rezept</ion-select-option>
+            <ion-select-option v-for="recipe in recipes" :key="recipe.id" :value="recipe.id">
+              {{ recipe.title }}
+            </ion-select-option>
+          </ion-select>
+        </ion-card-content>
+      </ion-card>
+    </section>
+
+    <!-- Generate shopping list -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title class="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+          Einkaufsliste aus Wochenplan
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content class="space-y-3">
+        <ion-select
+          v-model="selectedListId"
+          label="Liste auswählen"
+          label-placement="floating"
+          fill="outline"
+          interface="action-sheet"
         >
-          <option value="">Kein Rezept</option>
-          <option v-for="recipe in recipes" :key="recipe.id" :value="recipe.id">
-            {{ recipe.title }}
-          </option>
-        </select>
-      </div>
-    </section>
+          <ion-select-option v-for="list in lists" :key="list.id" :value="list.id">
+            {{ list.title }}
+          </ion-select-option>
+        </ion-select>
 
-    <section class="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-3">
-      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide">
-        Einkaufsliste aus Wochenplan
-      </h3>
+        <ion-button
+          expand="block"
+          @click="handleGenerateShoppingList"
+          :disabled="generating || !selectedListId"
+        >
+          {{ generating ? 'Generiere...' : 'Einkaufsliste generieren' }}
+        </ion-button>
 
-      <select
-        v-model="selectedListId"
-        class="w-full px-3 py-2.5 border border-slate-600 rounded-xl text-sm bg-slate-700 text-slate-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-      >
-        <option value="" disabled>Liste auswählen</option>
-        <option v-for="list in lists" :key="list.id" :value="list.id">
-          {{ list.title }}
-        </option>
-      </select>
-
-      <button
-        @click="handleGenerateShoppingList"
-        :disabled="generating || !selectedListId"
-        class="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
-      >
-        {{ generating ? 'Generiere...' : 'Einkaufsliste generieren' }}
-      </button>
-
-      <p v-if="generationMessage" class="text-sm text-green-400">{{ generationMessage }}</p>
-      <p v-if="generationError" class="text-sm text-red-400">{{ generationError }}</p>
-    </section>
+        <p v-if="generationMessage" class="text-sm text-green-400">{{ generationMessage }}</p>
+        <p v-if="generationError" class="text-sm text-red-400">{{ generationError }}</p>
+      </ion-card-content>
+    </ion-card>
   </div>
 </template>

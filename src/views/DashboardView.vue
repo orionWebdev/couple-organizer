@@ -24,10 +24,10 @@ const activeTab = ref('overview')
 
 <template>
   <ion-page>
-    <AppHeader />
+    <AppHeader v-if="!['overview', 'todos', 'expenses'].includes(activeTab)" />
 
     <ion-content class="ion-padding">
-      <div class="max-w-lg mx-auto pb-16">
+      <div class="mx-auto max-w-lg pb-16" :class="activeTab === 'overview' ? 'pt-2' : 'pt-1'">
         <!-- Use v-show to keep components alive so onSnapshot listeners persist -->
         <div v-show="activeTab === 'overview'">
           <OverviewTab

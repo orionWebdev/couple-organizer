@@ -91,12 +91,18 @@ export interface MealPlan {
 }
 
 export type ExpenseCategory = 'food' | 'transport' | 'home' | 'leisure' | 'other'
+export type FinanceEventKind = 'one_time' | 'monthly'
 
 export interface FinanceEvent {
   id: string
   coupleId: string
   title: string
+  kind: FinanceEventKind
+  category: ExpenseCategory | null
   archived: boolean
+  settledAt: Timestamp | null
+  settledBy: string | null
+  settledMonthKeys: string[]
   createdBy: string
   createdAt: Timestamp
   updatedAt: Timestamp
@@ -114,7 +120,7 @@ export interface Expense {
   monthKey: string // YYYY-MM
   source: 'manual' | 'shopping'
   shoppingListId: string | null
-  shoppingItemIds: string[]
+  shoppingItemIds: readonly string[]
   createdBy: string
   createdAt: Timestamp
   updatedAt: Timestamp

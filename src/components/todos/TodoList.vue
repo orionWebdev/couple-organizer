@@ -1,23 +1,27 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import {
-  IonList,
+  IonButton,
+  IonButtons,
+  IonContent,
   IonFab,
   IonFabButton,
-  IonIcon,
-  IonModal,
   IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonButtons,
-  IonButton,
+  IonIcon,
   IonInput,
-  IonSpinner
+  IonItem,
+  IonLabel,
+  IonList,
+  IonModal,
+  IonSpinner,
+  IonTitle,
+  IonToolbar
 } from '@ionic/vue'
-import { addOutline } from 'ionicons/icons'
+import { addOutline, closeOutline, searchOutline } from 'ionicons/icons'
+import { useAuth } from '@/composables/useAuth'
 import { useTodos } from '@/composables/useTodos'
-import type { Couple } from '@/types'
+import type { Couple, Todo } from '@/types'
+import AppSegmentToggle from '@/components/ui/AppSegmentToggle.vue'
 import TodoItem from './TodoItem.vue'
 
 const props = defineProps<{
@@ -25,11 +29,38 @@ const props = defineProps<{
   couple: Couple | null
 }>()
 
+const { user } = useAuth()
 const coupleIdRef = computed<string | null>(() => props.coupleId)
 const { todos, loading, error, addTodo, toggleTodo, updateTodo, deleteTodo } = useTodos(coupleIdRef)
 
+const filterMode = ref<'all' | 'mine'>('all')
+const searchQuery = ref('')
+const showSearch = ref(false)
 const newTitle = ref('')
 const showAddModal = ref(false)
+const showAssignModal = ref(false)
+const selectedTodo = ref<Todo | null>(null)
+
+const filterOptions = [
+  { label: 'Alle', value: 'all' },
+  { label: 'Meine', value: 'mine' }
+]
+
+const visibleTodos = computed(() => {
+  const normalizedQuery = searchQuery.value.trim().toLowerCase()
+
+  return todos.value.filter((todo) => {
+    const matchesMine = filterMode.value === 'all'
+      || todo.assignedTo === user.value?.uid
+      || (!todo.assignedTo && todo.createdBy === user.value?.uid)
+
+    if (!matchesMine) return false
+    if (!normalizedQuery) return true
+
+    const assignee = todo.assignedTo ? props.couple?.memberNames[todo.assignedTo] || '' : ''
+    return `${todo.title} ${assignee}`.toLowerCase().includes(normalizedQuery)
+  })
+})
 
 async function handleAdd() {
   const title = newTitle.value.trim()
@@ -38,51 +69,82 @@ async function handleAdd() {
   newTitle.value = ''
   showAddModal.value = false
 }
+
+function openAssignModal(todo: Todo) {
+  selectedTodo.value = todo
+  showAssignModal.value = true
+}
+
+async function assignTodo(assignedTo: string | null) {
+  if (!selectedTodo.value) return
+  await updateTodo(selectedTodo.value.id, { assignedTo })
+  showAssignModal.value = false
+  selectedTodo.value = null
+}
 </script>
 
 <template>
-  <div>
-    <!-- Error -->
-    <p v-if="error" class="text-center text-red-400 text-sm py-2">{{ error }}</p>
+  <section class="space-y-5 pb-4">
+    <div class="todo-page-header">
+      <h1 class="text-[2rem] font-semibold tracking-tight text-slate-50">Aufgaben</h1>
+      <button
+        type="button"
+        class="todo-icon-button"
+        :aria-label="showSearch ? 'Suche schließen' : 'Suche öffnen'"
+        @click="showSearch = !showSearch"
+      >
+        <ion-icon :icon="showSearch ? closeOutline : searchOutline" class="text-xl" />
+      </button>
+    </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-8">
+    <div v-if="showSearch" class="todo-search-card">
+      <ion-input
+        v-model="searchQuery"
+        placeholder="Aufgaben durchsuchen"
+        fill="outline"
+        :clear-input="true"
+      />
+    </div>
+
+    <AppSegmentToggle v-model="filterMode" :options="filterOptions" />
+
+    <p v-if="error" class="text-center text-sm text-red-400">{{ error }}</p>
+
+    <div v-if="loading" class="flex justify-center py-12">
       <ion-spinner name="crescent" color="primary" />
     </div>
 
-    <!-- Empty state -->
-    <div v-else-if="todos.length === 0" class="text-center py-12">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
-      <p class="text-slate-500 text-sm">Noch keine Aufgaben vorhanden</p>
+    <div v-else-if="visibleTodos.length === 0" class="todo-empty-card">
+      <p class="text-base font-medium text-slate-200">Keine Aufgaben gefunden</p>
+      <p class="mt-2 text-sm text-slate-400">
+        {{ filterMode === 'mine' ? 'Dir ist aktuell nichts zugewiesen.' : 'Lege deine erste Aufgabe an.' }}
+      </p>
     </div>
 
-    <!-- Todo items -->
-    <ion-list v-else lines="none" class="space-y-2">
-      <TodoItem
-        v-for="todo in todos"
-        :key="todo.id"
-        :todo="todo"
-        :couple="couple"
-        @toggle="toggleTodo"
-        @assign="(id, to) => updateTodo(id, { assignedTo: to })"
-        @delete="deleteTodo"
-      />
-    </ion-list>
+    <section v-else class="todo-list-card">
+      <ion-list lines="none" class="todo-list-shell">
+        <TodoItem
+          v-for="todo in visibleTodos"
+          :key="todo.id"
+          :todo="todo"
+          :couple="couple"
+          @toggle="toggleTodo"
+          @assign-request="openAssignModal"
+          @delete="deleteTodo"
+        />
+      </ion-list>
+    </section>
 
-    <!-- FAB to open add modal -->
     <ion-fab vertical="bottom" horizontal="end" slot="fixed" class="mb-2 mr-2">
       <ion-fab-button @click="showAddModal = true" color="primary">
         <ion-icon :icon="addOutline" />
       </ion-fab-button>
     </ion-fab>
 
-    <!-- Add Todo Modal (bottom sheet) -->
     <ion-modal
       :is-open="showAddModal"
-      :breakpoints="[0, 0.35]"
-      :initial-breakpoint="0.35"
+      :breakpoints="[0, 0.38]"
+      :initial-breakpoint="0.38"
       @did-dismiss="showAddModal = false"
     >
       <ion-header>
@@ -103,15 +165,93 @@ async function handleAdd() {
             label="Aufgabe"
             label-placement="floating"
           />
-          <ion-button
-            expand="block"
-            type="submit"
-            :disabled="!newTitle.trim()"
-          >
+          <ion-button expand="block" type="submit" :disabled="!newTitle.trim()">
             Hinzufügen
           </ion-button>
         </form>
       </ion-content>
     </ion-modal>
-  </div>
+
+    <ion-modal
+      :is-open="showAssignModal"
+      :breakpoints="[0, 0.42]"
+      :initial-breakpoint="0.42"
+      @did-dismiss="showAssignModal = false"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Zuweisung</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showAssignModal = false">Schließen</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <div class="space-y-3">
+          <p class="text-sm text-slate-400">
+            {{ selectedTodo?.title }}
+          </p>
+          <ion-list lines="none">
+            <ion-item :button="true" :detail="false" @click="assignTodo(null)">
+              <ion-label>Nicht zugewiesen</ion-label>
+            </ion-item>
+            <ion-item
+              v-for="(name, uid) in couple?.memberNames || {}"
+              :key="uid"
+              :button="true"
+              :detail="false"
+              @click="assignTodo(uid)"
+            >
+              <ion-label>{{ name }}</ion-label>
+            </ion-item>
+          </ion-list>
+        </div>
+      </ion-content>
+    </ion-modal>
+  </section>
 </template>
+
+<style scoped>
+.todo-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.25rem;
+}
+
+.todo-icon-button {
+  display: inline-flex;
+  height: 3.25rem;
+  width: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(71, 85, 105, 0.55);
+  border-radius: 9999px;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.96));
+  color: rgb(226 232 240);
+  box-shadow: 0 14px 28px rgba(2, 6, 23, 0.16);
+}
+
+.todo-search-card {
+  padding: 0.15rem 0;
+}
+
+.todo-empty-card,
+.todo-list-card {
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  border-radius: 1.9rem;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.97), rgba(15, 23, 42, 0.97));
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.24);
+}
+
+.todo-empty-card {
+  padding: 2rem 1.4rem;
+  text-align: center;
+}
+
+.todo-list-shell {
+  background: transparent;
+  padding: 1.15rem 1.2rem;
+}
+</style>

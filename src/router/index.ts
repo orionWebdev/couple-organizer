@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from '@ionic/vue-router'
 import { useAuth } from '@/composables/useAuth'
 
 const router = createRouter({

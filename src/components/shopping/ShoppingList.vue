@@ -1,5 +1,26 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import {
+  IonList,
+  IonFab,
+  IonFabButton,
+  IonIcon,
+  IonModal,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButtons,
+  IonButton,
+  IonInput,
+  IonSelect,
+  IonSelectOption,
+  IonChip,
+  IonLabel,
+  IonSpinner,
+  IonNote
+} from '@ionic/vue'
+import { addOutline, receiptOutline } from 'ionicons/icons'
 import { useShopping } from '@/composables/useShopping'
 import { useExpenses } from '@/composables/useExpenses'
 import { useAuth } from '@/composables/useAuth'
@@ -42,6 +63,9 @@ const financeMessage = ref<string | null>(null)
 const financeError = ref<string | null>(null)
 const creatingExpense = ref(false)
 
+const showAddModal = ref(false)
+const showExpenseModal = ref(false)
+
 watch(() => props.couple, (couple) => {
   if (!couple) return
   if (!financePaidBy.value || !(financePaidBy.value in couple.memberNames)) {
@@ -72,6 +96,7 @@ async function handleAddItem() {
     category: newItemCategory.value
   })
   newItemName.value = ''
+  showAddModal.value = false
 }
 
 async function handleCreateShoppingExpense() {
@@ -118,90 +143,74 @@ async function handleCreateShoppingExpense() {
   financeAmount.value = ''
   financeMessage.value = `Ausgabe wurde erstellt und ${checkedItemsWithoutExpense.value.length} Artikel verknüpft.`
   creatingExpense.value = false
+  showExpenseModal.value = false
 }
 </script>
 
 <template>
   <div class="space-y-4">
-    <section class="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-3">
-      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide">Listen</h3>
-
+    <!-- List selector -->
+    <section class="space-y-3">
       <div class="flex gap-2 overflow-x-auto pb-1">
-        <button
+        <ion-chip
           v-for="list in lists"
           :key="list.id"
+          :color="list.id === activeListId ? 'primary' : 'medium'"
           @click="setActiveList(list.id)"
-          class="px-3 py-2 rounded-xl text-sm border whitespace-nowrap transition-colors"
-          :class="list.id === activeListId ? 'bg-green-600 border-green-500 text-white' : 'border-slate-600 text-slate-300 hover:border-slate-500'"
         >
-          {{ list.title }}
-        </button>
+          <ion-label>{{ list.title }}</ion-label>
+        </ion-chip>
       </div>
 
       <form @submit.prevent="handleCreateList" class="flex gap-2">
-        <input
+        <ion-input
           v-model="newListTitle"
-          type="text"
           placeholder="Neue Liste"
-          class="flex-1 px-3 py-2.5 border border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
+          fill="outline"
+          class="flex-1"
         />
-        <button
+        <ion-button
           type="submit"
           :disabled="!newListTitle.trim()"
-          class="px-4 py-2.5 bg-slate-700 text-slate-100 rounded-xl text-sm font-medium hover:bg-slate-600 disabled:opacity-50 transition-colors"
+          color="medium"
         >
           Erstellen
-        </button>
+        </ion-button>
       </form>
 
-      <button
-        v-if="canArchiveActiveList && activeList"
-        @click="archiveList(activeList.id)"
-        class="text-xs text-slate-500 hover:text-red-400 transition-colors"
-      >
-        Aktive Liste archivieren
-      </button>
-      <p v-if="archivedLists.length > 0" class="text-xs text-slate-500">
-        Archivierte Listen: {{ archivedLists.length }}
-      </p>
+      <div class="flex items-center gap-4">
+        <ion-button
+          v-if="canArchiveActiveList && activeList"
+          fill="clear"
+          size="small"
+          color="danger"
+          @click="archiveList(activeList.id)"
+        >
+          Liste archivieren
+        </ion-button>
+        <ion-note v-if="archivedLists.length > 0" class="text-xs">
+          Archivierte Listen: {{ archivedLists.length }}
+        </ion-note>
+      </div>
     </section>
 
+    <!-- Items -->
     <section v-if="activeList" class="space-y-3">
-      <form @submit.prevent="handleAddItem" class="grid grid-cols-12 gap-2">
-        <input
-          v-model="newItemName"
-          type="text"
-          placeholder="Artikel hinzufügen..."
-          class="col-span-6 px-3 py-2.5 border border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
-        />
-        <select
-          v-model="newItemCategory"
-          class="col-span-4 px-3 py-2.5 border border-slate-600 rounded-xl text-sm bg-slate-700 text-slate-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-        >
-          <option>Lebensmittel</option>
-          <option>Drogerie</option>
-          <option>Haushalt</option>
-          <option>Sonstiges</option>
-        </select>
-        <button
-          type="submit"
-          :disabled="!newItemName.trim()"
-          class="col-span-2 px-3 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
-        >
-          +
-        </button>
-      </form>
-
-      <button
+      <ion-button
         v-if="hasCheckedItems"
+        fill="clear"
+        size="small"
+        color="danger"
         @click="clearChecked(activeList.id)"
-        class="text-sm text-slate-500 hover:text-red-400 transition-colors"
       >
         Abgehakte entfernen
-      </button>
+      </ion-button>
 
       <p v-if="error" class="text-center text-red-400 text-sm py-2">{{ error }}</p>
-      <p v-if="loading" class="text-center text-slate-500 text-sm py-4">Laden...</p>
+
+      <div v-if="loading" class="flex justify-center py-8">
+        <ion-spinner name="crescent" color="primary" />
+      </div>
 
       <div v-else-if="activeItems.length === 0" class="text-center py-12">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -210,67 +219,149 @@ async function handleCreateShoppingExpense() {
         <p class="text-slate-500 text-sm">Die aktive Einkaufsliste ist leer</p>
       </div>
 
-      <ShoppingItem
-        v-for="item in activeItems"
-        :key="item.id"
-        :item="item"
-        @toggle="toggleChecked"
-        @delete="deleteItem"
-      />
+      <ion-list v-else lines="none" class="space-y-2">
+        <ShoppingItem
+          v-for="item in activeItems"
+          :key="item.id"
+          :item="item"
+          @toggle="toggleChecked"
+          @delete="deleteItem"
+        />
+      </ion-list>
     </section>
 
-    <section v-if="activeList" class="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-3">
-      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide">
-        Ausgabe aus Einkauf erfassen
-      </h3>
+    <!-- Expense button -->
+    <ion-button
+      v-if="activeList && checkedItemsWithoutExpense.length > 0"
+      expand="block"
+      fill="outline"
+      @click="showExpenseModal = true"
+    >
+      <ion-icon :icon="receiptOutline" slot="start" />
+      Ausgabe aus Einkauf erfassen ({{ checkedItemsWithoutExpense.length }})
+    </ion-button>
 
-      <input
-        v-model="financeTitle"
-        type="text"
-        placeholder="Titel (optional)"
-        class="w-full px-3 py-2.5 border border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
-      />
+    <!-- FAB to add item -->
+    <ion-fab v-if="activeList" vertical="bottom" horizontal="end" slot="fixed" class="mb-2 mr-2">
+      <ion-fab-button @click="showAddModal = true" color="primary">
+        <ion-icon :icon="addOutline" />
+      </ion-fab-button>
+    </ion-fab>
 
-      <div class="grid grid-cols-12 gap-2">
-        <div class="col-span-6 relative">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
-          <input
-            v-model="financeAmount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            placeholder="0,00"
-            class="w-full pl-8 pr-3 py-2.5 border border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
+    <!-- Add Item Modal -->
+    <ion-modal
+      :is-open="showAddModal"
+      :breakpoints="[0, 0.45]"
+      :initial-breakpoint="0.45"
+      @did-dismiss="showAddModal = false"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Artikel hinzufügen</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showAddModal = false">Fertig</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <form @submit.prevent="handleAddItem" class="space-y-4">
+          <ion-input
+            v-model="newItemName"
+            placeholder="Artikel eingeben..."
+            fill="outline"
+            label="Artikel"
+            label-placement="floating"
+            :clear-input="true"
           />
-        </div>
-        <select
-          v-model="financePaidBy"
-          class="col-span-6 px-3 py-2.5 border border-slate-600 rounded-xl text-sm bg-slate-700 text-slate-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-        >
-          <option
-            v-for="(name, uid) in couple?.memberNames || {}"
-            :key="uid"
-            :value="uid"
+          <ion-select
+            v-model="newItemCategory"
+            label="Kategorie"
+            label-placement="floating"
+            fill="outline"
+            interface="action-sheet"
           >
-            {{ name }}
-          </option>
-        </select>
-      </div>
+            <ion-select-option value="Lebensmittel">Lebensmittel</ion-select-option>
+            <ion-select-option value="Drogerie">Drogerie</ion-select-option>
+            <ion-select-option value="Haushalt">Haushalt</ion-select-option>
+            <ion-select-option value="Sonstiges">Sonstiges</ion-select-option>
+          </ion-select>
+          <ion-button expand="block" type="submit" :disabled="!newItemName.trim()">
+            Hinzufügen
+          </ion-button>
+        </form>
+      </ion-content>
+    </ion-modal>
 
-      <p class="text-xs text-slate-500">
-        Abgehakte Artikel ohne bestehende Ausgabe: {{ checkedItemsWithoutExpense.length }}
-      </p>
+    <!-- Expense Modal -->
+    <ion-modal
+      :is-open="showExpenseModal"
+      :breakpoints="[0, 0.55]"
+      :initial-breakpoint="0.55"
+      @did-dismiss="showExpenseModal = false"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Ausgabe erfassen</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showExpenseModal = false">Fertig</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <div class="space-y-4">
+          <ion-input
+            v-model="financeTitle"
+            placeholder="Titel (optional)"
+            fill="outline"
+            label="Titel"
+            label-placement="floating"
+          />
+          <div class="flex gap-2">
+            <ion-input
+              v-model="financeAmount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="0,00"
+              fill="outline"
+              label="Betrag (€)"
+              label-placement="floating"
+              class="flex-1"
+            />
+            <ion-select
+              v-model="financePaidBy"
+              label="Bezahlt von"
+              label-placement="floating"
+              fill="outline"
+              interface="action-sheet"
+              class="flex-1"
+            >
+              <ion-select-option
+                v-for="(name, uid) in couple?.memberNames || {}"
+                :key="uid"
+                :value="uid"
+              >
+                {{ name }}
+              </ion-select-option>
+            </ion-select>
+          </div>
 
-      <button
-        @click="handleCreateShoppingExpense"
-        :disabled="creatingExpense || checkedItemsWithoutExpense.length === 0"
-        class="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
-      >
-        {{ creatingExpense ? 'Speichere...' : 'Als Lebensmittel-Ausgabe speichern' }}
-      </button>
+          <ion-note class="block text-xs">
+            Abgehakte Artikel ohne bestehende Ausgabe: {{ checkedItemsWithoutExpense.length }}
+          </ion-note>
 
-      <p v-if="financeMessage" class="text-sm text-green-400">{{ financeMessage }}</p>
-      <p v-if="financeError" class="text-sm text-red-400">{{ financeError }}</p>
-    </section>
+          <ion-button
+            expand="block"
+            @click="handleCreateShoppingExpense"
+            :disabled="creatingExpense || checkedItemsWithoutExpense.length === 0"
+          >
+            {{ creatingExpense ? 'Speichere...' : 'Als Lebensmittel-Ausgabe speichern' }}
+          </ion-button>
+
+          <p v-if="financeMessage" class="text-sm text-green-400">{{ financeMessage }}</p>
+          <p v-if="financeError" class="text-sm text-red-400">{{ financeError }}</p>
+        </div>
+      </ion-content>
+    </ion-modal>
   </div>
 </template>

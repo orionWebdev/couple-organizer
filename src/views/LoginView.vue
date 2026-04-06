@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import {
+  IonPage,
+  IonContent,
+  IonInput,
+  IonButton
+} from '@ionic/vue'
 import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
@@ -30,77 +36,77 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4">
-    <div class="w-full max-w-sm">
-      <!-- Logo / Title -->
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-green-500">Paarplaner</h1>
-        <p class="text-slate-400 mt-2">Gemeinsam organisiert</p>
+  <ion-page>
+    <ion-content class="ion-padding">
+      <div class="min-h-full flex items-center justify-center">
+        <div class="w-full max-w-sm">
+          <!-- Logo / Title -->
+          <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-green-500">Paarplaner</h1>
+            <p class="text-slate-400 mt-2">Gemeinsam organisiert</p>
+          </div>
+
+          <!-- Form -->
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold text-center">
+              {{ isRegister ? 'Konto erstellen' : 'Willkommen zurück' }}
+            </h2>
+
+            <ion-input
+              v-if="isRegister"
+              v-model="displayName"
+              type="text"
+              label="Name"
+              label-placement="floating"
+              fill="outline"
+              placeholder="Dein Name"
+              required
+            />
+
+            <ion-input
+              v-model="email"
+              type="email"
+              label="E-Mail"
+              label-placement="floating"
+              fill="outline"
+              placeholder="du@beispiel.de"
+              required
+            />
+
+            <ion-input
+              v-model="password"
+              type="password"
+              label="Passwort"
+              label-placement="floating"
+              fill="outline"
+              placeholder="Mindestens 6 Zeichen"
+              required
+              :minlength="6"
+            />
+
+            <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
+
+            <ion-button
+              expand="block"
+              @click="handleSubmit"
+              :disabled="submitting"
+            >
+              {{ submitting ? 'Bitte warten...' : (isRegister ? 'Registrieren' : 'Anmelden') }}
+            </ion-button>
+
+            <p class="text-center text-sm text-slate-400">
+              {{ isRegister ? 'Bereits ein Konto?' : 'Noch kein Konto?' }}
+              <button
+                type="button"
+                @click="isRegister = !isRegister"
+                class="text-green-400 font-medium hover:underline ml-1"
+              >
+                {{ isRegister ? 'Anmelden' : 'Registrieren' }}
+              </button>
+            </p>
+          </div>
+        </div>
       </div>
-
-      <!-- Form -->
-      <form @submit.prevent="handleSubmit" class="bg-slate-800 rounded-2xl border border-slate-700 p-6 space-y-4">
-        <h2 class="text-xl font-semibold text-center text-slate-100">
-          {{ isRegister ? 'Konto erstellen' : 'Willkommen zurück' }}
-        </h2>
-
-        <!-- Display Name (register only) -->
-        <div v-if="isRegister">
-          <label class="block text-sm font-medium text-slate-300 mb-1">Name</label>
-          <input
-            v-model="displayName"
-            type="text"
-            required
-            placeholder="Dein Name"
-            class="w-full px-3 py-2.5 border border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-slate-300 mb-1">E-Mail</label>
-          <input
-            v-model="email"
-            type="email"
-            required
-            placeholder="du@beispiel.de"
-            class="w-full px-3 py-2.5 border border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-slate-300 mb-1">Passwort</label>
-          <input
-            v-model="password"
-            type="password"
-            required
-            minlength="6"
-            placeholder="Mindestens 6 Zeichen"
-            class="w-full px-3 py-2.5 border border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-          />
-        </div>
-
-        <!-- Error message -->
-        <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
-
-        <button
-          type="submit"
-          :disabled="submitting"
-          class="w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
-        >
-          {{ submitting ? 'Bitte warten...' : (isRegister ? 'Registrieren' : 'Anmelden') }}
-        </button>
-
-        <p class="text-center text-sm text-slate-400">
-          {{ isRegister ? 'Bereits ein Konto?' : 'Noch kein Konto?' }}
-          <button
-            type="button"
-            @click="isRegister = !isRegister"
-            class="text-green-400 font-medium hover:underline ml-1"
-          >
-            {{ isRegister ? 'Anmelden' : 'Registrieren' }}
-          </button>
-        </p>
-      </form>
-    </div>
-  </div>
+    </ion-content>
+  </ion-page>
 </template>

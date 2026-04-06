@@ -1,5 +1,35 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import {
+  IonList,
+  IonItem,
+  IonItemSliding,
+  IonItemOptions,
+  IonItemOption,
+  IonLabel,
+  IonFab,
+  IonFabButton,
+  IonIcon,
+  IonModal,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButtons,
+  IonButton,
+  IonInput,
+  IonSelect,
+  IonSelectOption,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonAccordionGroup,
+  IonAccordion,
+  IonSpinner,
+  IonNote
+} from '@ionic/vue'
+import { addOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useExpenses } from '@/composables/useExpenses'
 import type { Couple, ExpenseCategory } from '@/types'
@@ -39,6 +69,9 @@ const newExpenseCategory = ref<ExpenseCategory>('food')
 const newExpensePaidBy = ref(user.value?.uid || '')
 const newEventTitle = ref('')
 const eventForms = reactive<Record<string, EventExpenseFormState>>({})
+
+const showAddExpenseModal = ref(false)
+const showEventModal = ref(false)
 
 const categoryOptions: Array<{ value: ExpenseCategory; label: string }> = [
   { value: 'food', label: 'Lebensmittel' },
@@ -109,11 +142,13 @@ async function handleAddExpense() {
   if (!expenseId) return
   newExpenseTitle.value = ''
   newExpenseAmount.value = ''
+  showAddExpenseModal.value = false
 }
 
 async function handleCreateEvent() {
   await createEvent(newEventTitle.value)
   newEventTitle.value = ''
+  showEventModal.value = false
 }
 
 async function handleAddEventExpense(eventId: string) {
@@ -144,208 +179,167 @@ async function handleAddEventExpense(eventId: string) {
       :couple="couple"
     />
 
-    <section class="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-3">
-      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide">Ausgabe hinzufügen</h3>
+    <!-- Monthly food summaries -->
+    <ion-card v-if="monthlyFoodSummaries.length > 0">
+      <ion-card-header>
+        <ion-card-title class="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+          Monatliche Lebensmittel
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list lines="none">
+          <ion-item v-for="entry in monthlyFoodSummaries" :key="entry.monthKey">
+            <ion-label>
+              <h3 class="text-sm font-medium">{{ formatMonth(entry.monthKey) }}</h3>
+              <p class="text-xs text-slate-400">Pro Person: {{ formatEuro(entry.perPerson) }} €</p>
+            </ion-label>
+            <ion-note slot="end" class="text-sm font-semibold text-green-400">
+              {{ formatEuro(entry.total) }} €
+            </ion-note>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
 
-      <input
-        v-model="newExpenseTitle"
-        type="text"
-        placeholder="Wofür war die Ausgabe?"
-        class="w-full px-3 py-2.5 border border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-      />
-
-      <div class="grid grid-cols-12 gap-2">
-        <div class="col-span-4 relative">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
-          <input
-            v-model="newExpenseAmount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            placeholder="0,00"
-            class="w-full pl-8 pr-3 py-2.5 border border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-          />
-        </div>
-
-        <select
-          v-model="newExpenseCategory"
-          class="col-span-4 px-3 py-2.5 border border-slate-600 rounded-xl text-sm bg-slate-700 text-slate-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-        >
-          <option v-for="option in categoryOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-
-        <select
-          v-model="newExpensePaidBy"
-          class="col-span-4 px-3 py-2.5 border border-slate-600 rounded-xl text-sm bg-slate-700 text-slate-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-        >
-          <option v-for="(name, uid) in couple?.memberNames || {}" :key="uid" :value="uid">
-            {{ name }}
-          </option>
-        </select>
-      </div>
-
-      <button
-        @click="handleAddExpense"
-        class="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors"
-      >
-        Speichern
-      </button>
-    </section>
-
-    <section class="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-2">
-      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide">Monatliche Lebensmittel</h3>
-      <div v-if="monthlyFoodSummaries.length === 0" class="text-sm text-slate-500">
-        Noch keine Lebensmittel-Ausgaben vorhanden.
-      </div>
-      <div v-else class="space-y-2">
-        <div
-          v-for="entry in monthlyFoodSummaries"
-          :key="entry.monthKey"
-          class="bg-slate-700/50 rounded-xl px-3 py-2 flex items-center justify-between"
-        >
-          <div>
-            <p class="text-sm font-medium text-slate-100">{{ formatMonth(entry.monthKey) }}</p>
-            <p class="text-xs text-slate-400">Pro Person: {{ formatEuro(entry.perPerson) }} €</p>
-          </div>
-          <p class="text-sm font-semibold text-green-400">{{ formatEuro(entry.total) }} €</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="bg-slate-800 rounded-2xl border border-slate-700 p-4 space-y-3">
-      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide">Events</h3>
-
-      <form @submit.prevent="handleCreateEvent" class="flex gap-2">
-        <input
-          v-model="newEventTitle"
-          type="text"
-          placeholder="Neues Event (z. B. Urlaub)"
-          class="flex-1 px-3 py-2.5 border border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-        />
-        <button
-          type="submit"
-          :disabled="!newEventTitle.trim()"
-          class="px-4 py-2.5 bg-slate-700 text-slate-100 rounded-xl text-sm font-medium hover:bg-slate-600 disabled:opacity-50 transition-colors"
-        >
-          Anlegen
-        </button>
-      </form>
-
-      <div v-if="activeEventSummaries.length === 0" class="text-sm text-slate-500">
-        Keine aktiven Events.
-      </div>
-
-      <article
-        v-for="summary in activeEventSummaries"
-        :key="summary.event.id"
-        class="bg-slate-700/50 rounded-xl border border-slate-600 p-3 space-y-3"
-      >
+    <!-- Events -->
+    <ion-card>
+      <ion-card-header>
         <div class="flex items-center justify-between">
-          <div>
-            <h4 class="text-sm font-semibold text-slate-100">{{ summary.event.title }}</h4>
-            <p class="text-xs text-slate-400">
-              Gesamt: {{ formatEuro(summary.total) }} € · Pro Person: {{ formatEuro(summary.perPerson) }} €
-            </p>
-          </div>
-          <button
-            @click="setEventArchived(summary.event.id, true)"
-            class="text-xs text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            Archivieren
-          </button>
+          <ion-card-title class="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+            Events
+          </ion-card-title>
+          <ion-button fill="clear" size="small" @click="showEventModal = true">
+            + Neues Event
+          </ion-button>
+        </div>
+      </ion-card-header>
+      <ion-card-content>
+        <div v-if="activeEventSummaries.length === 0" class="text-sm text-slate-500">
+          Keine aktiven Events.
         </div>
 
-        <template v-if="eventForms[summary.event.id]">
-          <div class="grid grid-cols-12 gap-2">
-            <input
-              v-model="eventForms[summary.event.id].title"
-              type="text"
-              placeholder="Event-Ausgabe"
-              class="col-span-5 px-3 py-2.5 border border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-            />
-            <input
-              v-model="eventForms[summary.event.id].amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              placeholder="Betrag"
-              class="col-span-2 px-3 py-2.5 border border-slate-600 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-            />
-            <select
-              v-model="eventForms[summary.event.id].category"
-              class="col-span-3 px-3 py-2.5 border border-slate-600 rounded-xl text-sm bg-slate-700 text-slate-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-            >
-              <option v-for="option in categoryOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-            <button
-              @click="handleAddEventExpense(summary.event.id)"
-              class="col-span-2 px-3 py-2.5 bg-green-600 text-white rounded-xl text-sm hover:bg-green-700 transition-colors"
-            >
-              +
-            </button>
-          </div>
-
-          <select
-            v-model="eventForms[summary.event.id].paidBy"
-            class="w-full px-3 py-2.5 border border-slate-600 rounded-xl text-sm bg-slate-700 text-slate-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-          >
-            <option v-for="(name, uid) in couple?.memberNames || {}" :key="uid" :value="uid">
-              {{ name }}
-            </option>
-          </select>
-        </template>
-
-        <div v-if="summary.expenses.length === 0" class="text-xs text-slate-500">
-          Noch keine Ausgaben in diesem Event.
-        </div>
-        <div v-else class="space-y-1">
+        <div v-else class="space-y-4">
           <div
-            v-for="expense in summary.expenses"
-            :key="expense.id"
-            class="flex items-center justify-between text-sm"
-          >
-            <p class="text-slate-200 truncate">
-              {{ expense.title }} <span class="text-slate-500">({{ getMemberName(expense.paidBy) }})</span>
-            </p>
-            <p class="text-slate-300 font-medium">{{ formatEuro(expense.amount) }} €</p>
-          </div>
-        </div>
-      </article>
-
-      <details v-if="archivedEventSummaries.length > 0" class="rounded-xl border border-slate-600 px-3 py-2">
-        <summary class="text-sm text-slate-300 cursor-pointer">
-          Archivierte Events ({{ archivedEventSummaries.length }})
-        </summary>
-        <div class="mt-3 space-y-2">
-          <div
-            v-for="summary in archivedEventSummaries"
+            v-for="summary in activeEventSummaries"
             :key="summary.event.id"
-            class="flex items-center justify-between text-sm"
+            class="bg-slate-700/50 rounded-xl border border-slate-600 p-3 space-y-3"
           >
-            <div>
-              <p class="text-slate-200">{{ summary.event.title }}</p>
-              <p class="text-xs text-slate-500">Gesamt: {{ formatEuro(summary.total) }} €</p>
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-semibold">{{ summary.event.title }}</h4>
+                <p class="text-xs text-slate-400">
+                  Gesamt: {{ formatEuro(summary.total) }} € · Pro Person: {{ formatEuro(summary.perPerson) }} €
+                </p>
+              </div>
+              <ion-button
+                fill="clear"
+                size="small"
+                color="medium"
+                @click="setEventArchived(summary.event.id, true)"
+              >
+                Archivieren
+              </ion-button>
             </div>
-            <button
-              @click="setEventArchived(summary.event.id, false)"
-              class="text-xs text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              Reaktivieren
-            </button>
+
+            <template v-if="eventForms[summary.event.id]">
+              <div class="flex gap-2">
+                <ion-input
+                  v-model="eventForms[summary.event.id].title"
+                  placeholder="Event-Ausgabe"
+                  fill="outline"
+                  size="small"
+                  class="flex-1"
+                />
+                <ion-input
+                  v-model="eventForms[summary.event.id].amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="Betrag"
+                  fill="outline"
+                  size="small"
+                  class="max-w-24"
+                />
+                <ion-button size="small" @click="handleAddEventExpense(summary.event.id)">+</ion-button>
+              </div>
+              <div class="flex gap-2">
+                <ion-select
+                  v-model="eventForms[summary.event.id].category"
+                  fill="outline"
+                  interface="action-sheet"
+                  class="flex-1"
+                >
+                  <ion-select-option v-for="option in categoryOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </ion-select-option>
+                </ion-select>
+                <ion-select
+                  v-model="eventForms[summary.event.id].paidBy"
+                  fill="outline"
+                  interface="action-sheet"
+                  class="flex-1"
+                >
+                  <ion-select-option v-for="(name, uid) in couple?.memberNames || {}" :key="uid" :value="uid">
+                    {{ name }}
+                  </ion-select-option>
+                </ion-select>
+              </div>
+            </template>
+
+            <div v-if="summary.expenses.length === 0" class="text-xs text-slate-500">
+              Noch keine Ausgaben in diesem Event.
+            </div>
+            <ion-list v-else lines="none">
+              <ion-item v-for="expense in summary.expenses" :key="expense.id" class="--ion-item-background: transparent">
+                <ion-label>
+                  <p class="text-sm">{{ expense.title }} <span class="text-slate-500">({{ getMemberName(expense.paidBy) }})</span></p>
+                </ion-label>
+                <ion-note slot="end" class="text-sm font-medium">{{ formatEuro(expense.amount) }} €</ion-note>
+              </ion-item>
+            </ion-list>
           </div>
         </div>
-      </details>
-    </section>
 
+        <!-- Archived events -->
+        <ion-accordion-group v-if="archivedEventSummaries.length > 0" class="mt-4">
+          <ion-accordion value="archived">
+            <ion-item slot="header">
+              <ion-label class="text-sm">Archivierte Events ({{ archivedEventSummaries.length }})</ion-label>
+            </ion-item>
+            <div slot="content" class="p-3 space-y-2">
+              <div
+                v-for="summary in archivedEventSummaries"
+                :key="summary.event.id"
+                class="flex items-center justify-between"
+              >
+                <div>
+                  <p class="text-sm">{{ summary.event.title }}</p>
+                  <p class="text-xs text-slate-500">Gesamt: {{ formatEuro(summary.total) }} €</p>
+                </div>
+                <ion-button
+                  fill="clear"
+                  size="small"
+                  color="medium"
+                  @click="setEventArchived(summary.event.id, false)"
+                >
+                  Reaktivieren
+                </ion-button>
+              </div>
+            </div>
+          </ion-accordion>
+        </ion-accordion-group>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Recent expenses -->
     <section>
-      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide mb-2">Letzte Ausgaben</h3>
+      <h3 class="font-semibold text-sm text-slate-400 uppercase tracking-wide mb-2 px-1">Letzte Ausgaben</h3>
 
       <p v-if="error" class="text-center text-red-400 text-sm py-2">{{ error }}</p>
-      <p v-if="loading" class="text-center text-slate-500 text-sm py-4">Laden...</p>
+
+      <div v-if="loading" class="flex justify-center py-8">
+        <ion-spinner name="crescent" color="primary" />
+      </div>
 
       <div v-else-if="expenses.length === 0" class="text-center py-8">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-slate-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -354,31 +348,133 @@ async function handleAddEventExpense(eventId: string) {
         <p class="text-slate-500 text-sm">Noch keine Ausgaben</p>
       </div>
 
-      <div v-else class="space-y-2">
-        <div
-          v-for="expense in expenses"
-          :key="expense.id"
-          class="flex items-center gap-3 p-4 bg-slate-800 rounded-2xl border border-slate-700"
-        >
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-slate-100 truncate">{{ expense.title }}</p>
-            <p class="text-xs text-slate-500 truncate">
-              {{ getMemberName(expense.paidBy) }} · {{ categoryOptions.find(o => o.value === expense.category)?.label || 'Sonstiges' }}
-              <span v-if="expense.eventId">· Event</span>
-              <span v-if="expense.source === 'shopping'">· aus Einkauf</span>
-            </p>
-          </div>
-          <span class="text-sm font-semibold text-slate-200">{{ formatEuro(expense.amount) }} €</span>
-          <button
-            @click="deleteExpense(expense.id)"
-            class="text-slate-600 hover:text-red-400 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
+      <ion-list v-else lines="none" class="space-y-2">
+        <ion-item-sliding v-for="expense in expenses" :key="expense.id">
+          <ion-item class="rounded-xl">
+            <ion-label>
+              <h3 class="text-sm font-medium">{{ expense.title }}</h3>
+              <p class="text-xs text-slate-500">
+                {{ getMemberName(expense.paidBy) }} · {{ categoryOptions.find(o => o.value === expense.category)?.label || 'Sonstiges' }}
+                <span v-if="expense.eventId"> · Event</span>
+                <span v-if="expense.source === 'shopping'"> · aus Einkauf</span>
+              </p>
+            </ion-label>
+            <ion-note slot="end" class="text-sm font-semibold">{{ formatEuro(expense.amount) }} €</ion-note>
+          </ion-item>
+          <ion-item-options side="end">
+            <ion-item-option color="danger" @click="deleteExpense(expense.id)">
+              Löschen
+            </ion-item-option>
+          </ion-item-options>
+        </ion-item-sliding>
+      </ion-list>
     </section>
+
+    <!-- FAB to add expense -->
+    <ion-fab vertical="bottom" horizontal="end" slot="fixed" class="mb-2 mr-2">
+      <ion-fab-button @click="showAddExpenseModal = true" color="primary">
+        <ion-icon :icon="addOutline" />
+      </ion-fab-button>
+    </ion-fab>
+
+    <!-- Add Expense Modal -->
+    <ion-modal
+      :is-open="showAddExpenseModal"
+      :breakpoints="[0, 0.55]"
+      :initial-breakpoint="0.55"
+      @did-dismiss="showAddExpenseModal = false"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Ausgabe hinzufügen</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showAddExpenseModal = false">Fertig</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <div class="space-y-4">
+          <ion-input
+            v-model="newExpenseTitle"
+            placeholder="Wofür war die Ausgabe?"
+            fill="outline"
+            label="Titel"
+            label-placement="floating"
+            :clear-input="true"
+          />
+          <div class="flex gap-2">
+            <ion-input
+              v-model="newExpenseAmount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="0,00"
+              fill="outline"
+              label="Betrag (€)"
+              label-placement="floating"
+              class="flex-1"
+            />
+            <ion-select
+              v-model="newExpenseCategory"
+              label="Kategorie"
+              label-placement="floating"
+              fill="outline"
+              interface="action-sheet"
+              class="flex-1"
+            >
+              <ion-select-option v-for="option in categoryOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </ion-select-option>
+            </ion-select>
+          </div>
+          <ion-select
+            v-model="newExpensePaidBy"
+            label="Bezahlt von"
+            label-placement="floating"
+            fill="outline"
+            interface="action-sheet"
+          >
+            <ion-select-option v-for="(name, uid) in couple?.memberNames || {}" :key="uid" :value="uid">
+              {{ name }}
+            </ion-select-option>
+          </ion-select>
+          <ion-button expand="block" @click="handleAddExpense">
+            Speichern
+          </ion-button>
+        </div>
+      </ion-content>
+    </ion-modal>
+
+    <!-- Create Event Modal -->
+    <ion-modal
+      :is-open="showEventModal"
+      :breakpoints="[0, 0.3]"
+      :initial-breakpoint="0.3"
+      @did-dismiss="showEventModal = false"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Neues Event</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="showEventModal = false">Fertig</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <form @submit.prevent="handleCreateEvent" class="space-y-4">
+          <ion-input
+            v-model="newEventTitle"
+            placeholder="z. B. Urlaub"
+            fill="outline"
+            label="Event-Titel"
+            label-placement="floating"
+            :clear-input="true"
+          />
+          <ion-button expand="block" type="submit" :disabled="!newEventTitle.trim()">
+            Anlegen
+          </ion-button>
+        </form>
+      </ion-content>
+    </ion-modal>
   </div>
 </template>

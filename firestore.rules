@@ -53,12 +53,44 @@ service cloud.firestore {
       allow update, delete: if isCoupleMember(resource.data.coupleId);
     }
 
+    match /shoppingLists/{listId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
+    match /recipes/{recipeId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
+    match /mealPlans/{planId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
     match /expenses/{expenseId} {
       allow read: if isCoupleMember(resource.data.coupleId);
       allow create: if signedIn()
         && request.resource.data.createdBy == request.auth.uid
         && isCoupleMember(request.resource.data.coupleId);
-      allow delete: if isCoupleMember(resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
+    match /financeEvents/{eventId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
     }
   }
 }

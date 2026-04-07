@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { IonPage, IonContent } from '@ionic/vue'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppNav from '@/components/layout/AppNav.vue'
+import OverviewTab from '@/components/overview/OverviewTab.vue'
 import TodoList from '@/components/todos/TodoList.vue'
+import RecipeManager from '@/components/recipes/RecipeManager.vue'
+import MealPlanBoard from '@/components/meal-plan/MealPlanBoard.vue'
 import ShoppingList from '@/components/shopping/ShoppingList.vue'
 import ExpenseList from '@/components/expenses/ExpenseList.vue'
 
@@ -15,42 +19,89 @@ if (user.value?.coupleId) {
   watchCouple(user.value.coupleId)
 }
 
-const activeTab = ref('todos')
+const activeTab = ref('overview')
+const todoCreateRequestKey = ref(0)
+const shoppingCreateRequestKey = ref(0)
+const expenseCreateRequestKey = ref(0)
+
+function handleTabSwitch(tab: string, intent: 'default' | 'create' = 'default') {
+  activeTab.value = tab
+
+  if (intent !== 'create') return
+
+  if (tab === 'todos') {
+    todoCreateRequestKey.value += 1
+  }
+
+  if (tab === 'shopping') {
+    shoppingCreateRequestKey.value += 1
+  }
+
+  if (tab === 'expenses') {
+    expenseCreateRequestKey.value += 1
+  }
+}
 </script>
 
 <template>
-  <div class="min-h-screen pb-16">
-    <AppHeader />
+  <ion-page>
+    <AppHeader v-if="!['overview', 'todos', 'expenses'].includes(activeTab)" />
 
-    <main class="max-w-lg mx-auto px-4 py-4">
-      <!-- Use v-show to keep components alive so onSnapshot listeners persist -->
-      <div v-show="activeTab === 'todos'">
-        <h2 class="text-lg font-bold mb-3">Todos</h2>
-        <TodoList
-          v-if="user?.coupleId"
-          :couple-id="user.coupleId"
-          :couple="couple"
-        />
-      </div>
+    <ion-content class="ion-padding">
+      <div class="mx-auto max-w-lg pb-16" :class="activeTab === 'overview' ? 'pt-2' : 'pt-1'">
+        <!-- Use v-show to keep components alive so onSnapshot listeners persist -->
+        <div v-show="activeTab === 'overview'">
+          <OverviewTab
+            v-if="user?.coupleId"
+            :couple-id="user.coupleId"
+            :couple="couple"
+            @switch-tab="handleTabSwitch"
+          />
+        </div>
 
-      <div v-show="activeTab === 'shopping'">
-        <h2 class="text-lg font-bold mb-3">Shopping List</h2>
-        <ShoppingList
-          v-if="user?.coupleId"
-          :couple-id="user.coupleId"
-        />
-      </div>
+        <div v-show="activeTab === 'todos'">
+          <TodoList
+            v-if="user?.coupleId"
+            :couple-id="user.coupleId"
+            :couple="couple"
+            :create-request-key="todoCreateRequestKey"
+          />
+        </div>
 
-      <div v-show="activeTab === 'expenses'">
-        <h2 class="text-lg font-bold mb-3">Expenses</h2>
-        <ExpenseList
-          v-if="user?.coupleId"
-          :couple-id="user.coupleId"
-          :couple="couple"
-        />
+        <div v-show="activeTab === 'shopping'">
+          <ShoppingList
+            v-if="user?.coupleId"
+            :couple-id="user.coupleId"
+            :couple="couple"
+            :create-request-key="shoppingCreateRequestKey"
+          />
+        </div>
+
+        <div v-show="activeTab === 'recipes'">
+          <RecipeManager
+            v-if="user?.coupleId"
+            :couple-id="user.coupleId"
+          />
+        </div>
+
+        <div v-show="activeTab === 'mealPlan'">
+          <MealPlanBoard
+            v-if="user?.coupleId"
+            :couple-id="user.coupleId"
+          />
+        </div>
+
+        <div v-show="activeTab === 'expenses'">
+          <ExpenseList
+            v-if="user?.coupleId"
+            :couple-id="user.coupleId"
+            :couple="couple"
+            :create-request-key="expenseCreateRequestKey"
+          />
+        </div>
       </div>
-    </main>
+    </ion-content>
 
     <AppNav v-model:active-tab="activeTab" />
-  </div>
+  </ion-page>
 </template>

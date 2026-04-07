@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import {
+  IonItemSliding,
+  IonItem,
+  IonItemOptions,
+  IonItemOption,
+  IonCheckbox,
+  IonLabel
+} from '@ionic/vue'
 import type { ShoppingItem } from '@/types'
 
 defineProps<{
@@ -6,32 +14,33 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  toggle: [id: string, bought: boolean]
+  toggle: [id: string, checked: boolean]
   delete: [id: string]
 }>()
 </script>
 
 <template>
-  <div
-    class="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm"
-    :class="{ 'opacity-50': item.bought }"
-  >
-    <input
-      type="checkbox"
-      :checked="item.bought"
-      @change="emit('toggle', item.id, !item.bought)"
-      class="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
-    />
-    <span class="flex-1 text-sm" :class="{ 'line-through text-gray-400': item.bought }">
-      {{ item.name }}
-    </span>
-    <button
-      @click="emit('delete', item.id)"
-      class="text-gray-300 hover:text-red-500 transition-colors"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  </div>
+  <ion-item-sliding>
+    <ion-item :class="{ 'opacity-60': item.checked }" class="rounded-xl mb-1">
+      <ion-checkbox
+        slot="start"
+        :checked="item.checked"
+        @ion-change="emit('toggle', item.id, !item.checked)"
+        color="primary"
+      />
+      <ion-label :class="{ 'line-through text-slate-500': item.checked }">
+        <h3 class="text-sm">{{ item.name }}</h3>
+        <p class="text-xs text-slate-400">
+          {{ item.category }}
+          <span v-if="item.expenseId" class="text-green-400"> · als Ausgabe erfasst</span>
+        </p>
+      </ion-label>
+    </ion-item>
+
+    <ion-item-options side="end">
+      <ion-item-option color="danger" @click="emit('delete', item.id)">
+        Löschen
+      </ion-item-option>
+    </ion-item-options>
+  </ion-item-sliding>
 </template>

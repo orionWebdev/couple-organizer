@@ -68,6 +68,7 @@ function mapShoppingItem(data: Record<string, any>, id: string): ShoppingItem {
     name: data.name || '',
     category: data.category || 'Sonstiges',
     checked: data.checked ?? data.bought ?? false,
+    checkedBy: data.checkedBy ?? null,
     addedBy: data.addedBy || '',
     source: data.source || 'manual',
     sourceWeekKey: data.sourceWeekKey ?? null,
@@ -277,10 +278,11 @@ export function useShopping(coupleId: Ref<string | null>) {
     }
   }
 
-  async function toggleChecked(id: string, checked: boolean) {
+  async function toggleChecked(id: string, checked: boolean, uid?: string | null) {
     try {
       await updateDoc(doc(db, 'shoppingItems', id), {
         checked,
+        ...(uid !== undefined ? { checkedBy: checked ? (uid ?? null) : null } : {}),
         updatedAt: serverTimestamp()
       })
     } catch (err: any) {
@@ -311,7 +313,7 @@ export function useShopping(coupleId: Ref<string | null>) {
 
   async function generateItemsFromIngredients(
     listId: string,
-    ingredients: RecipeIngredient[],
+    ingredients: ReadonlyArray<RecipeIngredient>,
     weekKey: string
   ): Promise<ShoppingFromMealPlanResult> {
     if (!coupleId.value || !user.value) {

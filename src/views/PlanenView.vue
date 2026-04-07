@@ -19,7 +19,7 @@ const active = ref<Segment>('aufgaben')
 const SEGMENTS: { id: Segment; label: string; emoji: string }[] = [
   { id: 'aufgaben',   label: 'Aufgaben',   emoji: '✓' },
   { id: 'rezepte',    label: 'Rezepte',    emoji: '🍝' },
-  { id: 'wochenplan', label: 'Wochenplan', emoji: '📅' }
+  { id: 'wochenplan', label: 'Essensplan', emoji: '📅' }
 ]
 </script>
 
@@ -66,7 +66,7 @@ const SEGMENTS: { id: Segment; label: string; emoji: string }[] = [
             <!-- ─ Wochenplan ───────────────────────────────────── -->
             <template v-else-if="active === 'wochenplan'">
               <div class="section-header-block">
-                <h1 class="section-title">Wochenplan</h1>
+                <h1 class="section-title">Essensplan</h1>
               </div>
               <MealPlanBoard
                 v-if="user?.coupleId"

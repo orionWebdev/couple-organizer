@@ -692,9 +692,10 @@ const todayStr = new Date().toISOString().slice(0, 10)
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem 1rem;
-  background: rgba(15, 23, 42, 0.5);
-  border: 1px solid rgba(71, 85, 105, 0.4);
-  border-radius: 1rem;
+  background: var(--input-bg);
+  border: 1.5px solid var(--input-border);
+  border-radius: var(--input-radius);
+  transition: var(--input-transition);
 }
 
 /* Category chips */
@@ -737,19 +738,29 @@ const todayStr = new Date().toISOString().slice(0, 10)
 .date-input {
   width: 100%;
   padding: 0.75rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(71, 85, 105, 0.88);
-  background: rgba(15, 23, 42, 0.64);
-  color: #f8fafc;
-  font-family: inherit;
-  font-size: 1rem;
+  border-radius: var(--input-radius);
+  border: 1.5px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--app-text);
+  font-family: var(--ion-font-family);
+  font-size: 0.9375rem;
   color-scheme: dark;
   outline: none;
   box-sizing: border-box;
+  transition: var(--input-transition);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.date-input:hover:not(:focus) {
+  border-color: var(--input-border-hover);
+  background: var(--input-bg-hover);
 }
 
 .date-input:focus {
-  border-color: rgba(34, 197, 94, 0.6);
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 3px var(--input-glow);
+  background: var(--input-bg-focus);
 }
 
 /* Assign chips */

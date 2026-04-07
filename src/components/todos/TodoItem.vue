@@ -1,61 +1,218 @@
 <script setup lang="ts">
-import type { Todo, Couple } from '@/types'
+import { computed } from 'vue'
+import {
+  IonCheckbox,
+  IonIcon,
+  IonItem,
+  IonItemOption,
+  IonItemOptions,
+  IonItemSliding,
+  IonLabel
+} from '@ionic/vue'
+import { checkmarkOutline } from 'ionicons/icons'
+import type { Couple, Todo } from '@/types'
+import OverviewAvatar from '@/components/overview/OverviewAvatar.vue'
 
-defineProps<{
+const props = defineProps<{
   todo: Todo
   couple: Couple | null
 }>()
 
 const emit = defineEmits<{
   toggle: [id: string, done: boolean]
-  assign: [id: string, assignedTo: string | null]
+  assignRequest: [todo: Todo]
   delete: [id: string]
 }>()
+
+const visibleMembers = computed(() => {
+  if (!props.couple) return []
+
+  const orderedIds = [props.todo.assignedTo, props.todo.createdBy]
+    .filter((uid): uid is string => Boolean(uid))
+    .filter((uid, index, array) => array.indexOf(uid) === index)
+
+  return orderedIds.slice(0, 2).map((uid, index) => ({
+    uid,
+    name: props.couple?.memberNames[uid] || 'Unbekannt',
+    tone: getTone(index)
+  }))
+})
+
+const secondaryText = computed(() => {
+  if (props.todo.done) {
+    return 'Erledigt'
+  }
+
+  if (props.todo.assignedTo) {
+    return `Zugewiesen an ${props.couple?.memberNames[props.todo.assignedTo] || 'jemanden'}`
+  }
+
+  return 'Nicht zugewiesen'
+})
+
+function getTone(index: number): 'green' | 'blue' | 'amber' | 'rose' {
+  return ['green', 'blue', 'amber', 'rose'][index % 4] as 'green' | 'blue' | 'amber' | 'rose'
+}
 </script>
 
 <template>
-  <div
-    class="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm"
-    :class="{ 'opacity-50': todo.done }"
-  >
-    <!-- Checkbox -->
-    <input
-      type="checkbox"
-      :checked="todo.done"
-      @change="emit('toggle', todo.id, !todo.done)"
-      class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-    />
+  <ion-item-sliding class="todo-feed-row">
+    <ion-item lines="none" class="todo-feed-item" :class="{ 'todo-feed-item-done': todo.done }">
+      <div slot="start" class="todo-checkbox-shell">
+        <div class="todo-checkbox-ring" :class="{ 'todo-checkbox-ring-done': todo.done }">
+          <ion-checkbox
+            :checked="todo.done"
+            aria-label="Aufgabe erledigt"
+            @ion-change="emit('toggle', todo.id, $event.detail.checked)"
+          />
+          <ion-icon v-if="todo.done" :icon="checkmarkOutline" class="todo-check-icon" />
+        </div>
+      </div>
 
-    <!-- Title -->
-    <span class="flex-1 text-sm" :class="{ 'line-through text-gray-400': todo.done }">
-      {{ todo.title }}
-    </span>
+      <ion-label class="todo-content">
+        <h3 class="todo-title" :class="{ 'todo-title-done': todo.done }">{{ todo.title }}</h3>
+        <p class="todo-subtitle" :class="{ 'todo-subtitle-done': todo.done }">{{ secondaryText }}</p>
+      </ion-label>
 
-    <!-- Assignee selector -->
-    <select
-      v-if="couple"
-      :value="todo.assignedTo || ''"
-      @change="emit('assign', todo.id, ($event.target as HTMLSelectElement).value || null)"
-      class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-gray-50 text-gray-600"
-    >
-      <option value="">Unassigned</option>
-      <option
-        v-for="(name, uid) in couple.memberNames"
-        :key="uid"
-        :value="uid"
+      <button
+        slot="end"
+        type="button"
+        class="todo-assignee-button"
+        aria-label="Zuweisung bearbeiten"
+        @click.stop="emit('assignRequest', todo)"
       >
-        {{ name }}
-      </option>
-    </select>
+        <div v-if="visibleMembers.length > 1" class="todo-avatar-stack">
+          <OverviewAvatar
+            v-for="member in visibleMembers"
+            :key="member.uid"
+            :name="member.name"
+            :tone="member.tone"
+            size="sm"
+          />
+        </div>
+        <OverviewAvatar
+          v-else
+          :name="visibleMembers[0]?.name || 'Offen'"
+          :tone="visibleMembers[0]?.tone || 'green'"
+          size="sm"
+        />
+      </button>
+    </ion-item>
 
-    <!-- Delete -->
-    <button
-      @click="emit('delete', todo.id)"
-      class="text-gray-300 hover:text-red-500 transition-colors"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  </div>
+    <ion-item-options side="end">
+      <ion-item-option color="danger" expandable @click="emit('delete', todo.id)">
+        Löschen
+      </ion-item-option>
+    </ion-item-options>
+  </ion-item-sliding>
 </template>
+
+<style scoped>
+.todo-feed-row {
+  margin: 0;
+}
+
+.todo-feed-item {
+  --background: transparent;
+  --padding-start: 0;
+  --padding-end: 0;
+  --inner-padding-end: 0;
+  --min-height: 4.85rem;
+}
+
+.todo-feed-item::part(native) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.todo-checkbox-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.9rem;
+}
+
+.todo-checkbox-ring {
+  position: relative;
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(191, 219, 254, 0.75);
+  border-radius: 9999px;
+}
+
+.todo-checkbox-ring-done {
+  border-color: rgb(74 222 128);
+  background: rgb(74 222 128);
+}
+
+.todo-checkbox-ring :deep(ion-checkbox) {
+  --size: 1.6rem;
+  --border-width: 0;
+  --checkbox-background: transparent;
+  --checkbox-background-checked: transparent;
+  opacity: 0;
+  position: absolute;
+  inset: 0;
+}
+
+.todo-check-icon {
+  color: white;
+  font-size: 1rem;
+}
+
+.todo-content {
+  margin: 0;
+}
+
+.todo-title {
+  margin: 0;
+  color: rgb(248 250 252);
+  font-size: 1.12rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.todo-title-done {
+  color: rgb(100 116 139);
+  text-decoration: line-through;
+}
+
+.todo-subtitle {
+  margin-top: 0.35rem;
+  color: rgb(148 163 184);
+  font-size: 0.92rem;
+}
+
+.todo-subtitle-done {
+  color: rgb(100 116 139);
+}
+
+.todo-assignee-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 2.8rem;
+  padding-left: 0.75rem;
+  background: transparent;
+  border: 0;
+}
+
+.todo-avatar-stack {
+  display: flex;
+  align-items: center;
+}
+
+.todo-avatar-stack :deep(.inline-flex) {
+  margin-left: -0.45rem;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.88);
+}
+
+.todo-avatar-stack :deep(.inline-flex:first-child) {
+  margin-left: 0;
+}
+</style>

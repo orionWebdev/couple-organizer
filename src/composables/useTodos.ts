@@ -1,11 +1,18 @@
 import { ref, onScopeDispose, readonly, type Ref, watch } from 'vue'
 import {
   collection, query, where, orderBy, onSnapshot,
-  addDoc, updateDoc, deleteDoc, doc, serverTimestamp
+  addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { Todo } from '@/types'
+import type { Todo, TodoCategory } from '@/types'
+
+interface AddTodoOptions {
+  assignedTo?: string | null
+  category?: TodoCategory | null
+  dueDate?: Date | null
+  recurring?: boolean
+}
 
 export function useTodos(coupleId: Ref<string | null>) {
   const { user } = useAuth()
@@ -43,15 +50,18 @@ export function useTodos(coupleId: Ref<string | null>) {
     if (id) startListening(id)
   }, { immediate: true })
 
-  async function addTodo(title: string, assignedTo: string | null = null) {
+  async function addTodo(title: string, options: AddTodoOptions = {}) {
     if (!coupleId.value || !user.value) return
     try {
       await addDoc(collection(db, 'todos'), {
         coupleId: coupleId.value,
         title,
         done: false,
-        assignedTo,
+        assignedTo: options.assignedTo ?? null,
         createdBy: user.value.uid,
+        category: options.category ?? null,
+        dueDate: options.dueDate ? Timestamp.fromDate(options.dueDate) : null,
+        recurring: options.recurring ?? false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       })
@@ -70,7 +80,7 @@ export function useTodos(coupleId: Ref<string | null>) {
     }
   }
 
-  async function updateTodo(id: string, updates: Partial<Pick<Todo, 'title' | 'assignedTo'>>) {
+  async function updateTodo(id: string, updates: Partial<Pick<Todo, 'title' | 'assignedTo' | 'category' | 'dueDate' | 'recurring'>>) {
     try {
       await updateDoc(doc(db, 'todos', id), { ...updates, updatedAt: serverTimestamp() })
     } catch (err: any) {

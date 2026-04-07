@@ -17,9 +17,34 @@ const router = createRouter({
     },
     {
       path: '/',
-      name: 'dashboard',
-      component: () => import('@/views/DashboardView.vue'),
-      meta: { requiresAuth: true, requiresCouple: true }
+      component: () => import('@/views/TabsView.vue'),
+      meta: { requiresAuth: true, requiresCouple: true },
+      children: [
+        {
+          path: '',
+          redirect: '/overview'
+        },
+        {
+          path: 'overview',
+          name: 'overview',
+          component: () => import('@/views/OverviewView.vue')
+        },
+        {
+          path: 'plan',
+          name: 'plan',
+          component: () => import('@/views/PlanenView.vue')
+        },
+        {
+          path: 'shopping',
+          name: 'shopping',
+          component: () => import('@/views/ShoppingView.vue')
+        },
+        {
+          path: 'finance',
+          name: 'finance',
+          component: () => import('@/views/FinanceView.vue')
+        }
+      ]
     }
   ]
 })
@@ -27,7 +52,6 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const { user, loading, authReady } = useAuth()
 
-  // Wait for initial auth check
   if (loading.value) {
     await authReady
   }
@@ -35,24 +59,21 @@ router.beforeEach(async (to) => {
   const isAuthenticated = !!user.value
   const hasCouple = !!user.value?.coupleId
 
-  // Redirect unauthenticated users to login
+  // Meta is merged from parent routes in Vue Router 4
   if (to.meta.requiresAuth && !isAuthenticated) {
     return { name: 'login' }
   }
 
-  // Redirect to couple setup if authenticated but no couple
   if (to.meta.requiresCouple && !hasCouple) {
     return { name: 'couple-setup' }
   }
 
-  // Redirect authenticated users away from login
   if (to.name === 'login' && isAuthenticated) {
-    return hasCouple ? { name: 'dashboard' } : { name: 'couple-setup' }
+    return hasCouple ? { name: 'overview' } : { name: 'couple-setup' }
   }
 
-  // Redirect to dashboard if already in a couple but on setup page
   if (to.name === 'couple-setup' && hasCouple) {
-    return { name: 'dashboard' }
+    return { name: 'overview' }
   }
 })
 

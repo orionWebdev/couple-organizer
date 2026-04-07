@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { MealPlan, MealPlanDayKey, MealPlanDays } from '@/types'
+import type { MealPlan, MealPlanDayKey, MealPlanDayMeals, MealPlanDays, MealType } from '@/types'
 
 const dayFormatter = new Intl.DateTimeFormat('de-DE', {
   day: '2-digit',
@@ -19,14 +19,20 @@ const dayFormatter = new Intl.DateTimeFormat('de-DE', {
   year: 'numeric'
 })
 
-export const MEAL_PLAN_DAYS: Array<{ key: MealPlanDayKey; label: string }> = [
-  { key: 'monday', label: 'Montag' },
-  { key: 'tuesday', label: 'Dienstag' },
-  { key: 'wednesday', label: 'Mittwoch' },
-  { key: 'thursday', label: 'Donnerstag' },
-  { key: 'friday', label: 'Freitag' },
-  { key: 'saturday', label: 'Samstag' },
-  { key: 'sunday', label: 'Sonntag' }
+export const MEAL_PLAN_DAYS: Array<{ key: MealPlanDayKey; label: string; short: string }> = [
+  { key: 'monday',    label: 'Montag',     short: 'Mo' },
+  { key: 'tuesday',   label: 'Dienstag',   short: 'Di' },
+  { key: 'wednesday', label: 'Mittwoch',   short: 'Mi' },
+  { key: 'thursday',  label: 'Donnerstag', short: 'Do' },
+  { key: 'friday',    label: 'Freitag',    short: 'Fr' },
+  { key: 'saturday',  label: 'Samstag',    short: 'Sa' },
+  { key: 'sunday',    label: 'Sonntag',    short: 'So' }
+]
+
+export const MEAL_TYPES: Array<{ key: MealType; label: string; icon: string }> = [
+  { key: 'breakfast', label: 'Frühstück',  icon: '🌅' },
+  { key: 'lunch',     label: 'Mittagessen', icon: '☀️'  },
+  { key: 'dinner',    label: 'Abendessen',  icon: '🌙' }
 ]
 
 function pad(value: number): string {
@@ -46,16 +52,34 @@ function getStartOfWeek(date: Date): Date {
   return start
 }
 
-function createEmptyDays(): MealPlanDays {
-  return {
-    monday: null,
-    tuesday: null,
-    wednesday: null,
-    thursday: null,
-    friday: null,
-    saturday: null,
-    sunday: null
+function emptyDayMeals(): MealPlanDayMeals {
+  return { breakfast: null, lunch: null, dinner: null }
+}
+
+function normalizeDays(rawDays: any): MealPlanDays {
+  const result = {} as MealPlanDays
+  for (const { key } of MEAL_PLAN_DAYS) {
+    const val = rawDays?.[key]
+    if (!val || typeof val === 'string') {
+      // Old format: single string or null → treat as dinner for backward compat
+      result[key] = { breakfast: null, lunch: null, dinner: typeof val === 'string' ? val : null }
+    } else {
+      result[key] = {
+        breakfast: val.breakfast ?? null,
+        lunch: val.lunch ?? null,
+        dinner: val.dinner ?? null
+      }
+    }
   }
+  return result
+}
+
+function createEmptyDays(): MealPlanDays {
+  const result = {} as MealPlanDays
+  for (const { key } of MEAL_PLAN_DAYS) {
+    result[key] = emptyDayMeals()
+  }
+  return result
 }
 
 function getPlanDocumentId(coupleId: string, weekKey: string): string {
@@ -71,14 +95,29 @@ export function useMealPlan(coupleId: Ref<string | null>) {
   let unsubscribe: (() => void) | null = null
 
   const weekKey = computed(() => createWeekKey(selectedWeekStart.value))
-  const days = computed<MealPlanDays>(() => mealPlan.value?.days ?? createEmptyDays())
+  const days = computed<MealPlanDays>(() =>
+    mealPlan.value?.days ? normalizeDays(mealPlan.value.days) : createEmptyDays()
+  )
 
   const weekLabel = computed(() => {
     const start = selectedWeekStart.value
     const end = new Date(start)
     end.setDate(end.getDate() + 6)
-    return `${dayFormatter.format(start)} - ${dayFormatter.format(end)}`
+    return `${dayFormatter.format(start)} – ${dayFormatter.format(end)}`
   })
+
+  const filledSlots = computed(() => {
+    let count = 0
+    for (const { key } of MEAL_PLAN_DAYS) {
+      const d = days.value[key]
+      if (d.breakfast) count++
+      if (d.lunch) count++
+      if (d.dinner) count++
+    }
+    return count
+  })
+
+  const totalSlots = MEAL_PLAN_DAYS.length * MEAL_TYPES.length // 21
 
   function startListening(couple: string, selectedKey: string) {
     if (unsubscribe) unsubscribe()
@@ -99,7 +138,6 @@ export function useMealPlan(coupleId: Ref<string | null>) {
           loading.value = false
           return
         }
-
         const firstDoc = snap.docs[0]
         mealPlan.value = {
           id: firstDoc.id,
@@ -125,31 +163,37 @@ export function useMealPlan(coupleId: Ref<string | null>) {
   }, { immediate: true })
 
   function shiftWeek(offsetInWeeks: number) {
-    const nextWeek = new Date(selectedWeekStart.value)
-    nextWeek.setDate(nextWeek.getDate() + offsetInWeeks * 7)
-    selectedWeekStart.value = getStartOfWeek(nextWeek)
+    const next = new Date(selectedWeekStart.value)
+    next.setDate(next.getDate() + offsetInWeeks * 7)
+    selectedWeekStart.value = getStartOfWeek(next)
   }
 
   function goToCurrentWeek() {
     selectedWeekStart.value = getStartOfWeek(new Date())
   }
 
-  async function setRecipeForDay(day: MealPlanDayKey, recipeId: string | null) {
+  async function setMealForDay(day: MealPlanDayKey, mealType: MealType, recipeId: string | null) {
     if (!coupleId.value || !user.value) return
 
     try {
       const selectedKey = weekKey.value
-      const planDocRef = doc(db, 'mealPlans', mealPlan.value?.id || getPlanDocumentId(coupleId.value, selectedKey))
-      const updatedDays = {
-        ...(mealPlan.value?.days ?? createEmptyDays()),
-        [day]: recipeId
+      const currentDays = normalizeDays(mealPlan.value?.days)
+      const updatedDays: MealPlanDays = {
+        ...currentDays,
+        [day]: {
+          ...currentDays[day],
+          [mealType]: recipeId
+        }
       }
 
+      const planDocRef = doc(
+        db,
+        'mealPlans',
+        mealPlan.value?.id || getPlanDocumentId(coupleId.value, selectedKey)
+      )
+
       if (mealPlan.value) {
-        await updateDoc(planDocRef, {
-          days: updatedDays,
-          updatedAt: serverTimestamp()
-        })
+        await updateDoc(planDocRef, { days: updatedDays, updatedAt: serverTimestamp() })
         return
       }
 
@@ -179,8 +223,10 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     weekKey,
     weekLabel,
     days,
+    filledSlots,
+    totalSlots,
     shiftWeek,
     goToCurrentWeek,
-    setRecipeForDay
+    setMealForDay
   }
 }

@@ -20,6 +20,17 @@ ion-app.md {
   --app-primary-strong: #16a34a;
   --app-danger: #ef4444;
 
+  /* ── Input design tokens ───────────────────────────────────── */
+  --input-bg: rgba(8, 13, 28, 0.72);
+  --input-bg-hover: rgba(8, 13, 28, 0.84);
+  --input-bg-focus: rgba(8, 13, 28, 0.88);
+  --input-border: rgba(100, 116, 139, 0.55);
+  --input-border-hover: rgba(148, 163, 184, 0.75);
+  --input-border-focus: var(--app-primary);
+  --input-glow: rgba(34, 197, 94, 0.18);
+  --input-radius: 0.875rem;
+  --input-transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+
   --ion-font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --ion-background-color: var(--app-bg);
   --ion-background-color-rgb: var(--app-bg-rgb);
@@ -278,18 +289,100 @@ ion-textarea {
 ion-input[fill="outline"],
 ion-select[fill="outline"],
 ion-textarea[fill="outline"] {
-  --background: rgba(15, 23, 42, 0.64);
-  --border-color: rgba(71, 85, 105, 0.88);
-  --border-radius: 1rem;
+  --background: var(--input-bg);
+  --border-color: var(--input-border);
+  --border-radius: var(--input-radius);
+  --border-width: 1.5px;
+  --highlight-color-focused: var(--app-primary);
+  --highlight-height: 2px;
+  --padding-start: 0.875rem;
+  --padding-end: 0.875rem;
+}
+
+ion-input[fill="outline"]::part(container),
+ion-select[fill="outline"]::part(container),
+ion-textarea[fill="outline"]::part(container) {
+  transition: var(--input-transition);
+}
+
+ion-input[fill="outline"]:focus-within::part(container),
+ion-textarea[fill="outline"]:focus-within::part(container) {
+  box-shadow: 0 0 0 3px var(--input-glow);
 }
 
 ion-input::part(native),
 ion-textarea::part(native) {
+  background: transparent;
   color: var(--app-text);
+  font-family: var(--ion-font-family);
+  font-size: 0.9375rem;
 }
 
 ion-select {
   --placeholder-color: var(--app-text-muted);
+}
+
+/* ── Native HTML inputs/selects – utility classes ───────────── */
+
+.app-field {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--input-bg);
+  border: 1.5px solid var(--input-border);
+  border-radius: var(--input-radius);
+  color: var(--app-text);
+  font-family: var(--ion-font-family);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  outline: none;
+  transition: var(--input-transition);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.app-field::placeholder {
+  color: var(--app-text-muted);
+  opacity: 1;
+}
+
+.app-field:hover:not(:focus) {
+  border-color: var(--input-border-hover);
+  background: var(--input-bg-hover);
+}
+
+.app-field:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 3px var(--input-glow);
+  background: var(--input-bg-focus);
+}
+
+.app-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  background-size: 1.25rem;
+  padding-right: 2.75rem;
+  cursor: pointer;
+}
+
+.app-field-wrap {
+  position: relative;
+}
+
+.app-field-prefix {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--app-text-muted);
+  font-size: 0.9375rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.app-field--with-prefix {
+  padding-left: 2rem;
 }
 
 ion-accordion-group,

@@ -16,6 +16,8 @@ export interface Couple {
   createdAt: Timestamp
 }
 
+export type TodoCategory = 'haushalt' | 'einkauf' | 'sonstiges'
+
 export interface Todo {
   id: string
   coupleId: string
@@ -23,6 +25,9 @@ export interface Todo {
   done: boolean
   assignedTo: string | null
   createdBy: string
+  category: TodoCategory | null
+  dueDate: Timestamp | null
+  recurring: boolean
   createdAt: Timestamp
   updatedAt: Timestamp
 }

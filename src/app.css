@@ -367,3 +367,91 @@ ion-spinner {
   border: 1px solid rgba(71, 85, 105, 0.72);
   border-radius: 1rem;
 }
+
+/* ─── Bottom tab bar ──────────────────────────────────────────── */
+
+ion-tab-bar {
+  --background: rgba(15, 23, 42, 0.96);
+  --border: 1px solid rgba(51, 65, 85, 0.72);
+  height: 62px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+ion-tab-button {
+  --color: var(--app-text-muted);
+  --color-selected: var(--app-primary);
+  --ripple-color: rgba(34, 197, 94, 0.12);
+}
+
+/* Icon: spring-bounce up + scale on active */
+ion-tab-button ion-icon {
+  font-size: 23px;
+  margin-bottom: 2px;
+  transition:
+    transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 0.2s ease;
+}
+
+ion-tab-button.tab-selected ion-icon {
+  transform: translateY(-3px) scale(1.2);
+}
+
+/* Label: fade + weight shift */
+ion-tab-button ion-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  transition: color 0.2s ease, font-weight 0.2s ease;
+}
+
+ion-tab-button.tab-selected ion-label {
+  font-weight: 700;
+}
+
+/* Active indicator bar at the top of each button */
+ion-tab-button::part(native) {
+  border-top: 2px solid transparent;
+  transition: border-color 0.25s ease;
+  position: relative;
+}
+
+ion-tab-button.tab-selected::part(native) {
+  border-top-color: var(--app-primary);
+}
+
+/* ─── Segment control (PlanenView) ────────────────────────────── */
+
+ion-segment {
+  --background: rgba(15, 23, 42, 0.6);
+  border-radius: 0.75rem;
+  padding: 3px;
+}
+
+ion-segment-button {
+  --background: transparent;
+  --background-checked: rgba(34, 197, 94, 0.18);
+  --color: var(--app-text-muted);
+  --color-checked: var(--app-primary);
+  --indicator-color: transparent;
+  --border-radius: 0.625rem;
+  --padding-start: 0.5rem;
+  --padding-end: 0.5rem;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  min-height: 36px;
+  transition: color 0.2s ease;
+}
+
+ion-segment-button::part(indicator-background) {
+  background: rgba(34, 197, 94, 0.18);
+  border-radius: 0.625rem;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+ion-segment-button::part(native) {
+  font-weight: inherit;
+}

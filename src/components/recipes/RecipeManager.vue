@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import {
-  IonFab,
-  IonFabButton,
-  IonIcon,
-  IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonButtons,
   IonButton,
   IonInput,
   IonTextarea,
@@ -22,6 +13,8 @@ import {
 import { addOutline } from 'ionicons/icons'
 import { useRecipes } from '@/composables/useRecipes'
 import type { RecipeIngredient } from '@/types'
+import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
+import AppSheetModal from '@/components/ui/AppSheetModal.vue'
 
 interface IngredientFormRow {
   name: string
@@ -210,95 +203,84 @@ function formatIngredient(ingredient: RecipeIngredient): string {
     <p v-if="error" class="text-sm text-red-400 text-center">{{ error }}</p>
 
     <!-- FAB to add recipe -->
-    <ion-fab vertical="bottom" horizontal="end" slot="fixed" class="mb-2 mr-2">
-      <ion-fab-button @click="openNewRecipe" color="primary">
-        <ion-icon :icon="addOutline" />
-      </ion-fab-button>
-    </ion-fab>
+    <AppFloatingActionButton :icon="addOutline" aria-label="Rezept hinzufügen" @click="openNewRecipe" />
 
-    <!-- Recipe Form Modal (fullscreen) -->
-    <ion-modal
+    <AppSheetModal
       :is-open="showFormModal"
-      @did-dismiss="showFormModal = false"
+      :title="editingRecipeId ? 'Rezept bearbeiten' : 'Neues Rezept'"
+      variant="fullscreen"
+      close-label="Abbrechen"
+      @close="showFormModal = false"
     >
-      <ion-header>
-        <ion-toolbar>
-          <ion-buttons slot="start">
-            <ion-button @click="showFormModal = false">Abbrechen</ion-button>
-          </ion-buttons>
-          <ion-title>{{ editingRecipeId ? 'Rezept bearbeiten' : 'Neues Rezept' }}</ion-title>
-          <ion-buttons slot="end">
-            <ion-button @click="handleSubmit" :strong="true">Speichern</ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding">
-        <div class="space-y-4">
-          <ion-input
-            v-model="title"
-            placeholder="Rezepttitel"
-            fill="outline"
-            label="Titel"
-            label-placement="floating"
-            :clear-input="true"
-          />
+      <div class="space-y-4">
+        <ion-input
+          v-model="title"
+          placeholder="Rezepttitel"
+          fill="outline"
+          label="Titel"
+          label-placement="floating"
+          :clear-input="true"
+        />
 
-          <div class="space-y-2">
-            <p class="text-xs font-medium text-slate-400 uppercase tracking-wide">Zutaten</p>
+        <div class="space-y-2">
+          <p class="text-xs font-medium text-slate-400 uppercase tracking-wide">Zutaten</p>
 
-            <div
-              v-for="(row, index) in ingredientRows"
-              :key="index"
-              class="flex gap-2 items-center"
+          <div
+            v-for="(row, index) in ingredientRows"
+            :key="index"
+            class="flex gap-2 items-center"
+          >
+            <ion-input
+              v-model="row.name"
+              placeholder="Name"
+              fill="outline"
+              class="flex-1"
+            />
+            <ion-input
+              v-model="row.amount"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Menge"
+              fill="outline"
+              class="max-w-20"
+            />
+            <ion-input
+              v-model="row.unit"
+              placeholder="Einheit"
+              fill="outline"
+              class="max-w-20"
+            />
+            <ion-button
+              fill="clear"
+              size="small"
+              color="danger"
+              @click="removeIngredientRow(index)"
             >
-              <ion-input
-                v-model="row.name"
-                placeholder="Name"
-                fill="outline"
-                class="flex-1"
-              />
-              <ion-input
-                v-model="row.amount"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Menge"
-                fill="outline"
-                class="max-w-20"
-              />
-              <ion-input
-                v-model="row.unit"
-                placeholder="Einheit"
-                fill="outline"
-                class="max-w-20"
-              />
-              <ion-button
-                fill="clear"
-                size="small"
-                color="danger"
-                @click="removeIngredientRow(index)"
-              >
-                ×
-              </ion-button>
-            </div>
-
-            <ion-button fill="clear" size="small" @click="addIngredientRow">
-              + Zutat hinzufügen
+              ×
             </ion-button>
           </div>
 
-          <ion-textarea
-            v-model="instructions"
-            :rows="6"
-            placeholder="Zubereitungsschritte"
-            fill="outline"
-            label="Zubereitung"
-            label-placement="floating"
-          />
-
-          <p v-if="formError" class="text-sm text-red-400">{{ formError }}</p>
+          <ion-button fill="clear" size="small" @click="addIngredientRow">
+            + Zutat hinzufügen
+          </ion-button>
         </div>
-      </ion-content>
-    </ion-modal>
+
+        <ion-textarea
+          v-model="instructions"
+          :rows="6"
+          placeholder="Zubereitungsschritte"
+          fill="outline"
+          label="Zubereitung"
+          label-placement="floating"
+        />
+
+        <p v-if="formError" class="text-sm text-red-400">{{ formError }}</p>
+
+        <ion-button expand="block" @click="handleSubmit">
+          Speichern
+        </ion-button>
+      </div>
+    </AppSheetModal>
   </div>
 </template>

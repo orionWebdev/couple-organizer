@@ -91,7 +91,7 @@ export interface MealPlan {
 }
 
 export type ExpenseCategory = 'food' | 'transport' | 'home' | 'leisure' | 'other'
-export type FinanceEventKind = 'one_time' | 'monthly'
+export type FinanceEventKind = 'event' | 'monthly'
 
 export interface FinanceEvent {
   id: string
@@ -100,9 +100,6 @@ export interface FinanceEvent {
   kind: FinanceEventKind
   category: ExpenseCategory | null
   archived: boolean
-  settledAt: Timestamp | null
-  settledBy: string | null
-  settledMonthKeys: string[]
   createdBy: string
   createdAt: Timestamp
   updatedAt: Timestamp
@@ -114,6 +111,7 @@ export interface Expense {
   coupleId: string
   title: string
   amount: number // stored in cents
+  owedBy: Readonly<Record<string, number>>
   category: ExpenseCategory
   paidBy: string
   eventId: string | null
@@ -124,4 +122,25 @@ export interface Expense {
   createdBy: string
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+export interface ExpenseBalanceSummary {
+  totals: Record<string, number>
+  owedTotals: Record<string, number>
+  balances: Record<string, number>
+  totalSpent: number
+}
+
+export interface MonthlyExpenseSummary {
+  monthKey: string
+  total: number
+  balances: Record<string, number>
+  expenses: Expense[]
+}
+
+export interface FinanceEventSummary {
+  event: FinanceEvent
+  total: number
+  balances: Record<string, number>
+  expenses: Expense[]
 }

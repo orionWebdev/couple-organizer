@@ -79,7 +79,7 @@ function getTone(index: number): 'green' | 'blue' | 'amber' | 'rose' {
         type="button"
         class="todo-assignee-button"
         aria-label="Zuweisung bearbeiten"
-        @click="emit('assignRequest', todo)"
+        @click.stop="emit('assignRequest', todo)"
       >
         <div v-if="visibleMembers.length > 1" class="todo-avatar-stack">
           <OverviewAvatar

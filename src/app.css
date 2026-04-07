@@ -305,7 +305,8 @@ ion-modal {
   --background: var(--app-surface);
   --box-shadow: 0 24px 48px rgba(2, 6, 23, 0.48);
   --border-radius: 1.5rem 1.5rem 0 0;
-  --height: auto;
+  --height: min(92vh, 56rem);
+  --width: min(100%, 42rem);
 }
 
 ion-modal::part(backdrop) {
@@ -318,11 +319,38 @@ ion-modal::part(content) {
   border: 1px solid rgba(71, 85, 105, 0.72);
   border-bottom: 0;
   background: var(--app-surface);
+  overflow: hidden;
+}
+
+ion-modal.app-fullscreen-modal {
+  --height: 100%;
+  --width: 100%;
+  --border-radius: 0;
+}
+
+ion-modal.app-sheet-modal-full {
+  --height: 100%;
+  --width: 100%;
+}
+
+ion-modal.app-fullscreen-modal::part(content) {
+  border-radius: 0;
+  border: 0;
+}
+
+ion-modal.app-sheet-modal-full::part(content) {
+  border-radius: 1.5rem 1.5rem 0 0;
+  border-left: 0;
+  border-right: 0;
 }
 
 ion-modal ion-toolbar {
   --background: transparent;
   --min-height: 3.75rem;
+}
+
+ion-modal.app-sheet-modal ion-content::part(scroll) {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
 
 ion-spinner {

@@ -1,32 +1,27 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   IonButton,
-  IonButtons,
-  IonContent,
-  IonFab,
-  IonFabButton,
-  IonHeader,
   IonIcon,
   IonInput,
   IonItem,
   IonLabel,
   IonList,
-  IonModal,
-  IonSpinner,
-  IonTitle,
-  IonToolbar
+  IonSpinner
 } from '@ionic/vue'
 import { addOutline, closeOutline, searchOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useTodos } from '@/composables/useTodos'
 import type { Couple, Todo } from '@/types'
 import AppSegmentToggle from '@/components/ui/AppSegmentToggle.vue'
+import AppSheetModal from '@/components/ui/AppSheetModal.vue'
+import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
 import TodoItem from './TodoItem.vue'
 
 const props = defineProps<{
   coupleId: string
   couple: Couple | null
+  createRequestKey?: number
 }>()
 
 const { user } = useAuth()
@@ -81,6 +76,11 @@ async function assignTodo(assignedTo: string | null) {
   showAssignModal.value = false
   selectedTodo.value = null
 }
+
+watch(() => props.createRequestKey, (next, previous) => {
+  if (!next || next === previous) return
+  showAddModal.value = true
+})
 </script>
 
 <template>
@@ -135,79 +135,59 @@ async function assignTodo(assignedTo: string | null) {
       </ion-list>
     </section>
 
-    <ion-fab vertical="bottom" horizontal="end" slot="fixed" class="mb-2 mr-2">
-      <ion-fab-button @click="showAddModal = true" color="primary">
-        <ion-icon :icon="addOutline" />
-      </ion-fab-button>
-    </ion-fab>
+    <AppFloatingActionButton :icon="addOutline" aria-label="Aufgabe hinzufügen" @click="showAddModal = true" />
 
-    <ion-modal
+    <AppSheetModal
       :is-open="showAddModal"
-      :breakpoints="[0, 0.38]"
+      title="Neue Aufgabe"
+      :breakpoints="[0, 0.38, 0.54]"
       :initial-breakpoint="0.38"
-      @did-dismiss="showAddModal = false"
+      close-label="Fertig"
+      @close="showAddModal = false"
     >
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Neue Aufgabe</ion-title>
-          <ion-buttons slot="end">
-            <ion-button @click="showAddModal = false">Fertig</ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding">
-        <form @submit.prevent="handleAdd" class="space-y-4">
-          <ion-input
-            v-model="newTitle"
-            placeholder="Aufgabe eingeben..."
-            :clear-input="true"
-            fill="outline"
-            label="Aufgabe"
-            label-placement="floating"
-          />
-          <ion-button expand="block" type="submit" :disabled="!newTitle.trim()">
-            Hinzufügen
-          </ion-button>
-        </form>
-      </ion-content>
-    </ion-modal>
+      <form @submit.prevent="handleAdd" class="space-y-4">
+        <ion-input
+          v-model="newTitle"
+          placeholder="Aufgabe eingeben..."
+          :clear-input="true"
+          fill="outline"
+          label="Aufgabe"
+          label-placement="floating"
+        />
+        <ion-button expand="block" type="submit" :disabled="!newTitle.trim()">
+          Hinzufügen
+        </ion-button>
+      </form>
+    </AppSheetModal>
 
-    <ion-modal
+    <AppSheetModal
       :is-open="showAssignModal"
-      :breakpoints="[0, 0.42]"
+      title="Zuweisung"
+      :breakpoints="[0, 0.42, 0.56]"
       :initial-breakpoint="0.42"
-      @did-dismiss="showAssignModal = false"
+      close-label="Schließen"
+      @close="showAssignModal = false"
     >
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Zuweisung</ion-title>
-          <ion-buttons slot="end">
-            <ion-button @click="showAssignModal = false">Schließen</ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding">
-        <div class="space-y-3">
-          <p class="text-sm text-slate-400">
-            {{ selectedTodo?.title }}
-          </p>
-          <ion-list lines="none">
-            <ion-item :button="true" :detail="false" @click="assignTodo(null)">
-              <ion-label>Nicht zugewiesen</ion-label>
-            </ion-item>
-            <ion-item
-              v-for="(name, uid) in couple?.memberNames || {}"
-              :key="uid"
-              :button="true"
-              :detail="false"
-              @click="assignTodo(uid)"
-            >
-              <ion-label>{{ name }}</ion-label>
-            </ion-item>
-          </ion-list>
-        </div>
-      </ion-content>
-    </ion-modal>
+      <div class="space-y-3">
+        <p class="text-sm text-slate-400">
+          {{ selectedTodo?.title }}
+        </p>
+        <ion-list lines="none">
+          <ion-item :button="true" :detail="false" @click="assignTodo(null)">
+            <ion-label>Nicht zugewiesen</ion-label>
+          </ion-item>
+          <ion-item
+            v-for="(name, uid) in couple?.memberNames || {}"
+            :key="uid"
+            :button="true"
+            :detail="false"
+            @click="assignTodo(uid)"
+          >
+            <ion-label>{{ name }}</ion-label>
+          </ion-item>
+        </ion-list>
+      </div>
+    </AppSheetModal>
   </section>
 </template>
 

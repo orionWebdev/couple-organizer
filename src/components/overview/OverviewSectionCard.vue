@@ -23,8 +23,7 @@ const emit = defineEmits<{
       <button
         v-if="actionLabel"
         type="button"
-        class="rounded-full px-4 py-2 text-sm font-medium transition"
-        :class="dark ? 'bg-slate-700/80 text-slate-100 hover:bg-slate-700' : 'bg-emerald-500/12 text-emerald-300 hover:bg-emerald-500/18'"
+        class="section-card-action-button"
         @click="emit('action')"
       >
         {{ actionLabel }}
@@ -50,5 +49,22 @@ const emit = defineEmits<{
 .section-card-dark {
   background:
     linear-gradient(180deg, rgba(16, 24, 44, 0.98), rgba(9, 14, 28, 0.98));
+}
+
+.section-card-action-button {
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  background: rgba(34, 197, 94, 0.14);
+  color: rgb(134 239 172);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.section-card-action-button:hover {
+  transform: translateY(-1px);
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.42);
 }
 </style>

@@ -13,7 +13,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="segment-shell">
+  <div class="segment-shell" :style="{ '--segment-count': String(options.length || 1) }">
     <button
       v-for="option in options"
       :key="option.value"
@@ -30,7 +30,7 @@ const emit = defineEmits<{
 <style scoped>
 .segment-shell {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--segment-count, 2), minmax(0, 1fr));
   gap: 0.4rem;
   padding: 0.35rem;
   border: 1px solid rgba(71, 85, 105, 0.52);

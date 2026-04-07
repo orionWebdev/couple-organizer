@@ -23,7 +23,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  switchTab: [tab: string]
+  switchTab: [tab: string, intent?: 'default' | 'create']
 }>()
 
 const { user } = useAuth()
@@ -156,7 +156,7 @@ function formatEuro(cents: number): string {
       />
     </section>
 
-    <OverviewSectionCard title="Aufgaben" action-label="+ Aufgabe" @action="emit('switchTab', 'todos')">
+    <OverviewSectionCard title="Aufgaben" action-label="+ Aufgabe" @action="emit('switchTab', 'todos', 'create')">
       <div v-if="todoPreview.length > 0" class="space-y-5">
         <article
           v-for="todo in todoPreview"
@@ -192,7 +192,7 @@ function formatEuro(cents: number): string {
       <p v-else class="py-6 text-sm text-slate-400">Keine offenen Aufgaben mehr.</p>
     </OverviewSectionCard>
 
-    <OverviewSectionCard title="Einkaufsliste" action-label="+ Artikel" @action="emit('switchTab', 'shopping')">
+    <OverviewSectionCard title="Einkaufsliste" action-label="+ Artikel" @action="emit('switchTab', 'shopping', 'create')">
       <div v-if="shoppingPreview.length > 0" class="space-y-5">
         <article
           v-for="item in shoppingPreview"
@@ -211,7 +211,7 @@ function formatEuro(cents: number): string {
       <p v-else class="py-6 text-sm text-slate-400">Die Einkaufsliste ist aktuell leer.</p>
     </OverviewSectionCard>
 
-    <OverviewSectionCard title="Ausgabenbilanz" action-label="+ Ausgabe" dark @action="emit('switchTab', 'expenses')">
+    <OverviewSectionCard title="Ausgabenbilanz" action-label="+ Ausgabe" dark @action="emit('switchTab', 'expenses', 'create')">
       <div class="space-y-6 text-center">
         <div>
           <p v-if="balanceSummary" class="text-base text-slate-400">

@@ -1,69 +1,83 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import {
   IonButton,
-  IonButtons,
-  IonContent,
-  IonFab,
-  IonFabButton,
-  IonHeader,
-  IonIcon,
   IonInput,
-  IonModal,
   IonSelect,
   IonSelectOption,
-  IonSpinner,
-  IonTitle,
-  IonToolbar
+  IonSpinner
 } from '@ionic/vue'
 import { addOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useExpenses } from '@/composables/useExpenses'
-import type { Couple, Expense, ExpenseCategory, FinanceEventKind } from '@/types'
-import BalanceSummary from './BalanceSummary.vue'
-import ExpenseTimelineItem from './ExpenseTimelineItem.vue'
-import OverviewSectionCard from '@/components/overview/OverviewSectionCard.vue'
+import type { Couple, Expense, ExpenseCategory, FinanceEvent } from '@/types'
+import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
+import AppSegmentToggle from '@/components/ui/AppSegmentToggle.vue'
+import AppSheetModal from '@/components/ui/AppSheetModal.vue'
+import ExpenseArchiveModal from './ExpenseArchiveModal.vue'
+import ExpenseEventsView from './ExpenseEventsView.vue'
+import ExpenseMonthlyView from './ExpenseMonthlyView.vue'
+import ExpenseOverviewView from './ExpenseOverviewView.vue'
 
-interface TimelineGroup {
-  key: string
-  label: string
-  expenses: ReadonlyArray<Readonly<Expense>>
-}
+type FinanceView = 'overview' | 'monthly' | 'events'
+type ExpenseMode = 'monthly' | 'event'
 
 const props = defineProps<{
   coupleId: string
   couple: Couple | null
+  createRequestKey?: number
 }>()
 
 const { user } = useAuth()
 
 const coupleIdRef = computed<string | null>(() => props.coupleId)
 const {
-  expenses,
+  events,
   loading,
   error,
   balanceInfo,
-  eventSummaries,
-  recurringEventSummaries,
+  recentExpenses,
+  monthlySummaries,
+  activeEventSummaries,
+  archivedEventSummaries,
+  activeEvents,
   addExpense,
+  updateExpense,
   createEvent,
-  setEventArchived,
-  setEventSettled,
-  setMonthlyEventMonthSettled
+  deleteEvent,
+  setEventArchived
 } = useExpenses(coupleIdRef)
 
+const activeView = ref<FinanceView>('overview')
+const newExpenseMode = ref<ExpenseMode>('monthly')
 const newExpenseTitle = ref('')
 const newExpenseAmount = ref('')
 const newExpenseCategory = ref<ExpenseCategory>('food')
 const newExpensePaidBy = ref(user.value?.uid || '')
 const newExpenseEventId = ref('')
+const privateShares = reactive<Record<string, string>>({})
 
 const newEventTitle = ref('')
-const newEventKind = ref<FinanceEventKind>('one_time')
-const newEventCategory = ref<ExpenseCategory>('food')
 
 const showAddExpenseModal = ref(false)
 const showEventModal = ref(false)
+const showArchiveModal = ref(false)
+const editingExpenseId = ref<string | null>(null)
+const editingOriginalAmountInCents = ref<number | null>(null)
+const editingOriginalOwedBy = ref<Record<string, number> | null>(null)
+const expenseFormError = ref<string | null>(null)
+const eventFormError = ref<string | null>(null)
+
+const viewOptions = [
+  { label: 'Overview', value: 'overview' },
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Events', value: 'events' }
+] as const
+
+const expenseTypeOptions = [
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Event', value: 'event' }
+] as const
 
 const categoryOptions: Array<{ value: ExpenseCategory; label: string }> = [
   { value: 'food', label: 'Lebensmittel' },
@@ -73,493 +87,547 @@ const categoryOptions: Array<{ value: ExpenseCategory; label: string }> = [
   { value: 'other', label: 'Sonstiges' }
 ]
 
+const archivedEntries = computed(() => {
+  return archivedEventSummaries.value.map((summary) => ({
+    id: summary.event.id,
+    title: summary.event.title,
+    kind: summary.event.kind
+  }))
+})
+
+const selectableEvents = computed(() => {
+  return activeEvents.value.filter((event) => event.kind === 'event')
+})
+
 watch(() => props.couple, (couple) => {
   if (!couple) return
   const fallback = user.value?.uid || Object.keys(couple.memberNames)[0] || ''
   if (!newExpensePaidBy.value || !(newExpensePaidBy.value in couple.memberNames)) {
     newExpensePaidBy.value = fallback
   }
+  for (const uid of Object.keys(couple.memberNames)) {
+    if (!(uid in privateShares)) privateShares[uid] = ''
+  }
 }, { immediate: true })
 
-const activeOneTimeEvents = computed(() => eventSummaries.value.filter((entry) => !entry.event.archived))
-const archivedOneTimeEvents = computed(() => eventSummaries.value.filter((entry) => entry.event.archived))
-const activeRecurringEvents = computed(() => recurringEventSummaries.value.filter((entry) => !entry.event.archived))
-const archivedRecurringEvents = computed(() => recurringEventSummaries.value.filter((entry) => entry.event.archived))
-
-const selectableEvents = computed(() => {
-  return [
-    ...activeOneTimeEvents.value.map((entry) => entry.event),
-    ...activeRecurringEvents.value.map((entry) => entry.event)
-  ]
-})
-
-const timelineGroups = computed<TimelineGroup[]>(() => {
-  const groups = new Map<string, Expense[]>()
-
-  for (const expense of expenses.value) {
-    const bucket = getTimelineBucket(expense)
-    groups.set(bucket.key, [...(groups.get(bucket.key) || []), expense])
+watch(newExpenseMode, (mode) => {
+  if (mode === 'monthly') {
+    const selectedEvent = getSelectedEvent()
+    if (!selectedEvent || selectedEvent.kind !== 'monthly') {
+      newExpenseEventId.value = ''
+    }
+    return
   }
 
-  return [...groups.entries()].map(([key, value]) => ({
-    key,
-    label: getTimelineLabel(key),
-    expenses: value
+  if (!newExpenseEventId.value && selectableEvents.value.length > 0) {
+    newExpenseEventId.value = selectableEvents.value[0].id
+  }
+})
+
+watch(selectableEvents, (next) => {
+  if (newExpenseMode.value !== 'event') return
+  if (next.some((event) => event.id === newExpenseEventId.value)) return
+  newExpenseEventId.value = next[0]?.id || ''
+})
+
+function getSelectedEvent(): Readonly<FinanceEvent> | null {
+  return events.value.find((entry) => entry.id === newExpenseEventId.value) || null
+}
+
+function getDefaultExpenseMode(): ExpenseMode {
+  if (activeView.value === 'events' && selectableEvents.value.length > 0) {
+    return 'event'
+  }
+
+  return 'monthly'
+}
+
+function resolveExpenseEventId(): string | null {
+  const selectedEvent = getSelectedEvent()
+
+  if (newExpenseMode.value === 'event') {
+    return newExpenseEventId.value || null
+  }
+
+  return selectedEvent?.kind === 'monthly' ? selectedEvent.id : null
+}
+
+function resetPrivateShares() {
+  for (const uid of Object.keys(privateShares)) {
+    privateShares[uid] = ''
+  }
+}
+
+function clearExpenseForm() {
+  newExpenseTitle.value = ''
+  newExpenseAmount.value = ''
+  newExpenseCategory.value = 'food'
+  newExpenseMode.value = getDefaultExpenseMode()
+  newExpenseEventId.value = newExpenseMode.value === 'event' ? selectableEvents.value[0]?.id || '' : ''
+  editingExpenseId.value = null
+  editingOriginalAmountInCents.value = null
+  editingOriginalOwedBy.value = null
+  expenseFormError.value = null
+  resetPrivateShares()
+
+  const memberIds = Object.keys(props.couple?.memberNames || {})
+  if (!newExpensePaidBy.value || !memberIds.includes(newExpensePaidBy.value)) {
+    newExpensePaidBy.value = user.value?.uid || memberIds[0] || ''
+  }
+}
+
+function closeExpenseModal() {
+  showAddExpenseModal.value = false
+  clearExpenseForm()
+}
+
+function openAddExpenseModal() {
+  clearExpenseForm()
+  showAddExpenseModal.value = true
+}
+
+function closeEventModal() {
+  showEventModal.value = false
+  newEventTitle.value = ''
+  eventFormError.value = null
+}
+
+function hasPrivateShareInput(): boolean {
+  return Object.values(privateShares).some((value) => String(value || '').trim() !== '')
+}
+
+function scaleOwedBy(original: Record<string, number>, nextAmountInCents: number): Record<string, number> | null {
+  const members = Object.keys(props.couple?.memberNames || {})
+  if (members.length === 0) return {}
+
+  const originalEntries = members.map((uid) => ({
+    uid,
+    amount: Math.max(0, original[uid] || 0)
   }))
-})
+  const originalTotal = originalEntries.reduce((sum, entry) => sum + entry.amount, 0)
 
-function getTimelineBucket(expense: Readonly<Expense>): { key: string } {
-  const now = new Date()
-  const target = toDate(expense.createdAt)
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const startOfTarget = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime()
-  const diffDays = Math.floor((startOfToday - startOfTarget) / 86400000)
-
-  if (diffDays <= 0) return { key: 'today' }
-  if (diffDays === 1) return { key: 'yesterday' }
-  return { key: `date:${target.getFullYear()}-${target.getMonth()}-${target.getDate()}` }
-}
-
-function getTimelineLabel(key: string): string {
-  if (key === 'today') return 'Heute'
-  if (key === 'yesterday') return 'Gestern'
-  const raw = key.replace('date:', '')
-  const [year, monthIndex, day] = raw.split('-').map(Number)
-  return new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long' }).format(new Date(year, monthIndex, day))
-}
-
-function toDate(timestamp: unknown): Date {
-  if (timestamp && typeof timestamp === 'object' && 'toDate' in timestamp && typeof (timestamp as { toDate: () => Date }).toDate === 'function') {
-    return (timestamp as { toDate: () => Date }).toDate()
+  if (originalTotal <= 0) {
+    return buildOwedBy(nextAmountInCents / 100)
   }
-  return new Date()
+
+  const withFractions = originalEntries.map((entry) => {
+    const exact = (entry.amount / originalTotal) * nextAmountInCents
+    const floored = Math.floor(exact)
+    return {
+      uid: entry.uid,
+      amount: floored,
+      fraction: exact - floored
+    }
+  })
+
+  let remainder = nextAmountInCents - withFractions.reduce((sum, entry) => sum + entry.amount, 0)
+
+  withFractions
+    .sort((a, b) => b.fraction - a.fraction)
+    .forEach((entry) => {
+      if (remainder <= 0) return
+      entry.amount += 1
+      remainder -= 1
+    })
+
+  return Object.fromEntries(withFractions.map((entry) => [entry.uid, entry.amount]))
 }
 
-function formatEuro(cents: number): string {
-  return `${(cents / 100).toFixed(2)} €`
+function buildOwedBy(totalAmountInEuro: number): Record<string, number> | null {
+  const members = Object.keys(props.couple?.memberNames || {})
+  if (members.length === 0) return {}
+
+  const totalInCents = Math.round(totalAmountInEuro * 100)
+  const personalShares = members.map((uid) => ({
+    uid,
+    cents: Math.max(0, Math.round(Number(String(privateShares[uid] || '').replace(',', '.')) * 100) || 0)
+  }))
+
+  const personalTotal = personalShares.reduce((sum, entry) => sum + entry.cents, 0)
+  if (personalTotal > totalInCents) return null
+
+  const sharedRemainder = totalInCents - personalTotal
+  const baseShare = Math.floor(sharedRemainder / members.length)
+  const remainder = sharedRemainder % members.length
+  const owedBy: Record<string, number> = {}
+
+  members.forEach((uid, index) => {
+    const personal = personalShares.find((entry) => entry.uid === uid)?.cents || 0
+    owedBy[uid] = personal + baseShare + (index < remainder ? 1 : 0)
+  })
+
+  return owedBy
 }
 
-function getMemberName(uid: string): string {
-  return props.couple?.memberNames[uid] || 'Unbekannt'
-}
+function resolveOwedBy(amountInCents: number): Record<string, number> | null {
+  if (hasPrivateShareInput()) {
+    return buildOwedBy(amountInCents / 100)
+  }
 
-function getCategoryLabel(category: ExpenseCategory): string {
-  return categoryOptions.find((option) => option.value === category)?.label || 'Sonstiges'
-}
+  if (editingExpenseId.value && editingOriginalOwedBy.value) {
+    if (editingOriginalAmountInCents.value === amountInCents) {
+      return { ...editingOriginalOwedBy.value }
+    }
+    return scaleOwedBy(editingOriginalOwedBy.value, amountInCents)
+  }
 
-function formatMonth(monthKey: string): string {
-  const [year, month] = monthKey.split('-').map(Number)
-  return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1))
+  return buildOwedBy(amountInCents / 100)
 }
 
 async function handleAddExpense() {
   const title = newExpenseTitle.value.trim()
   const amount = Number(String(newExpenseAmount.value).replace(',', '.'))
-  if (!title || !Number.isFinite(amount) || amount <= 0 || !newExpensePaidBy.value) return
+  expenseFormError.value = null
 
-  const expenseId = await addExpense({
+  if (!title) {
+    expenseFormError.value = 'Bitte gib einen Titel fuer den Finanzeintrag ein.'
+    return
+  }
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    expenseFormError.value = 'Bitte gib einen gueltigen Betrag groesser als 0 ein.'
+    return
+  }
+
+  if (!newExpensePaidBy.value) {
+    expenseFormError.value = 'Bitte waehle aus, wer den Betrag bezahlt hat.'
+    return
+  }
+
+  if (newExpenseMode.value === 'event' && !newExpenseEventId.value) {
+    expenseFormError.value = 'Bitte waehle ein Event aus oder lege zuerst eins an.'
+    return
+  }
+
+  const amountInCents = Math.round(amount * 100)
+  const owedBy = resolveOwedBy(amountInCents)
+
+  if (!owedBy) {
+    expenseFormError.value = 'Die privaten Anteile sind hoeher als der Gesamtbetrag. Bitte pruefe deine Eingaben.'
+    return
+  }
+
+  const payload = {
     title,
-    amountInCents: Math.round(amount * 100),
+    amountInCents,
     paidBy: newExpensePaidBy.value,
+    owedBy,
     category: newExpenseCategory.value,
-    eventId: newExpenseEventId.value || null
-  })
+    eventId: resolveExpenseEventId()
+  }
 
-  if (!expenseId) return
+  if (editingExpenseId.value) {
+    const wasUpdated = await updateExpense(editingExpenseId.value, payload)
 
-  newExpenseTitle.value = ''
-  newExpenseAmount.value = ''
-  newExpenseEventId.value = ''
-  showAddExpenseModal.value = false
+    if (!wasUpdated) {
+      expenseFormError.value = 'Der Finanzeintrag konnte nicht gespeichert werden. Bitte versuche es erneut.'
+      return
+    }
+  } else {
+    const expenseId = await addExpense(payload)
+
+    if (!expenseId) {
+      expenseFormError.value = 'Der Finanzeintrag konnte nicht erstellt werden. Bitte versuche es erneut.'
+      return
+    }
+  }
+
+  closeExpenseModal()
 }
 
 async function handleCreateEvent() {
   const title = newEventTitle.value.trim()
-  if (!title) return
+  eventFormError.value = null
 
-  await createEvent(title, {
-    kind: newEventKind.value,
-    category: newEventKind.value === 'monthly' ? newEventCategory.value : null
-  })
+  if (!title) {
+    eventFormError.value = 'Bitte gib einen Namen fuer das Event ein.'
+    return
+  }
 
-  newEventTitle.value = ''
-  newEventKind.value = 'one_time'
-  newEventCategory.value = 'food'
-  showEventModal.value = false
+  await createEvent(title, { kind: 'event' })
+  closeEventModal()
 }
+
+async function handleDeleteArchivedEvent(eventId: string) {
+  const wasDeleted = await deleteEvent(eventId)
+  if (wasDeleted && archivedEntries.value.length <= 1) {
+    showArchiveModal.value = false
+  }
+}
+
+function openCreateEventFromExpense() {
+  showAddExpenseModal.value = false
+  showEventModal.value = true
+}
+
+function openEditExpenseModal(expense: Readonly<Expense>) {
+  clearExpenseForm()
+  editingExpenseId.value = expense.id
+  editingOriginalAmountInCents.value = expense.amount
+  editingOriginalOwedBy.value = { ...expense.owedBy }
+  newExpenseTitle.value = expense.title
+  newExpenseAmount.value = (expense.amount / 100).toFixed(2)
+  newExpenseCategory.value = expense.category
+  newExpensePaidBy.value = expense.paidBy
+  newExpenseEventId.value = expense.eventId || ''
+
+  const linkedEvent = expense.eventId ? events.value.find((entry) => entry.id === expense.eventId) : null
+  newExpenseMode.value = linkedEvent?.kind === 'event' ? 'event' : 'monthly'
+
+  showAddExpenseModal.value = true
+}
+
+watch(() => props.createRequestKey, (next, previous) => {
+  if (!next || next === previous) return
+  openAddExpenseModal()
+})
 </script>
 
 <template>
   <section class="space-y-5 pb-4">
     <div class="finance-page-header">
-      <h1 class="text-[2rem] font-semibold tracking-tight text-slate-50">Finanzen</h1>
-      <button type="button" class="finance-icon-button" aria-label="Event erstellen" @click="showEventModal = true">
-        <ion-icon :icon="addOutline" class="text-xl" />
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-300/80">Finance</p>
+        <h1 class="mt-2 text-[2rem] font-semibold tracking-tight text-slate-50">Einfach geteilt</h1>
+      </div>
+
+      <button type="button" class="finance-pill-button" @click="showEventModal = true">
+        Event
       </button>
     </div>
 
-    <BalanceSummary
-      :balances="balanceInfo.balances"
-      :totals="balanceInfo.totals"
-      :total-spent="balanceInfo.totalSpent"
-      :couple="couple"
+    <AppSegmentToggle
+      v-model="activeView"
+      :options="[...viewOptions]"
     />
 
+    <p class="px-1 text-sm text-slate-400">
+      Eine Ausgabe ist jetzt entweder monatlich oder gehört zu einem Event.
+    </p>
+
     <div v-if="error" class="text-center text-sm text-red-400">{{ error }}</div>
+
     <div v-if="loading" class="flex justify-center py-12">
       <ion-spinner name="crescent" color="primary" />
     </div>
 
     <template v-else>
-      <div
-        v-for="group in timelineGroups"
-        :key="group.key"
-        class="space-y-3"
-      >
-        <p class="px-1 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-          {{ group.label }}
-        </p>
-        <OverviewSectionCard title="" class="finance-section-compact">
-          <div class="space-y-5">
-            <ExpenseTimelineItem
-              v-for="expense in group.expenses"
-              :key="expense.id"
-              :expense="expense"
-              :payer-name="getMemberName(expense.paidBy)"
-              :category-label="getCategoryLabel(expense.category)"
-            />
-          </div>
-        </OverviewSectionCard>
-      </div>
+      <ExpenseOverviewView
+        v-if="activeView === 'overview'"
+        :couple="couple"
+        :current-user-id="user?.uid"
+        :balance-info="balanceInfo"
+        :recent-expenses="recentExpenses"
+        @edit="openEditExpenseModal"
+      />
 
-      <OverviewSectionCard title="Dauer-Events">
-        <div v-if="activeRecurringEvents.length === 0" class="py-3 text-sm text-slate-400">
-          Noch keine Dauer-Events angelegt.
-        </div>
-        <div v-else class="space-y-4">
-          <article
-            v-for="summary in activeRecurringEvents"
-            :key="summary.event.id"
-            class="rounded-[1.35rem] border border-slate-700/80 bg-slate-900/35 p-4"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <h3 class="text-lg font-semibold text-slate-100">{{ summary.event.title }}</h3>
-                <p class="mt-1 text-sm text-slate-400">
-                  Offener Betrag: {{ formatEuro(summary.unsettledTotal / 2) }} pro Person
-                </p>
-              </div>
-              <div class="flex gap-2">
-                <button
-                  type="button"
-                  class="finance-chip-button"
-                  @click="setEventArchived(summary.event.id, true)"
-                >
-                  Archivieren
-                </button>
-              </div>
-            </div>
+      <ExpenseMonthlyView
+        v-else-if="activeView === 'monthly'"
+        :couple="couple"
+        :months="monthlySummaries"
+        @edit="openEditExpenseModal"
+      />
 
-            <div v-if="summary.entries.length === 0" class="pt-4 text-sm text-slate-500">
-              Für dieses Dauer-Event gibt es noch keine Monatsabrechnung.
-            </div>
-
-            <div v-else class="mt-4 space-y-3">
-              <div
-                v-for="entry in summary.entries"
-                :key="`${summary.event.id}-${entry.monthKey}`"
-                class="flex items-center justify-between gap-3 rounded-2xl border border-slate-700/70 bg-slate-950/30 px-4 py-3"
-              >
-                <div>
-                  <p class="text-base font-medium text-slate-100">{{ formatMonth(entry.monthKey) }}</p>
-                  <p class="mt-1 text-sm text-slate-400">
-                    Gesamt {{ formatEuro(entry.total) }} · pro Person {{ formatEuro(entry.perPerson) }}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="finance-status-button"
-                  :class="{ 'finance-status-button-active': entry.settled }"
-                  @click="setMonthlyEventMonthSettled(summary.event.id, entry.monthKey, !entry.settled)"
-                >
-                  {{ entry.settled ? 'Ausgeglichen' : 'Offen' }}
-                </button>
-              </div>
-            </div>
-          </article>
-        </div>
-      </OverviewSectionCard>
-
-      <OverviewSectionCard title="Finanz-Events">
-        <div v-if="activeOneTimeEvents.length === 0" class="py-3 text-sm text-slate-400">
-          Noch keine aktiven Finanz-Events.
-        </div>
-        <div v-else class="space-y-4">
-          <article
-            v-for="summary in activeOneTimeEvents"
-            :key="summary.event.id"
-            class="rounded-[1.35rem] border border-slate-700/80 bg-slate-900/35 p-4"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <h3 class="text-lg font-semibold text-slate-100">{{ summary.event.title }}</h3>
-                <p class="mt-1 text-sm text-slate-400">
-                  Gesamt {{ formatEuro(summary.total) }} · pro Person {{ formatEuro(summary.perPerson) }}
-                </p>
-              </div>
-              <div class="flex flex-col items-end gap-2">
-                <button
-                  type="button"
-                  class="finance-status-button"
-                  :class="{ 'finance-status-button-active': summary.settled }"
-                  @click="setEventSettled(summary.event.id, !summary.settled)"
-                >
-                  {{ summary.settled ? 'Ausgeglichen' : 'Als ausgeglichen markieren' }}
-                </button>
-                <button
-                  type="button"
-                  class="finance-chip-button"
-                  @click="setEventArchived(summary.event.id, true)"
-                >
-                  Archivieren
-                </button>
-              </div>
-            </div>
-
-            <div v-if="summary.expenses.length === 0" class="pt-4 text-sm text-slate-500">
-              Für dieses Event gibt es noch keine Ausgaben.
-            </div>
-
-            <div v-else class="mt-4 space-y-4">
-              <ExpenseTimelineItem
-                v-for="expense in summary.expenses"
-                :key="expense.id"
-                :expense="expense"
-                :payer-name="getMemberName(expense.paidBy)"
-                :category-label="getCategoryLabel(expense.category)"
-              />
-            </div>
-          </article>
-        </div>
-      </OverviewSectionCard>
-
-      <OverviewSectionCard title="Archiv">
-        <div v-if="archivedOneTimeEvents.length === 0 && archivedRecurringEvents.length === 0" class="py-3 text-sm text-slate-400">
-          Noch keine archivierten Finanz-Events.
-        </div>
-        <div v-else class="space-y-3">
-          <article
-            v-for="summary in [...archivedRecurringEvents, ...archivedOneTimeEvents]"
-            :key="summary.event.id"
-            class="flex items-center justify-between gap-3 rounded-2xl border border-slate-700/70 bg-slate-900/30 px-4 py-3"
-          >
-            <div>
-              <p class="text-base font-medium text-slate-100">{{ summary.event.title }}</p>
-              <p class="mt-1 text-sm text-slate-400">
-                {{ summary.event.kind === 'monthly' ? 'Dauer-Event' : 'Kurz-Event' }}
-              </p>
-            </div>
-            <button
-              type="button"
-              class="finance-chip-button"
-              @click="setEventArchived(summary.event.id, false)"
-            >
-              Reaktivieren
-            </button>
-          </article>
-        </div>
-      </OverviewSectionCard>
+      <ExpenseEventsView
+        v-else
+        :couple="couple"
+        :events="activeEventSummaries"
+        @edit="openEditExpenseModal"
+        @archive="setEventArchived($event, true)"
+        @open-archive="showArchiveModal = true"
+      />
     </template>
 
-    <ion-fab vertical="bottom" horizontal="end" slot="fixed" class="mb-2 mr-2">
-      <ion-fab-button @click="showAddExpenseModal = true" color="primary">
-        <ion-icon :icon="addOutline" />
-      </ion-fab-button>
-    </ion-fab>
+    <AppFloatingActionButton
+      :icon="addOutline"
+      aria-label="Ausgabe hinzufügen"
+      @click="openAddExpenseModal"
+    />
 
-    <ion-modal
+    <AppSheetModal
       :is-open="showAddExpenseModal"
-      :breakpoints="[0, 0.62]"
-      :initial-breakpoint="0.62"
-      @did-dismiss="showAddExpenseModal = false"
+      :title="editingExpenseId ? 'Ausgabe bearbeiten' : 'Ausgabe hinzufügen'"
+      :breakpoints="[0, 0.72, 0.92]"
+      :initial-breakpoint="0.72"
+      close-label="Fertig"
+      @close="closeExpenseModal"
     >
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Ausgabe hinzufügen</ion-title>
-          <ion-buttons slot="end">
-            <ion-button @click="showAddExpenseModal = false">Fertig</ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding">
-        <div class="space-y-4">
-          <ion-input
-            v-model="newExpenseTitle"
-            placeholder="Wofür war die Ausgabe?"
-            fill="outline"
-            label="Titel"
-            label-placement="floating"
-            :clear-input="true"
+      <form class="space-y-4" @submit.prevent="handleAddExpense">
+        <div v-if="expenseFormError" class="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          {{ expenseFormError }}
+        </div>
+
+        <div class="space-y-2">
+          <p class="text-sm font-medium text-slate-300">Bereich</p>
+          <AppSegmentToggle
+            v-model="newExpenseMode"
+            :options="[...expenseTypeOptions]"
           />
-          <ion-input
-            v-model="newExpenseAmount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            placeholder="0,00"
-            fill="outline"
-            label="Betrag (€)"
-            label-placement="floating"
-          />
-          <ion-select
-            v-model="newExpenseCategory"
-            label="Kategorie"
-            label-placement="floating"
-            fill="outline"
-            interface="action-sheet"
-          >
-            <ion-select-option v-for="option in categoryOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </ion-select-option>
-          </ion-select>
-          <ion-select
-            v-model="newExpensePaidBy"
-            label="Bezahlt von"
-            label-placement="floating"
-            fill="outline"
-            interface="action-sheet"
-          >
-            <ion-select-option v-for="(name, uid) in couple?.memberNames || {}" :key="uid" :value="uid">
-              {{ name }}
-            </ion-select-option>
-          </ion-select>
+        </div>
+
+        <ion-input
+          v-model="newExpenseTitle"
+          placeholder="Wofür war die Ausgabe?"
+          fill="outline"
+          label="Titel"
+          label-placement="floating"
+          :clear-input="true"
+        />
+
+        <ion-input
+          v-model="newExpenseAmount"
+          type="number"
+          min="0.01"
+          step="0.01"
+          placeholder="0,00"
+          fill="outline"
+          label="Betrag (€)"
+          label-placement="floating"
+        />
+
+        <ion-select
+          v-model="newExpenseCategory"
+          label="Kategorie"
+          label-placement="floating"
+          fill="outline"
+          interface="action-sheet"
+        >
+          <ion-select-option v-for="option in categoryOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </ion-select-option>
+        </ion-select>
+
+        <ion-select
+          v-model="newExpensePaidBy"
+          label="Bezahlt von"
+          label-placement="floating"
+          fill="outline"
+          interface="action-sheet"
+        >
+          <ion-select-option v-for="(name, uid) in couple?.memberNames || {}" :key="uid" :value="uid">
+            {{ name }}
+          </ion-select-option>
+        </ion-select>
+
+        <div v-if="newExpenseMode === 'event'" class="space-y-3">
           <ion-select
             v-model="newExpenseEventId"
-            label="Event (optional)"
+            label="Event"
             label-placement="floating"
             fill="outline"
             interface="action-sheet"
           >
-            <ion-select-option value="">Kein Event</ion-select-option>
             <ion-select-option v-for="event in selectableEvents" :key="event.id" :value="event.id">
               {{ event.title }}
             </ion-select-option>
           </ion-select>
-          <ion-button expand="block" @click="handleAddExpense">
-            Speichern
-          </ion-button>
-        </div>
-      </ion-content>
-    </ion-modal>
 
-    <ion-modal
-      :is-open="showEventModal"
-      :breakpoints="[0, 0.52]"
-      :initial-breakpoint="0.52"
-      @did-dismiss="showEventModal = false"
-    >
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Neues Finanz-Event</ion-title>
-          <ion-buttons slot="end">
-            <ion-button @click="showEventModal = false">Schließen</ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding">
-        <div class="space-y-4">
-          <ion-input
-            v-model="newEventTitle"
-            placeholder="z. B. Urlaub oder Konzert"
-            fill="outline"
-            label="Titel"
-            label-placement="floating"
-          />
-          <ion-select
-            v-model="newEventKind"
-            label="Typ"
-            label-placement="floating"
-            fill="outline"
-            interface="action-sheet"
-          >
-            <ion-select-option value="one_time">Kurz-Event</ion-select-option>
-            <ion-select-option value="monthly">Dauer-Event</ion-select-option>
-          </ion-select>
-          <ion-select
-            v-if="newEventKind === 'monthly'"
-            v-model="newEventCategory"
-            label="Kategorie für Monatsabrechnung"
-            label-placement="floating"
-            fill="outline"
-            interface="action-sheet"
-          >
-            <ion-select-option v-for="option in categoryOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </ion-select-option>
-          </ion-select>
-          <ion-button expand="block" :disabled="!newEventTitle.trim()" @click="handleCreateEvent">
-            Event anlegen
-          </ion-button>
+          <div v-if="selectableEvents.length === 0" class="rounded-2xl border border-slate-700/80 bg-slate-900/40 px-4 py-3 text-sm text-slate-300">
+            Es gibt noch kein Event. Lege zuerst eines an.
+            <button type="button" class="finance-inline-link" @click="openCreateEventFromExpense">
+              Event erstellen
+            </button>
+          </div>
         </div>
-      </ion-content>
-    </ion-modal>
+
+        <div v-if="couple" class="space-y-2">
+          <p class="text-sm font-medium text-slate-300">Private Anteile auf dem Beleg</p>
+          <div
+            v-for="(name, uid) in couple.memberNames"
+            :key="uid"
+            class="flex items-center gap-2"
+          >
+            <span class="w-28 shrink-0 text-sm text-slate-400">{{ name }}</span>
+            <ion-input
+              v-model="privateShares[uid]"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+              fill="outline"
+            />
+          </div>
+          <p class="text-xs text-slate-500">
+            Private Anteile werden nur dieser Person berechnet, der Rest wird weiterhin geteilt.
+          </p>
+          <p v-if="editingExpenseId" class="text-xs text-slate-500">
+            Wenn du den Betrag aenderst, bleiben die bisherigen Anteile erhalten, solange du hier nichts Neues eintraegst.
+          </p>
+        </div>
+
+        <ion-button expand="block" type="submit">
+          {{ editingExpenseId ? 'Aenderungen speichern' : 'Speichern' }}
+        </ion-button>
+      </form>
+    </AppSheetModal>
+
+    <AppSheetModal
+      :is-open="showEventModal"
+      title="Neues Event"
+      :breakpoints="[0, 0.45, 0.62]"
+      :initial-breakpoint="0.45"
+      close-label="Schließen"
+      @close="closeEventModal"
+    >
+      <div class="space-y-4">
+        <div v-if="eventFormError" class="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          {{ eventFormError }}
+        </div>
+
+        <ion-input
+          v-model="newEventTitle"
+          placeholder="z. B. Urlaub, Hochzeit oder Konzert"
+          fill="outline"
+          label="Eventname"
+          label-placement="floating"
+        />
+
+        <p class="text-sm text-slate-400">
+          Events bündeln gemeinsame Ausgaben für Anlässe. Alles andere bleibt automatisch monatlich.
+        </p>
+
+        <ion-button expand="block" :disabled="!newEventTitle.trim()" @click="handleCreateEvent">
+          Event anlegen
+        </ion-button>
+      </div>
+    </AppSheetModal>
+
+    <ExpenseArchiveModal
+      :is-open="showArchiveModal"
+      :entries="archivedEntries"
+      @close="showArchiveModal = false"
+      @reactivate="setEventArchived($event, false)"
+      @delete="handleDeleteArchivedEvent"
+    />
   </section>
 </template>
 
 <style scoped>
 .finance-page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   padding-top: 0.25rem;
 }
 
-.finance-icon-button {
-  display: inline-flex;
-  height: 3.25rem;
-  width: 3.25rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(71, 85, 105, 0.55);
+.finance-pill-button {
+  border: 1px solid rgba(34, 197, 94, 0.28);
   border-radius: 9999px;
-  background: linear-gradient(180deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.96));
-  color: rgb(226 232 240);
-  box-shadow: 0 14px 28px rgba(2, 6, 23, 0.16);
-}
-
-.finance-status-button,
-.finance-chip-button {
-  border: 0;
-  border-radius: 9999px;
-  padding: 0.55rem 0.9rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background 150ms ease, color 150ms ease;
-}
-
-.finance-status-button {
-  background: rgba(34, 197, 94, 0.12);
+  padding: 0.75rem 1rem;
+  background: rgba(34, 197, 94, 0.14);
   color: rgb(134 239 172);
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.finance-status-button-active {
-  background: rgba(71, 85, 105, 0.72);
-  color: rgb(241 245 249);
-}
-
-.finance-chip-button {
-  background: rgba(51, 65, 85, 0.72);
-  color: rgb(226 232 240);
-}
-
-.finance-section-compact :deep(.px-5) {
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-}
-
-.finance-section-compact :deep(.py-4) {
-  padding-top: 1.1rem;
-  padding-bottom: 1.1rem;
+.finance-inline-link {
+  margin-left: 0.45rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: rgb(191 219 254);
+  font-weight: 600;
 }
 </style>

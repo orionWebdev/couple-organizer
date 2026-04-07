@@ -20,6 +20,27 @@ if (user.value?.coupleId) {
 }
 
 const activeTab = ref('overview')
+const todoCreateRequestKey = ref(0)
+const shoppingCreateRequestKey = ref(0)
+const expenseCreateRequestKey = ref(0)
+
+function handleTabSwitch(tab: string, intent: 'default' | 'create' = 'default') {
+  activeTab.value = tab
+
+  if (intent !== 'create') return
+
+  if (tab === 'todos') {
+    todoCreateRequestKey.value += 1
+  }
+
+  if (tab === 'shopping') {
+    shoppingCreateRequestKey.value += 1
+  }
+
+  if (tab === 'expenses') {
+    expenseCreateRequestKey.value += 1
+  }
+}
 </script>
 
 <template>
@@ -34,7 +55,7 @@ const activeTab = ref('overview')
             v-if="user?.coupleId"
             :couple-id="user.coupleId"
             :couple="couple"
-            @switch-tab="activeTab = $event"
+            @switch-tab="handleTabSwitch"
           />
         </div>
 
@@ -43,6 +64,7 @@ const activeTab = ref('overview')
             v-if="user?.coupleId"
             :couple-id="user.coupleId"
             :couple="couple"
+            :create-request-key="todoCreateRequestKey"
           />
         </div>
 
@@ -51,6 +73,7 @@ const activeTab = ref('overview')
             v-if="user?.coupleId"
             :couple-id="user.coupleId"
             :couple="couple"
+            :create-request-key="shoppingCreateRequestKey"
           />
         </div>
 
@@ -73,6 +96,7 @@ const activeTab = ref('overview')
             v-if="user?.coupleId"
             :couple-id="user.coupleId"
             :couple="couple"
+            :create-request-key="expenseCreateRequestKey"
           />
         </div>
       </div>

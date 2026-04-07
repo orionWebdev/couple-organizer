@@ -1,16 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import {
   IonList,
-  IonFab,
-  IonFabButton,
   IonIcon,
-  IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonButtons,
   IonButton,
   IonInput,
   IonSelect,
@@ -25,11 +17,14 @@ import { useShopping } from '@/composables/useShopping'
 import { useExpenses } from '@/composables/useExpenses'
 import { useAuth } from '@/composables/useAuth'
 import type { Couple } from '@/types'
+import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
+import AppSheetModal from '@/components/ui/AppSheetModal.vue'
 import ShoppingItem from './ShoppingItem.vue'
 
 const props = defineProps<{
   coupleId: string
   couple: Couple | null
+  createRequestKey?: number
 }>()
 
 const { user } = useAuth()
@@ -62,14 +57,19 @@ const financePaidBy = ref(user.value?.uid || '')
 const financeMessage = ref<string | null>(null)
 const financeError = ref<string | null>(null)
 const creatingExpense = ref(false)
+const financePrivateShares = reactive<Record<string, string>>({})
 
 const showAddModal = ref(false)
 const showExpenseModal = ref(false)
+const pendingCreateRequestKey = ref<number | null>(null)
 
 watch(() => props.couple, (couple) => {
   if (!couple) return
   if (!financePaidBy.value || !(financePaidBy.value in couple.memberNames)) {
     financePaidBy.value = user.value?.uid || Object.keys(couple.memberNames)[0] || ''
+  }
+  for (const uid of Object.keys(couple.memberNames)) {
+    if (!(uid in financePrivateShares)) financePrivateShares[uid] = ''
   }
 }, { immediate: true })
 
@@ -104,12 +104,17 @@ async function handleCreateShoppingExpense() {
   financeError.value = null
 
   const amount = Number(String(financeAmount.value).replace(',', '.'))
+  const owedBy = buildOwedBy(amount)
   if (!activeList.value) {
     financeError.value = 'Bitte zuerst eine aktive Einkaufsliste auswählen.'
     return
   }
   if (!Number.isFinite(amount) || amount <= 0) {
     financeError.value = 'Bitte einen gültigen Betrag eingeben.'
+    return
+  }
+  if (!owedBy) {
+    financeError.value = 'Die Privatanteile sind höher als der Gesamtbetrag.'
     return
   }
   if (!financePaidBy.value) {
@@ -127,6 +132,7 @@ async function handleCreateShoppingExpense() {
     title,
     amountInCents: Math.round(amount * 100),
     paidBy: financePaidBy.value,
+    owedBy,
     category: 'food',
     source: 'shopping',
     shoppingListId: activeList.value.id,
@@ -141,10 +147,61 @@ async function handleCreateShoppingExpense() {
 
   financeTitle.value = ''
   financeAmount.value = ''
+  resetPrivateShares()
   financeMessage.value = `Ausgabe wurde erstellt und ${checkedItemsWithoutExpense.value.length} Artikel verknüpft.`
   creatingExpense.value = false
   showExpenseModal.value = false
 }
+
+function resetPrivateShares() {
+  for (const uid of Object.keys(financePrivateShares)) {
+    financePrivateShares[uid] = ''
+  }
+}
+
+function buildOwedBy(totalAmountInEuro: number): Record<string, number> | null {
+  const members = Object.keys(props.couple?.memberNames || {})
+  if (members.length === 0) return {}
+
+  const totalInCents = Math.round(totalAmountInEuro * 100)
+  const personalShares = members.map((uid) => ({
+    uid,
+    cents: Math.max(0, Math.round(Number(String(financePrivateShares[uid] || '').replace(',', '.')) * 100) || 0)
+  }))
+
+  const personalTotal = personalShares.reduce((sum, entry) => sum + entry.cents, 0)
+  if (personalTotal > totalInCents) return null
+
+  const sharedRemainder = totalInCents - personalTotal
+  const baseShare = Math.floor(sharedRemainder / members.length)
+  const remainder = sharedRemainder % members.length
+  const owedBy: Record<string, number> = {}
+
+  members.forEach((uid, index) => {
+    const personal = personalShares.find((entry) => entry.uid === uid)?.cents || 0
+    owedBy[uid] = personal + baseShare + (index < remainder ? 1 : 0)
+  })
+
+  return owedBy
+}
+
+watch(() => props.createRequestKey, (next, previous) => {
+  if (!next || next === previous) return
+
+  if (activeList.value) {
+    showAddModal.value = true
+    pendingCreateRequestKey.value = null
+    return
+  }
+
+  pendingCreateRequestKey.value = next
+})
+
+watch(activeList, (list) => {
+  if (!list || pendingCreateRequestKey.value === null) return
+  showAddModal.value = true
+  pendingCreateRequestKey.value = null
+})
 </script>
 
 <template>
@@ -242,126 +299,131 @@ async function handleCreateShoppingExpense() {
     </ion-button>
 
     <!-- FAB to add item -->
-    <ion-fab v-if="activeList" vertical="bottom" horizontal="end" slot="fixed" class="mb-2 mr-2">
-      <ion-fab-button @click="showAddModal = true" color="primary">
-        <ion-icon :icon="addOutline" />
-      </ion-fab-button>
-    </ion-fab>
+    <AppFloatingActionButton
+      v-if="activeList"
+      :icon="addOutline"
+      aria-label="Artikel hinzufügen"
+      @click="showAddModal = true"
+    />
 
-    <!-- Add Item Modal -->
-    <ion-modal
+    <AppSheetModal
       :is-open="showAddModal"
-      :breakpoints="[0, 0.45]"
+      title="Artikel hinzufügen"
+      :breakpoints="[0, 0.45, 0.62]"
       :initial-breakpoint="0.45"
-      @did-dismiss="showAddModal = false"
+      close-label="Fertig"
+      @close="showAddModal = false"
     >
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Artikel hinzufügen</ion-title>
-          <ion-buttons slot="end">
-            <ion-button @click="showAddModal = false">Fertig</ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding">
-        <form @submit.prevent="handleAddItem" class="space-y-4">
+      <form @submit.prevent="handleAddItem" class="space-y-4">
+        <ion-input
+          v-model="newItemName"
+          placeholder="Artikel eingeben..."
+          fill="outline"
+          label="Artikel"
+          label-placement="floating"
+          :clear-input="true"
+        />
+        <ion-select
+          v-model="newItemCategory"
+          label="Kategorie"
+          label-placement="floating"
+          fill="outline"
+          interface="action-sheet"
+        >
+          <ion-select-option value="Lebensmittel">Lebensmittel</ion-select-option>
+          <ion-select-option value="Drogerie">Drogerie</ion-select-option>
+          <ion-select-option value="Haushalt">Haushalt</ion-select-option>
+          <ion-select-option value="Sonstiges">Sonstiges</ion-select-option>
+        </ion-select>
+        <ion-button expand="block" type="submit" :disabled="!newItemName.trim()">
+          Hinzufügen
+        </ion-button>
+      </form>
+    </AppSheetModal>
+
+    <AppSheetModal
+      :is-open="showExpenseModal"
+      title="Ausgabe erfassen"
+      :breakpoints="[0, 0.62, 0.82]"
+      :initial-breakpoint="0.62"
+      close-label="Fertig"
+      @close="showExpenseModal = false"
+    >
+      <div class="space-y-4">
+        <ion-input
+          v-model="financeTitle"
+          placeholder="Titel (optional)"
+          fill="outline"
+          label="Titel"
+          label-placement="floating"
+        />
+        <div class="flex gap-2">
           <ion-input
-            v-model="newItemName"
-            placeholder="Artikel eingeben..."
+            v-model="financeAmount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            placeholder="0,00"
             fill="outline"
-            label="Artikel"
+            label="Betrag (€)"
             label-placement="floating"
-            :clear-input="true"
+            class="flex-1"
           />
           <ion-select
-            v-model="newItemCategory"
-            label="Kategorie"
+            v-model="financePaidBy"
+            label="Bezahlt von"
             label-placement="floating"
             fill="outline"
             interface="action-sheet"
+            class="flex-1"
           >
-            <ion-select-option value="Lebensmittel">Lebensmittel</ion-select-option>
-            <ion-select-option value="Drogerie">Drogerie</ion-select-option>
-            <ion-select-option value="Haushalt">Haushalt</ion-select-option>
-            <ion-select-option value="Sonstiges">Sonstiges</ion-select-option>
+            <ion-select-option
+              v-for="(name, uid) in couple?.memberNames || {}"
+              :key="uid"
+              :value="uid"
+            >
+              {{ name }}
+            </ion-select-option>
           </ion-select>
-          <ion-button expand="block" type="submit" :disabled="!newItemName.trim()">
-            Hinzufügen
-          </ion-button>
-        </form>
-      </ion-content>
-    </ion-modal>
+        </div>
 
-    <!-- Expense Modal -->
-    <ion-modal
-      :is-open="showExpenseModal"
-      :breakpoints="[0, 0.55]"
-      :initial-breakpoint="0.55"
-      @did-dismiss="showExpenseModal = false"
-    >
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Ausgabe erfassen</ion-title>
-          <ion-buttons slot="end">
-            <ion-button @click="showExpenseModal = false">Fertig</ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding">
-        <div class="space-y-4">
-          <ion-input
-            v-model="financeTitle"
-            placeholder="Titel (optional)"
-            fill="outline"
-            label="Titel"
-            label-placement="floating"
-          />
-          <div class="flex gap-2">
+        <div v-if="couple" class="space-y-2">
+          <p class="text-sm font-medium text-slate-300">Private Anteile auf der Rechnung</p>
+          <div
+            v-for="(name, uid) in couple.memberNames"
+            :key="uid"
+            class="flex items-center gap-2"
+          >
+            <span class="w-28 shrink-0 text-sm text-slate-400">{{ name }}</span>
             <ion-input
-              v-model="financeAmount"
+              v-model="financePrivateShares[uid]"
               type="number"
-              min="0.01"
+              min="0"
               step="0.01"
               placeholder="0,00"
               fill="outline"
-              label="Betrag (€)"
-              label-placement="floating"
-              class="flex-1"
             />
-            <ion-select
-              v-model="financePaidBy"
-              label="Bezahlt von"
-              label-placement="floating"
-              fill="outline"
-              interface="action-sheet"
-              class="flex-1"
-            >
-              <ion-select-option
-                v-for="(name, uid) in couple?.memberNames || {}"
-                :key="uid"
-                :value="uid"
-              >
-                {{ name }}
-              </ion-select-option>
-            </ion-select>
           </div>
-
-          <ion-note class="block text-xs">
-            Abgehakte Artikel ohne bestehende Ausgabe: {{ checkedItemsWithoutExpense.length }}
-          </ion-note>
-
-          <ion-button
-            expand="block"
-            @click="handleCreateShoppingExpense"
-            :disabled="creatingExpense || checkedItemsWithoutExpense.length === 0"
-          >
-            {{ creatingExpense ? 'Speichere...' : 'Als Lebensmittel-Ausgabe speichern' }}
-          </ion-button>
-
-          <p v-if="financeMessage" class="text-sm text-green-400">{{ financeMessage }}</p>
-          <p v-if="financeError" class="text-sm text-red-400">{{ financeError }}</p>
+          <p class="text-xs text-slate-500">
+            Private Anteile werden nur dieser Person berechnet, der Rest wird weiter geteilt.
+          </p>
         </div>
-      </ion-content>
-    </ion-modal>
+
+        <ion-note class="block text-xs">
+          Abgehakte Artikel ohne bestehende Ausgabe: {{ checkedItemsWithoutExpense.length }}
+        </ion-note>
+
+        <ion-button
+          expand="block"
+          @click="handleCreateShoppingExpense"
+          :disabled="creatingExpense || checkedItemsWithoutExpense.length === 0"
+        >
+          {{ creatingExpense ? 'Speichere...' : 'Als Lebensmittel-Ausgabe speichern' }}
+        </ion-button>
+
+        <p v-if="financeMessage" class="text-sm text-green-400">{{ financeMessage }}</p>
+        <p v-if="financeError" class="text-sm text-red-400">{{ financeError }}</p>
+      </div>
+    </AppSheetModal>
   </div>
 </template>

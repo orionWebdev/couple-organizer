@@ -7,6 +7,7 @@ const props = defineProps<{
   totals: Record<string, number>
   totalSpent: number
   couple: Couple | null
+  currentUserId?: string | null
 }>()
 
 const members = computed(() => {
@@ -27,6 +28,21 @@ const summary = computed(() => {
   const debtor = entries.find(([_, balance]) => balance < 0)
 
   if (!creditor || !debtor) return null
+
+  const currentUserBalance = props.currentUserId ? (props.balances[props.currentUserId] || 0) : 0
+  if (props.currentUserId && currentUserBalance < 0) {
+    return {
+      amount: Math.abs(currentUserBalance),
+      text: `Du schuldest ${props.couple.memberNames[creditor[0]] || 'deinem Partner'}`
+    }
+  }
+
+  if (props.currentUserId && currentUserBalance > 0) {
+    return {
+      amount: currentUserBalance,
+      text: `${props.couple.memberNames[debtor[0]] || 'Dein Partner'} schuldet dir`
+    }
+  }
 
   return {
     amount: Math.abs(debtor[1]),
@@ -50,7 +66,7 @@ function formatEuro(cents: number): string {
         {{ formatEuro(0) }}
       </p>
       <p class="mt-3 text-base text-slate-400">
-        {{ summary ? summary.text : (totalSpent === 0 ? 'Noch keine offenen Ausgaben' : 'Alles ist ausgeglichen') }}
+        {{ summary ? summary.text : (totalSpent === 0 ? 'Noch keine Ausgaben' : 'Alles ist ausgeglichen') }}
       </p>
     </div>
 

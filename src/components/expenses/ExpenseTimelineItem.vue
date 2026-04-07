@@ -10,10 +10,17 @@ import {
 } from 'ionicons/icons'
 import type { Expense } from '@/types'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   expense: Readonly<Expense>
   payerName: string
   categoryLabel: string
+  showEditAction?: boolean
+}>(), {
+  showEditAction: false
+})
+
+const emit = defineEmits<{
+  edit: [expense: Readonly<Expense>]
 }>()
 
 const icon = computed(() => {
@@ -53,6 +60,14 @@ function formatEuro(cents: number): string {
       </p>
     </div>
     <p class="shrink-0 text-[1.1rem] font-semibold text-slate-50">{{ formatEuro(expense.amount) }}</p>
+    <button
+      v-if="showEditAction"
+      type="button"
+      class="timeline-edit-button"
+      @click="emit('edit', expense)"
+    >
+      Bearbeiten
+    </button>
   </article>
 </template>
 
@@ -71,5 +86,16 @@ function formatEuro(cents: number): string {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
+}
+
+.timeline-edit-button {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(71, 85, 105, 0.9);
+  background: rgba(15, 23, 42, 0.65);
+  padding: 0.45rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgb(226, 232, 240);
 }
 </style>

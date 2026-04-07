@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "watch": "vite",
     "build": "vue-tsc -b && vite build",
+    "typecheck:watch": "vue-tsc -b --watch --preserveWatchOutput",
     "preview": "vite preview"
   },
   "dependencies": {

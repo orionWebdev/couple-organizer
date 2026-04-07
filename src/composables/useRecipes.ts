@@ -15,10 +15,14 @@ import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
 import type { Recipe, RecipeIngredient } from '@/types'
 
-interface RecipeInput {
+export interface RecipeInput {
   title: string
   ingredients: RecipeIngredient[]
   instructions: string
+  categories: string[]
+  image?: string
+  isFavorite?: boolean
+  cookingTime?: number
 }
 
 export function useRecipes(coupleId: Ref<string | null>) {
@@ -61,7 +65,6 @@ export function useRecipes(coupleId: Ref<string | null>) {
       startListening(id)
       return
     }
-
     recipes.value = []
     loading.value = false
   }, { immediate: true })
@@ -74,6 +77,11 @@ export function useRecipes(coupleId: Ref<string | null>) {
         title: input.title,
         ingredients: input.ingredients,
         instructions: input.instructions,
+        categories: input.categories ?? [],
+        image: input.image ?? '',
+        isFavorite: input.isFavorite ?? false,
+        cookingTime: input.cookingTime ?? null,
+        lastUsedAt: null,
         createdBy: user.value.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -90,6 +98,10 @@ export function useRecipes(coupleId: Ref<string | null>) {
         title: input.title,
         ingredients: input.ingredients,
         instructions: input.instructions,
+        categories: input.categories ?? [],
+        image: input.image ?? '',
+        isFavorite: input.isFavorite ?? false,
+        cookingTime: input.cookingTime ?? null,
         updatedAt: serverTimestamp()
       })
     } catch (err: any) {
@@ -107,6 +119,30 @@ export function useRecipes(coupleId: Ref<string | null>) {
     }
   }
 
+  async function toggleFavorite(id: string) {
+    const recipe = recipes.value.find((r) => r.id === id)
+    if (!recipe) return
+    try {
+      await updateDoc(doc(db, 'recipes', id), {
+        isFavorite: !recipe.isFavorite,
+        updatedAt: serverTimestamp()
+      })
+    } catch (err: any) {
+      console.error('Failed to toggle favorite:', err)
+      error.value = err.message
+    }
+  }
+
+  async function markAsUsed(id: string) {
+    try {
+      await updateDoc(doc(db, 'recipes', id), {
+        lastUsedAt: serverTimestamp()
+      })
+    } catch (err: any) {
+      console.error('Failed to mark as used:', err)
+    }
+  }
+
   onScopeDispose(() => {
     if (unsubscribe) unsubscribe()
   })
@@ -117,6 +153,8 @@ export function useRecipes(coupleId: Ref<string | null>) {
     error: readonly(error),
     addRecipe,
     updateRecipe,
-    deleteRecipe
+    deleteRecipe,
+    toggleFavorite,
+    markAsUsed
   }
 }

@@ -52,7 +52,10 @@ const tabs = [
   z-index: 10;
   background: var(--ion-tab-bar-background, #1e293b);
   border-top: 1px solid var(--ion-border-color, #334155);
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  /* Safe Area für iPhone Home Indicator */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 .app-tab-button {

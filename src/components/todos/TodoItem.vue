@@ -162,7 +162,7 @@ function getTone(index: number): 'green' | 'blue' | 'amber' | 'rose' {
 
 .todo-check-icon {
   color: white;
-  font-size: 1rem;
+  font-size: 1.25rem;
 }
 
 .todo-content {
@@ -172,7 +172,7 @@ function getTone(index: number): 'green' | 'blue' | 'amber' | 'rose' {
 .todo-title {
   margin: 0;
   color: rgb(248 250 252);
-  font-size: 1.12rem;
+  font-size: 1.37rem;
   font-weight: 600;
   line-height: 1.3;
 }
@@ -185,7 +185,7 @@ function getTone(index: number): 'green' | 'blue' | 'amber' | 'rose' {
 .todo-subtitle {
   margin-top: 0.35rem;
   color: rgb(148 163 184);
-  font-size: 0.92rem;
+  font-size: 1.17rem;
 }
 
 .todo-subtitle-done {

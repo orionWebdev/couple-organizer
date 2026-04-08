@@ -466,14 +466,14 @@ async function handleAddToShoppingList() {
 }
 
 .screen-subtitle {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   color: var(--app-text-muted);
   margin: 0;
   font-weight: 500;
 }
 
 .screen-count {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   color: var(--app-text-muted);
   font-weight: 500;
 }
@@ -494,7 +494,7 @@ async function handleAddToShoppingList() {
   background: transparent;
   color: var(--app-text-muted);
   font-family: var(--ion-font-family);
-  font-size: 0.78rem;
+  font-size: 1.03rem;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -514,7 +514,7 @@ async function handleAddToShoppingList() {
   border: none;
   color: var(--app-primary);
   font-family: var(--ion-font-family);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   cursor: pointer;
   padding: 0;
@@ -525,7 +525,7 @@ async function handleAddToShoppingList() {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.9rem;
+  font-size: 1.15rem;
   font-weight: 700;
 }
 
@@ -545,7 +545,7 @@ async function handleAddToShoppingList() {
 
 /* ── Section label ───────────────────────────────────────── */
 .section-label {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   font-weight: 700;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -564,21 +564,21 @@ async function handleAddToShoppingList() {
 }
 
 .empty-icon {
-  font-size: 3rem;
+  font-size: 3.25rem;
   line-height: 1;
   margin-bottom: 0.5rem;
   opacity: 0.6;
 }
 
 .empty-title {
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: var(--app-text-muted);
   margin: 0;
 }
 
 .empty-hint {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   color: #475569;
   margin: 0;
   max-width: 240px;
@@ -593,7 +593,7 @@ async function handleAddToShoppingList() {
 }
 
 .no-cats-hint p {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   color: var(--app-text-muted);
   margin: 0 0 0.75rem;
 }
@@ -605,7 +605,7 @@ async function handleAddToShoppingList() {
   border-radius: 9999px;
   color: #4ade80;
   font-family: var(--ion-font-family);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -623,7 +623,7 @@ async function handleAddToShoppingList() {
   text-align: center;
   padding: 1.5rem 0;
   color: var(--app-text-muted);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
 }
 
 .manage-cat-list {
@@ -651,10 +651,10 @@ async function handleAddToShoppingList() {
   min-width: 0;
 }
 
-.manage-cat-icon { font-size: 1.125rem; }
+.manage-cat-icon { font-size: 1.375rem; }
 
 .manage-cat-name {
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   font-weight: 600;
   color: var(--app-text);
   flex: 1;
@@ -664,7 +664,7 @@ async function handleAddToShoppingList() {
 }
 
 .manage-cat-count {
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--app-text-muted);
   background: rgba(51, 65, 85, 0.6);
@@ -708,7 +708,7 @@ async function handleAddToShoppingList() {
   border-radius: 1rem;
   color: #4ade80;
   font-family: var(--ion-font-family);
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   font-weight: 700;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -726,13 +726,13 @@ async function handleAddToShoppingList() {
 }
 
 .shopping-picker-info {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   color: var(--app-text-muted);
   margin: 0;
 }
 
 .shopping-picker-empty {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   color: var(--app-text-muted);
   text-align: center;
   margin: 0;
@@ -751,7 +751,7 @@ async function handleAddToShoppingList() {
   background: transparent;
   color: var(--app-text-muted);
   font-family: var(--ion-font-family);
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -771,7 +771,7 @@ async function handleAddToShoppingList() {
   color: #fff;
   font-family: var(--ion-font-family);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.25rem;
   border: 0;
   border-radius: 1rem;
   cursor: pointer;
@@ -783,7 +783,7 @@ async function handleAddToShoppingList() {
 .shopping-add-btn:active:not(:disabled) { transform: scale(0.98); background: var(--app-primary-strong); }
 
 .shopping-msg {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   text-align: center;
   margin: 0;
 }

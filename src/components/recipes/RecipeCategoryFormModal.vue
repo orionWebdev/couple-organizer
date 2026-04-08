@@ -152,7 +152,7 @@ function handleSubmit() {
 .icon-field { width: 5rem; flex-shrink: 0; }
 
 .field-label {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   font-weight: 700;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -196,19 +196,19 @@ function handleSubmit() {
 }
 
 .cat-preview-icon {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
 .cat-preview-name {
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.9);
 }
 
 /* Error */
 .form-error {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   color: #f87171;
   margin: 0;
   padding: 0.5rem 0.75rem;
@@ -224,7 +224,7 @@ function handleSubmit() {
   color: #fff;
   font-family: var(--ion-font-family);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.25rem;
   border: 0;
   border-radius: 1rem;
   cursor: pointer;

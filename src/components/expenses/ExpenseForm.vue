@@ -94,7 +94,7 @@ function handleSubmit() {
 }
 
 .expense-form-title {
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -109,7 +109,7 @@ function handleSubmit() {
   color: #fff;
   font-family: var(--ion-font-family);
   font-weight: 700;
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   border: 0;
   border-radius: 0.875rem;
   cursor: pointer;

@@ -31,7 +31,7 @@ ion-app.md {
   --input-radius: 0.875rem;
   --input-transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 
-  --ion-font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --ion-font-family: "Sora", sans-serif;
   --ion-background-color: var(--app-bg);
   --ion-background-color-rgb: var(--app-bg-rgb);
   --ion-text-color: var(--app-text);
@@ -315,7 +315,7 @@ ion-textarea::part(native) {
   background: transparent;
   color: var(--app-text);
   font-family: var(--ion-font-family);
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
 }
 
 ion-select {
@@ -333,7 +333,7 @@ ion-select {
   border-radius: var(--input-radius);
   color: var(--app-text);
   font-family: var(--ion-font-family);
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   line-height: 1.5;
   outline: none;
   transition: var(--input-transition);
@@ -376,7 +376,7 @@ ion-select {
   top: 50%;
   transform: translateY(-50%);
   color: var(--app-text-muted);
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   pointer-events: none;
   z-index: 1;
 }

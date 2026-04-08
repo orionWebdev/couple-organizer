@@ -326,7 +326,7 @@ const MEAL_ICON: Record<MealType, string> = {
 }
 
 .week-nav-label {
-  font-size: 0.65rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -335,14 +335,14 @@ const MEAL_ICON: Record<MealType, string> = {
 }
 
 .week-nav-range {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--app-text);
   margin: 0;
 }
 
 .week-today-btn {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   color: var(--app-primary);
   font-weight: 600;
   background: transparent;
@@ -371,13 +371,13 @@ const MEAL_ICON: Record<MealType, string> = {
 }
 
 .progress-label {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   font-weight: 500;
   color: var(--app-text-muted);
 }
 
 .progress-days-hint {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   color: #475569;
   font-weight: 500;
 }
@@ -392,7 +392,7 @@ const MEAL_ICON: Record<MealType, string> = {
   border: 1px solid rgba(34, 197, 94, 0.3);
   border-radius: 9999px;
   font-family: var(--ion-font-family);
-  font-size: 0.78rem;
+  font-size: 1.03rem;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -436,7 +436,7 @@ const MEAL_ICON: Record<MealType, string> = {
 }
 
 .day-name {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   font-weight: 700;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -494,7 +494,7 @@ const MEAL_ICON: Record<MealType, string> = {
 }
 
 .meal-icon {
-  font-size: 1rem;
+  font-size: 1.25rem;
   line-height: 1;
   flex-shrink: 0;
   width: 1.25rem;
@@ -510,7 +510,7 @@ const MEAL_ICON: Record<MealType, string> = {
 }
 
 .meal-type-label {
-  font-size: 0.68rem;
+  font-size: 0.93rem;
   font-weight: 700;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -518,7 +518,7 @@ const MEAL_ICON: Record<MealType, string> = {
 }
 
 .meal-recipe-name {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 500;
   color: var(--app-text);
   white-space: nowrap;
@@ -527,20 +527,20 @@ const MEAL_ICON: Record<MealType, string> = {
 }
 
 .meal-empty-hint {
-  font-size: 0.8rem;
+  font-size: 1.05rem;
   color: #334155;
   font-weight: 400;
 }
 
 .meal-check {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   color: var(--app-primary);
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .meal-plus {
-  font-size: 1.125rem;
+  font-size: 1.375rem;
   color: #334155;
   font-weight: 400;
   flex-shrink: 0;
@@ -555,13 +555,13 @@ const MEAL_ICON: Record<MealType, string> = {
 }
 
 .generate-info {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   color: var(--app-text-muted);
   margin: 0;
 }
 
 .list-selector-label {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   font-weight: 700;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -582,7 +582,7 @@ const MEAL_ICON: Record<MealType, string> = {
   background: transparent;
   color: var(--app-text-muted);
   font-family: var(--ion-font-family);
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -602,7 +602,7 @@ const MEAL_ICON: Record<MealType, string> = {
   color: #fff;
   font-family: var(--ion-font-family);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.25rem;
   border: 0;
   border-radius: 1rem;
   cursor: pointer;
@@ -620,7 +620,7 @@ const MEAL_ICON: Record<MealType, string> = {
 .btn-spinner { width: 1.25rem; height: 1.25rem; }
 
 .gen-msg {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   text-align: center;
   margin: 0;
 }

@@ -94,7 +94,7 @@ const SEGMENTS: { id: Segment; label: string; emoji: string }[] = [
 }
 
 .section-title {
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: #f8fafc;

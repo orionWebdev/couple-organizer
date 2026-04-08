@@ -125,13 +125,13 @@ const previewRecipes = computed(() => props.recipes.slice(0, 4))
 }
 
 .cat-card-icon {
-  font-size: 1.125rem;
+  font-size: 1.375rem;
   line-height: 1;
   flex-shrink: 0;
 }
 
 .cat-card-name {
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -171,7 +171,7 @@ const previewRecipes = computed(() => props.recipes.slice(0, 4))
 }
 
 .cat-count {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.55);
   margin: 0;
@@ -204,7 +204,7 @@ const previewRecipes = computed(() => props.recipes.slice(0, 4))
 }
 
 .cat-preview-title {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   color: rgba(255, 255, 255, 0.82);
   font-weight: 500;
   white-space: nowrap;
@@ -213,7 +213,7 @@ const previewRecipes = computed(() => props.recipes.slice(0, 4))
 }
 
 .cat-empty-hint {
-  font-size: 0.78rem;
+  font-size: 1.03rem;
   color: rgba(255, 255, 255, 0.38);
   margin: 0;
   font-style: italic;

@@ -109,7 +109,7 @@ function getKindLabel(kind: FinanceEventKind): string {
   border: 0;
   border-radius: 9999px;
   padding: 0.6rem 0.95rem;
-  font-size: 0.85rem;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 

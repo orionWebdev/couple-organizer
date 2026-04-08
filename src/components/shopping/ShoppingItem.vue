@@ -100,7 +100,7 @@ const emit = defineEmits<{
 }
 
 .item-name {
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   font-weight: 500;
   color: var(--app-text);
   white-space: nowrap;
@@ -121,13 +121,13 @@ const emit = defineEmits<{
 }
 
 .item-category {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   color: var(--app-text-muted);
 }
 
 /* ── Badges ──────────────────────────────────────────────────── */
 .badge {
-  font-size: 0.68rem;
+  font-size: 0.93rem;
   font-weight: 600;
   border-radius: 9999px;
   padding: 0.1rem 0.45rem;

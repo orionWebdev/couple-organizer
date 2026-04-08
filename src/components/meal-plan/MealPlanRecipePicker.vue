@@ -338,7 +338,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
   outline: none;
   color: var(--app-text);
   font-family: var(--ion-font-family);
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   padding: 0.7rem 0;
   -webkit-appearance: none;
 }
@@ -350,7 +350,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
   background: transparent;
   border: none;
   color: var(--app-text-muted);
-  font-size: 1.125rem;
+  font-size: 1.375rem;
   cursor: pointer;
   padding: 0;
   line-height: 1;
@@ -377,7 +377,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
   background: transparent;
   color: var(--app-text-muted);
   font-family: var(--ion-font-family);
-  font-size: 0.78rem;
+  font-size: 1.03rem;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -403,7 +403,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
   border-radius: 0.875rem;
   color: var(--app-text-muted);
   font-family: var(--ion-font-family);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 500;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -414,7 +414,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
 
 /* Section heading */
 .section-heading {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   font-weight: 700;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -471,7 +471,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
   justify-content: center;
 }
 
-.picker-recipe-emoji { font-size: 1.25rem; }
+.picker-recipe-emoji { font-size: 1.5rem; }
 
 /* Recipe info */
 .picker-recipe-info {
@@ -483,7 +483,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
 }
 
 .picker-recipe-title {
-  font-size: 0.9rem;
+  font-size: 1.15rem;
   font-weight: 600;
   color: var(--app-text);
   white-space: nowrap;
@@ -499,7 +499,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
 }
 
 .picker-meta-chip {
-  font-size: 0.68rem;
+  font-size: 0.93rem;
   color: var(--app-text-muted);
   font-weight: 500;
 }
@@ -508,7 +508,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
   display: inline-flex;
   align-items: center;
   gap: 0.15rem;
-  font-size: 0.65rem;
+  font-size: 0.9rem;
   font-weight: 600;
   padding: 0.1rem 0.4rem;
   border-radius: 9999px;
@@ -516,7 +516,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
 
 /* Check mark */
 .picker-recipe-check {
-  font-size: 1rem;
+  font-size: 1.25rem;
   color: var(--app-primary);
   font-weight: 700;
   flex-shrink: 0;
@@ -529,13 +529,13 @@ function cookingTimeLabel(recipe: Recipe): string | null {
 }
 
 .picker-empty p {
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   color: var(--app-text-muted);
   margin: 0;
 }
 
 .picker-empty-hint {
-  font-size: 0.8125rem !important;
+  font-size: 1.0625rem !important;
   margin-top: 0.25rem !important;
   opacity: 0.7;
 }
@@ -550,7 +550,7 @@ function cookingTimeLabel(recipe: Recipe): string | null {
   border-radius: 1rem;
   color: #c4b5fd;
   font-family: var(--ion-font-family);
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   font-weight: 700;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;

@@ -57,7 +57,7 @@ const emit = defineEmits<{
   padding: 0.5rem 1rem;
   background: rgba(34, 197, 94, 0.14);
   color: rgb(134 239 172);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
 }

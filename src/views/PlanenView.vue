@@ -9,6 +9,7 @@ import { useCouple } from '@/composables/useCouple'
 import TasksSection from '@/components/todos/TasksSection.vue'
 import RecipeManager from '@/components/recipes/RecipeManager.vue'
 import MealPlanBoard from '@/components/meal-plan/MealPlanBoard.vue'
+import SegmentShell from '@/components/ui/SegmentShell.vue'
 
 const { user } = useAuth()
 const { couple } = useCouple()
@@ -26,18 +27,7 @@ const SEGMENTS: { id: Segment; label: string; emoji: string }[] = [
 <template>
   <ion-page>
     <!-- Segment bar -->
-    <div class="seg-bar">
-      <button
-        v-for="seg in SEGMENTS"
-        :key="seg.id"
-        class="seg-btn"
-        :class="{ 'seg-active': active === seg.id }"
-        @click="active = seg.id"
-      >
-        <span class="seg-emoji" aria-hidden="true">{{ seg.emoji }}</span>
-        {{ seg.label }}
-      </button>
-    </div>
+    <SegmentShell v-model="active" :segments="SEGMENTS" />
 
     <ion-content>
       <div class="mx-auto max-w-lg px-4 pt-3 pb-24">
@@ -81,46 +71,6 @@ const SEGMENTS: { id: Segment; label: string; emoji: string }[] = [
 </template>
 
 <style scoped>
-/* ── Segment bar ───────────────────────────────────────────────────────── */
-.seg-bar {
-  display: flex;
-  background: rgba(15, 23, 42, 0.96);
-  border-bottom: 1px solid rgba(51, 65, 85, 0.7);
-  padding: 0.5rem 1rem 0;
-  gap: 0.25rem;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
-.seg-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 0.55rem 0.25rem;
-  border: 0;
-  background: transparent;
-  color: #64748b;
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0;
-  border-bottom: 2px solid transparent;
-  transition: color 0.2s ease, border-color 0.2s ease;
-  white-space: nowrap;
-  margin-bottom: -1px; /* sit on top of border-bottom */
-}
-
-.seg-active {
-  color: #22c55e;
-  border-bottom-color: #22c55e;
-}
-
-.seg-emoji {
-  font-size: 0.95rem;
-  line-height: 1;
-}
-
 /* ── Tab transition ────────────────────────────────────────────────────── */
 .tab-fade-enter-active,
 .tab-fade-leave-active {

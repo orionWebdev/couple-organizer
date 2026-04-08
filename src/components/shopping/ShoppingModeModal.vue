@@ -195,7 +195,12 @@ async function handleFinish() {
               @click="handleToggle(item)"
             >
               <div class="shop-row-text">
-                <span class="shop-row-name">{{ item.name }}</span>
+                <div class="shop-row-name-line">
+                  <span class="shop-row-name">{{ item.name }}</span>
+                  <span v-if="item.amount" class="shop-row-amount">
+                    {{ Number.isInteger(item.amount) ? item.amount : Number(item.amount.toFixed(2)) }}{{ item.unit ? '\u00a0' + item.unit : '' }}
+                  </span>
+                </div>
                 <span v-if="item.source === 'mealPlan'" class="shop-row-badge">Wochenplan</span>
               </div>
               <div class="shop-circle empty" />
@@ -361,6 +366,13 @@ async function handleFinish() {
   min-width: 0;
 }
 
+.shop-row-name-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .shop-row-name {
   font-size: 1.3125rem;
   font-weight: 500;
@@ -368,10 +380,24 @@ async function handleFinish() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.shop-row-amount {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--app-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .shop-row.checked .shop-row-name {
   text-decoration: line-through;
+  color: var(--app-text-muted);
+}
+
+.shop-row.checked .shop-row-amount {
   color: var(--app-text-muted);
 }
 

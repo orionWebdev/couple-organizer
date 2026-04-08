@@ -30,7 +30,12 @@ const emit = defineEmits<{
 
     <!-- Text -->
     <div class="item-body">
-      <span class="item-name">{{ item.name }}</span>
+      <div class="item-name-row">
+        <span class="item-name">{{ item.name }}</span>
+        <span v-if="item.amount" class="item-amount">
+          {{ Number.isInteger(item.amount) ? item.amount : Number(item.amount.toFixed(2)) }}{{ item.unit ? '\u00a0' + item.unit : '' }}
+        </span>
+      </div>
       <div class="item-meta">
         <span class="item-category">{{ item.category }}</span>
         <span v-if="item.source === 'mealPlan'" class="badge badge--meal">Wochenplan</span>
@@ -99,6 +104,13 @@ const emit = defineEmits<{
   gap: 0.2rem;
 }
 
+.item-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .item-name {
   font-size: 1.1875rem;
   font-weight: 500;
@@ -106,10 +118,24 @@ const emit = defineEmits<{
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.item-amount {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--app-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .item-row--checked .item-name {
   text-decoration: line-through;
+  color: var(--app-text-muted);
+}
+
+.item-row--checked .item-amount {
   color: var(--app-text-muted);
 }
 

@@ -46,6 +46,8 @@ const { addExpense } = useExpenses(coupleIdRef)
 
 const newListTitle = ref('')
 const newItemName = ref('')
+const newItemAmount = ref('')
+const newItemUnit = ref('')
 const newItemCategory = ref('Lebensmittel')
 const showAddModal = ref(false)
 const showShoppingMode = ref(false)
@@ -64,12 +66,17 @@ async function handleCreateList() {
 
 async function handleAddItem() {
   if (!activeListId.value) return
+  const parsedAmount = parseFloat(newItemAmount.value.replace(',', '.'))
   await addItem({
     listId: activeListId.value,
     name: newItemName.value,
+    amount: isNaN(parsedAmount) || parsedAmount <= 0 ? undefined : parsedAmount,
+    unit: newItemUnit.value.trim() || undefined,
     category: newItemCategory.value
   })
   newItemName.value = ''
+  newItemAmount.value = ''
+  newItemUnit.value = ''
   showAddModal.value = false
 }
 
@@ -215,8 +222,8 @@ watch(activeList, (list) => {
     <AppSheetModal
       :is-open="showAddModal"
       title="Artikel hinzufügen"
-      :breakpoints="[0, 0.45, 0.62]"
-      :initial-breakpoint="0.45"
+      :breakpoints="[0, 0.62, 0.85]"
+      :initial-breakpoint="0.62"
       close-label="Fertig"
       @close="showAddModal = false"
     >
@@ -229,6 +236,31 @@ watch(activeList, (list) => {
           label-placement="floating"
           :clear-input="true"
         />
+
+        <!-- Amount + Unit on one row (both optional) -->
+        <div class="amount-unit-row">
+          <ion-input
+            v-model="newItemAmount"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="any"
+            placeholder="–"
+            fill="outline"
+            label="Menge"
+            label-placement="floating"
+            class="amount-input"
+          />
+          <ion-input
+            v-model="newItemUnit"
+            placeholder="–"
+            fill="outline"
+            label="Einheit"
+            label-placement="floating"
+            class="unit-input"
+          />
+        </div>
+
         <ion-select
           v-model="newItemCategory"
           label="Kategorie"
@@ -241,6 +273,7 @@ watch(activeList, (list) => {
           <ion-select-option value="Haushalt">Haushalt</ion-select-option>
           <ion-select-option value="Sonstiges">Sonstiges</ion-select-option>
         </ion-select>
+
         <ion-button expand="block" type="submit" :disabled="!newItemName.trim()">
           Hinzufügen
         </ion-button>
@@ -320,6 +353,20 @@ watch(activeList, (list) => {
 .start-session-btn:active {
   background: rgba(34, 197, 94, 0.22);
   border-color: rgba(34, 197, 94, 0.56);
+}
+
+/* ── Amount + Unit row ───────────────────────────────────────── */
+.amount-unit-row {
+  display: flex;
+  gap: 0.625rem;
+}
+
+.amount-input {
+  flex: 2;
+}
+
+.unit-input {
+  flex: 3;
 }
 
 /* ── Empty list ──────────────────────────────────────────────── */

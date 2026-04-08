@@ -37,6 +37,8 @@ export interface ShoppingItem {
   coupleId: string
   listId: string
   name: string
+  amount?: number
+  unit?: string
   category: string
   checked: boolean
   checkedBy: string | null

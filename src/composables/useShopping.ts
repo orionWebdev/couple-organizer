@@ -16,11 +16,14 @@ import {
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
 import type { RecipeIngredient, ShoppingItem, ShoppingList } from '@/types'
+import { mergeIngredients } from '@/utils/mergeIngredients'
 
 interface AddShoppingItemInput {
   listId: string
   name: string
-  category: string
+  amount?: number
+  unit?: string
+  category?: string
 }
 
 interface ShoppingFromMealPlanResult {
@@ -40,25 +43,6 @@ function normalizeText(value: string): string {
   return value.trim().toLowerCase()
 }
 
-function formatAmount(value: number): string {
-  return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2)))
-}
-
-function buildMergedIngredientName(ingredient: RecipeIngredient): string {
-  const normalizedName = ingredient.name.trim()
-  if (!normalizedName) return ''
-
-  if (!ingredient.amount || ingredient.amount <= 0) {
-    return normalizedName
-  }
-
-  const unit = ingredient.unit.trim()
-  if (!unit) {
-    return `${normalizedName} (${formatAmount(ingredient.amount)})`
-  }
-
-  return `${normalizedName} (${formatAmount(ingredient.amount)} ${unit})`
-}
 
 function mapShoppingItem(data: Record<string, any>, id: string): ShoppingItem {
   return {
@@ -66,6 +50,8 @@ function mapShoppingItem(data: Record<string, any>, id: string): ShoppingItem {
     coupleId: data.coupleId,
     listId: data.listId || `${data.coupleId}_default`,
     name: data.name || '',
+    ...(typeof data.amount === 'number' && data.amount > 0 ? { amount: data.amount } : {}),
+    ...(data.unit?.trim() ? { unit: data.unit.trim() } : {}),
     category: data.category || 'Sonstiges',
     checked: data.checked ?? data.bought ?? false,
     checkedBy: data.checkedBy ?? null,
@@ -252,14 +238,16 @@ export function useShopping(coupleId: Ref<string | null>) {
   async function addItem(input: AddShoppingItemInput) {
     if (!coupleId.value || !user.value) return
     const cleanName = input.name.trim()
-    const cleanCategory = input.category.trim()
-    if (!cleanName || !cleanCategory) return
+    if (!cleanName) return
+    const cleanCategory = input.category?.trim() || 'Sonstiges'
 
     try {
       await addDoc(collection(db, 'shoppingItems'), {
         coupleId: coupleId.value,
         listId: input.listId,
         name: cleanName,
+        ...(input.amount && input.amount > 0 ? { amount: input.amount } : {}),
+        ...(input.unit?.trim() ? { unit: input.unit.trim() } : {}),
         category: cleanCategory,
         checked: false,
         addedBy: user.value.uid,
@@ -320,39 +308,26 @@ export function useShopping(coupleId: Ref<string | null>) {
       return { added: 0, skipped: 0, totalMerged: 0 }
     }
 
-    const merged = new Map<string, RecipeIngredient>()
-    for (const ingredient of ingredients) {
-      const name = ingredient.name.trim()
-      if (!name) continue
+    // Use the shared merge utility (wraps flat array as a single pseudo-recipe)
+    const merged = mergeIngredients([{ ingredients }])
 
-      const amount = Number(ingredient.amount) || 0
-      const unit = ingredient.unit.trim()
-      const mergeKey = `${normalizeText(name)}__${normalizeText(unit)}`
-
-      const existing = merged.get(mergeKey)
-      if (!existing) {
-        merged.set(mergeKey, { name, amount, unit })
-        continue
-      }
-
-      existing.amount += amount
-    }
-
-    const existingNames = new Set(
+    // Build a deduplication set from existing unchecked items on this list.
+    // Key: normalizedName + unit so structured items don't collide on name alone.
+    const existingKeys = new Set(
       items.value
         .filter((item) => item.listId === listId && !item.checked)
-        .map((item) => normalizeText(item.name))
+        .map((item) => `${normalizeText(item.name)}__${normalizeText(item.unit ?? '')}`)
     )
 
     let added = 0
     let skipped = 0
     const batch = writeBatch(db)
 
-    for (const mergedIngredient of merged.values()) {
-      const name = buildMergedIngredientName(mergedIngredient)
-      if (!name) continue
+    for (const ingredient of merged) {
+      if (!ingredient.name) continue
 
-      if (existingNames.has(normalizeText(name))) {
+      const dedupeKey = `${normalizeText(ingredient.name)}__${normalizeText(ingredient.unit ?? '')}`
+      if (existingKeys.has(dedupeKey)) {
         skipped += 1
         continue
       }
@@ -361,7 +336,9 @@ export function useShopping(coupleId: Ref<string | null>) {
       batch.set(itemRef, {
         coupleId: coupleId.value,
         listId,
-        name,
+        name: ingredient.name,
+        ...(ingredient.amount && ingredient.amount > 0 ? { amount: ingredient.amount } : {}),
+        ...(ingredient.unit?.trim() ? { unit: ingredient.unit.trim() } : {}),
         category: 'Lebensmittel',
         checked: false,
         addedBy: user.value.uid,
@@ -372,7 +349,7 @@ export function useShopping(coupleId: Ref<string | null>) {
         updatedAt: serverTimestamp()
       })
       added += 1
-      existingNames.add(normalizeText(name))
+      existingKeys.add(dedupeKey)
     }
 
     if (added > 0) {
@@ -385,7 +362,7 @@ export function useShopping(coupleId: Ref<string | null>) {
     return {
       added,
       skipped,
-      totalMerged: merged.size
+      totalMerged: merged.length
     }
   }
 

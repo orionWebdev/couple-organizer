@@ -285,7 +285,7 @@ watch(activeList, (list) => {
   background: rgba(30, 41, 59, 0.7);
   color: #94a3b8;
   font-family: var(--ion-font-family);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -310,7 +310,7 @@ watch(activeList, (list) => {
   border: 1px solid rgba(34, 197, 94, 0.36);
   border-radius: 9999px;
   font-family: var(--ion-font-family);
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.14s, border-color 0.14s;

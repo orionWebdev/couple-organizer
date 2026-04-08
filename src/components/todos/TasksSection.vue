@@ -455,7 +455,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
 }
 
 .tasks-title {
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: #f8fafc;
@@ -472,7 +472,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
   border: 1px solid rgba(71, 85, 105, 0.5);
   background: linear-gradient(180deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.96));
   color: #cbd5e1;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   flex-shrink: 0;
 }
 
@@ -514,7 +514,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
   border: 1px solid rgba(71, 85, 105, 0.5);
   background: rgba(30, 41, 59, 0.7);
   color: #94a3b8;
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   white-space: nowrap;
   transition: background 0.18s, border-color 0.18s, color 0.18s;
@@ -545,18 +545,18 @@ const todayStr = new Date().toISOString().slice(0, 10)
 
 .stat-icon {
   color: #4ade80;
-  font-size: 1rem;
+  font-size: 1.25rem;
 }
 
 .stat-name {
-  font-size: 0.82rem;
+  font-size: 1.07rem;
   color: #94a3b8;
   font-weight: 500;
 }
 
 .stat-count {
   margin-left: auto;
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #f8fafc;
 }
@@ -570,7 +570,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
 
 .error-text {
   text-align: center;
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   color: #f87171;
 }
 
@@ -583,14 +583,14 @@ const todayStr = new Date().toISOString().slice(0, 10)
 }
 
 .empty-title {
-  font-size: 1.05rem;
+  font-size: 1.3rem;
   font-weight: 600;
   color: #e2e8f0;
   margin: 0 0 0.375rem;
 }
 
 .empty-sub {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   color: #64748b;
   margin: 0;
 }
@@ -623,7 +623,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
 }
 
 .section-label {
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -632,7 +632,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
 
 .section-count {
   margin-left: auto;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #475569;
   background: rgba(71, 85, 105, 0.25);
@@ -666,7 +666,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
 }
 
 .form-label {
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -681,7 +681,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
 }
 
 .form-sub {
-  font-size: 0.78rem;
+  font-size: 1.03rem;
   color: #475569;
   margin: 0.15rem 0 0;
 }
@@ -711,7 +711,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
   border: 1px solid rgba(71, 85, 105, 0.5);
   background: rgba(30, 41, 59, 0.7);
   color: #64748b;
-  font-size: 0.82rem;
+  font-size: 1.07rem;
   font-weight: 600;
   transition: all 0.18s ease;
 }
@@ -743,7 +743,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
   background: var(--input-bg);
   color: var(--app-text);
   font-family: var(--ion-font-family);
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   color-scheme: dark;
   outline: none;
   box-sizing: border-box;
@@ -776,7 +776,7 @@ const todayStr = new Date().toISOString().slice(0, 10)
   border: 1px solid rgba(71, 85, 105, 0.5);
   background: rgba(30, 41, 59, 0.7);
   color: #94a3b8;
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   transition: all 0.18s ease;
 }

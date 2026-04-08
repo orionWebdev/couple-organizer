@@ -112,7 +112,7 @@ function getBalanceText(balances: Record<string, number>): string {
   padding: 0.55rem 0.9rem;
   background: rgba(51, 65, 85, 0.72);
   color: rgb(226 232 240);
-  font-size: 0.85rem;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 </style>

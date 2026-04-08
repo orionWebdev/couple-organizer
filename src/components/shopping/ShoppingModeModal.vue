@@ -362,7 +362,7 @@ async function handleFinish() {
 }
 
 .shop-row-name {
-  font-size: 1.0625rem;
+  font-size: 1.3125rem;
   font-weight: 500;
   color: var(--app-text);
   white-space: nowrap;
@@ -376,7 +376,7 @@ async function handleFinish() {
 }
 
 .shop-row-category {
-  font-size: 0.75rem;
+  font-size: 1rem;
   color: var(--app-text-muted);
 }
 
@@ -415,7 +415,7 @@ async function handleFinish() {
 
 /* ── Pills ───────────────────────────────────────────────────── */
 .pill-green {
-  font-size: 0.7rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--app-primary);
   background: rgba(34, 197, 94, 0.12);
@@ -425,7 +425,7 @@ async function handleFinish() {
 }
 
 .pill-teal {
-  font-size: 0.7rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #6ee7b7;
   background: rgba(110, 231, 183, 0.1);
@@ -437,7 +437,7 @@ async function handleFinish() {
 /* ── Section divider ─────────────────────────────────────────── */
 .section-divider {
   padding: 0.875rem 1.25rem 0.375rem;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -451,7 +451,7 @@ async function handleFinish() {
 }
 
 .shop-row-badge {
-  font-size: 0.68rem;
+  font-size: 0.93rem;
   font-weight: 600;
   color: #93c5fd;
   background: rgba(59, 130, 246, 0.12);
@@ -478,7 +478,7 @@ async function handleFinish() {
 }
 
 .empty-text {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   color: var(--app-text-muted);
 }
 
@@ -498,7 +498,7 @@ async function handleFinish() {
   color: #fff;
   font-family: var(--ion-font-family);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.25rem;
   border: 0;
   border-radius: 1rem;
   cursor: pointer;
@@ -517,7 +517,7 @@ async function handleFinish() {
 }
 
 .finish-meta {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   color: var(--app-text-muted);
   text-align: center;
 }
@@ -529,7 +529,7 @@ async function handleFinish() {
   color: #fff;
   font-family: var(--ion-font-family);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.25rem;
   border: 0;
   border-radius: 1rem;
   cursor: pointer;

@@ -209,7 +209,7 @@ function confirmDelete() {
 }
 
 .detail-hero-emoji {
-  font-size: 4rem;
+  font-size: 4.25rem;
   opacity: 0.4;
 }
 
@@ -229,7 +229,7 @@ function confirmDelete() {
 }
 
 .detail-title {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--app-text);
@@ -238,7 +238,7 @@ function confirmDelete() {
 }
 
 .detail-fav-btn {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   line-height: 1;
   color: #475569;
   background: transparent;
@@ -263,7 +263,7 @@ function confirmDelete() {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.78rem;
+  font-size: 1.03rem;
   font-weight: 600;
   color: var(--app-text-muted);
   background: rgba(30, 41, 59, 0.8);
@@ -282,7 +282,7 @@ function confirmDelete() {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   padding: 0.2rem 0.6rem;
   border-radius: 9999px;
@@ -295,7 +295,7 @@ function confirmDelete() {
 }
 
 .detail-section-title {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   font-weight: 700;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -324,7 +324,7 @@ function confirmDelete() {
 .ingredient-item:last-child { border-bottom: none; }
 
 .ingredient-amount {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   color: var(--app-primary);
   white-space: nowrap;
@@ -332,13 +332,13 @@ function confirmDelete() {
 }
 
 .ingredient-name {
-  font-size: 0.9rem;
+  font-size: 1.15rem;
   color: var(--app-text);
 }
 
 /* Instructions */
 .detail-instructions {
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   line-height: 1.65;
   color: rgba(248, 250, 252, 0.85);
   margin: 0;
@@ -362,7 +362,7 @@ function confirmDelete() {
   padding: 0.875rem;
   border-radius: 1rem;
   font-family: var(--ion-font-family);
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   font-weight: 700;
   border: none;
   cursor: pointer;
@@ -395,7 +395,7 @@ function confirmDelete() {
   border: none;
   color: #f87171;
   font-family: var(--ion-font-family);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   cursor: pointer;
   padding: 0.5rem 0;
@@ -416,7 +416,7 @@ function confirmDelete() {
 }
 
 .delete-confirm-text {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   color: #f87171;
   margin: 0;
@@ -433,7 +433,7 @@ function confirmDelete() {
   padding: 0.5rem;
   border-radius: 0.625rem;
   font-family: var(--ion-font-family);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   cursor: pointer;
   border: none;

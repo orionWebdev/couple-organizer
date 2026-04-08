@@ -617,7 +617,7 @@ watch(() => props.createRequestKey, (next, previous) => {
   padding: 0.75rem 1rem;
   background: rgba(34, 197, 94, 0.14);
   color: rgb(134 239 172);
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   font-weight: 600;
   white-space: nowrap;
 }

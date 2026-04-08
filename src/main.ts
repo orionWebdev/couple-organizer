@@ -14,7 +14,7 @@ const { authReady } = useAuth()
 
 authReady.then(() => {
   const app = createApp(App)
-  app.use(IonicVue, { mode: 'ios' })
+  app.use(IonicVue, { mode: 'ios', animated: false })
   app.use(router)
   app.mount('#app')
 })

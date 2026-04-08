@@ -141,7 +141,7 @@ const cookingTimeLabel = computed(() => {
 }
 
 .recipe-card-emoji {
-  font-size: 1.625rem;
+  font-size: 1.875rem;
   line-height: 1;
 }
 
@@ -162,7 +162,7 @@ const cookingTimeLabel = computed(() => {
 }
 
 .recipe-card-title {
-  font-size: 0.9375rem;
+  font-size: 1.1875rem;
   font-weight: 600;
   color: var(--app-text);
   margin: 0;
@@ -174,7 +174,7 @@ const cookingTimeLabel = computed(() => {
 
 /* Favorite */
 .recipe-fav-btn {
-  font-size: 1.125rem;
+  font-size: 1.375rem;
   line-height: 1;
   color: #475569;
   background: transparent;
@@ -205,7 +205,7 @@ const cookingTimeLabel = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  font-size: 0.6875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   padding: 0.175rem 0.5rem;
   border-radius: 9999px;
@@ -214,7 +214,7 @@ const cookingTimeLabel = computed(() => {
 }
 
 .recipe-tag-icon {
-  font-size: 0.75rem;
+  font-size: 1rem;
 }
 
 /* Meta */
@@ -228,7 +228,7 @@ const cookingTimeLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   color: var(--app-text-muted);
   font-weight: 500;
 }

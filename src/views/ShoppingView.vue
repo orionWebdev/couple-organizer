@@ -58,7 +58,7 @@ const listCount = computed(() => lists.value.length)
 }
 
 .page-title {
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--app-text);
@@ -81,13 +81,13 @@ const listCount = computed(() => lists.value.length)
 }
 
 .stat-value {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   font-weight: 700;
   color: var(--app-primary);
 }
 
 .stat-label {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   color: var(--app-text-muted);
 }
 </style>

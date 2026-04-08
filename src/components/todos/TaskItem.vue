@@ -190,7 +190,7 @@ const secondaryText = computed(() => {
 
 .check-icon {
   color: #fff;
-  font-size: 1rem;
+  font-size: 1.25rem;
   position: absolute;
 }
 
@@ -205,7 +205,7 @@ const secondaryText = computed(() => {
 .task-title {
   margin: 0;
   color: rgb(248 250 252);
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.35;
   transition: color 0.2s, text-decoration 0.2s;
@@ -224,7 +224,7 @@ const secondaryText = computed(() => {
 }
 
 .task-sub {
-  font-size: 0.8rem;
+  font-size: 1.05rem;
   color: rgb(100 116 139);
 }
 
@@ -234,7 +234,7 @@ const secondaryText = computed(() => {
   align-items: center;
   padding: 1px 7px;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;

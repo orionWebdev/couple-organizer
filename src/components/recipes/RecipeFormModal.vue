@@ -292,7 +292,7 @@ async function handleSubmit() {
 .flex-1 { flex: 1; }
 
 .field-label {
-  font-size: 0.72rem;
+  font-size: 0.97rem;
   font-weight: 700;
   color: var(--app-text-muted);
   text-transform: uppercase;
@@ -316,7 +316,7 @@ async function handleSubmit() {
   background: transparent;
   color: var(--app-text-muted);
   font-family: var(--ion-font-family);
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -330,7 +330,7 @@ async function handleSubmit() {
 }
 
 .cat-chip-icon {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
 }
 
 /* Favorite toggle */
@@ -343,7 +343,7 @@ async function handleSubmit() {
   background: transparent;
   color: var(--app-text-muted);
   font-family: var(--ion-font-family);
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -381,7 +381,7 @@ async function handleSubmit() {
   border: 1px solid rgba(239, 68, 68, 0.3);
   background: rgba(239, 68, 68, 0.08);
   color: #f87171;
-  font-size: 1.125rem;
+  font-size: 1.375rem;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -406,7 +406,7 @@ async function handleSubmit() {
   background: transparent;
   color: var(--app-text-muted);
   font-family: var(--ion-font-family);
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -420,7 +420,7 @@ async function handleSubmit() {
 
 /* Form error */
 .form-error {
-  font-size: 0.8125rem;
+  font-size: 1.0625rem;
   color: #f87171;
   margin: 0;
   padding: 0.5rem 0.75rem;
@@ -437,7 +437,7 @@ async function handleSubmit() {
   color: #fff;
   font-family: var(--ion-font-family);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.25rem;
   border: 0;
   border-radius: 1rem;
   cursor: pointer;

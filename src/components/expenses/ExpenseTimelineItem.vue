@@ -94,7 +94,7 @@ function formatEuro(cents: number): string {
   border: 1px solid rgba(71, 85, 105, 0.9);
   background: rgba(15, 23, 42, 0.65);
   padding: 0.45rem 0.85rem;
-  font-size: 0.85rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: rgb(226, 232, 240);
 }

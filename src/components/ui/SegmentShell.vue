@@ -64,7 +64,7 @@ const indicatorStyle = computed(() => ({
   border: 0;
   background: transparent;
   color: #64748b;
-  font-size: 0.82rem;
+  font-size: 1.07rem;
   font-weight: 600;
   transition: color 0.22s ease;
   white-space: nowrap;
@@ -77,7 +77,7 @@ const indicatorStyle = computed(() => ({
 }
 
 .seg-emoji {
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   line-height: 1;
 }
 

@@ -45,7 +45,7 @@ const emit = defineEmits<{
   border-radius: 1rem;
   background: transparent;
   color: rgb(148 163 184);
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
   transition: background 150ms ease, color 150ms ease, transform 150ms ease;
 }

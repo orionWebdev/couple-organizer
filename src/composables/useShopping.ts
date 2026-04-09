@@ -299,46 +299,62 @@ export function useShopping(coupleId: Ref<string | null>) {
     }
   }
 
-  async function generateItemsFromIngredients(
-    listId: string,
-    ingredients: ReadonlyArray<RecipeIngredient>,
-    weekKey: string
-  ): Promise<ShoppingFromMealPlanResult> {
-    if (!coupleId.value || !user.value) {
-      return { added: 0, skipped: 0, totalMerged: 0 }
-    }
+async function generateItemsFromIngredients(
+  listId: string,
+  ingredients: ReadonlyArray<RecipeIngredient>,
+  weekKey: string
+): Promise<ShoppingFromMealPlanResult> {
+  if (!coupleId.value || !user.value) {
+    return { added: 0, skipped: 0, totalMerged: 0 }
+  }
 
-    // Use the shared merge utility (wraps flat array as a single pseudo-recipe)
-    const merged = mergeIngredients([{ ingredients }])
+  const merged = mergeIngredients([{ ingredients }])
 
-    // Build a deduplication set from existing unchecked items on this list.
-    // Key: normalizedName + unit so structured items don't collide on name alone.
-    const existingKeys = new Set(
-      items.value
-        .filter((item) => item.listId === listId && !item.checked)
-        .map((item) => `${normalizeText(item.name)}__${normalizeText(item.unit ?? '')}`)
-    )
+  const existingItemMap = new Map<string, ShoppingItem>(
+    items.value
+      .filter((item) => item.listId === listId && !item.checked)
+      .map((item) => [
+        `${normalizeText(item.name)}__${normalizeText(item.unit ?? '')}`,
+        item
+      ])
+  )
 
-    let added = 0
-    let skipped = 0
-    const batch = writeBatch(db)
+  let added = 0
+  let mergedCount = 0
 
-    for (const ingredient of merged) {
-      if (!ingredient.name) continue
+  const batch = writeBatch(db)
 
-      const dedupeKey = `${normalizeText(ingredient.name)}__${normalizeText(ingredient.unit ?? '')}`
-      if (existingKeys.has(dedupeKey)) {
-        skipped += 1
-        continue
-      }
+  for (const ingredient of merged) {
+    if (!ingredient.name) continue
 
-      const itemRef = doc(collection(db, 'shoppingItems'))
-      batch.set(itemRef, {
+    const key = `${normalizeText(ingredient.name)}__${normalizeText(ingredient.unit ?? '')}`
+    const existing = existingItemMap.get(key)
+
+    if (existing) {
+      // ✅ MERGE
+      const newAmount =
+        (existing.amount ?? 0) + (ingredient.amount ?? 0)
+
+      batch.update(doc(db, 'shoppingItems', existing.id), {
+        amount: newAmount > 0 ? newAmount : existing.amount,
+        updatedAt: serverTimestamp()
+      })
+
+      mergedCount += 1
+    } else {
+      // ✅ NEW ITEM
+      const ref = doc(collection(db, 'shoppingItems'))
+
+      batch.set(ref, {
         coupleId: coupleId.value,
         listId,
         name: ingredient.name,
-        ...(ingredient.amount && ingredient.amount > 0 ? { amount: ingredient.amount } : {}),
-        ...(ingredient.unit?.trim() ? { unit: ingredient.unit.trim() } : {}),
+        ...(ingredient.amount && ingredient.amount > 0
+          ? { amount: ingredient.amount }
+          : {}),
+        ...(ingredient.unit?.trim()
+          ? { unit: ingredient.unit.trim() }
+          : {}),
         category: 'Lebensmittel',
         checked: false,
         addedBy: user.value.uid,
@@ -348,24 +364,32 @@ export function useShopping(coupleId: Ref<string | null>) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       })
+
       added += 1
-      existingKeys.add(dedupeKey)
-    }
 
-    if (added > 0) {
-      batch.update(doc(db, 'shoppingLists', listId), {
-        updatedAt: serverTimestamp()
-      })
-      await batch.commit()
-    }
-
-    return {
-      added,
-      skipped,
-      totalMerged: merged.length
+      // wichtig für mehrfach-merge innerhalb derselben liste
+      existingItemMap.set(key, {
+        ...ingredient,
+        id: ref.id
+      } as ShoppingItem)
     }
   }
 
+  // ✅ WICHTIG: commit immer wenn etwas passiert ist
+  if (added > 0 || mergedCount > 0) {
+    batch.update(doc(db, 'shoppingLists', listId), {
+      updatedAt: serverTimestamp()
+    })
+
+    await batch.commit()
+  }
+
+  return {
+    added,
+    skipped: 0, 
+    totalMerged: mergedCount
+  }
+}
   async function linkItemsToExpense(itemIds: string[], expenseId: string) {
     if (itemIds.length === 0) return
     try {

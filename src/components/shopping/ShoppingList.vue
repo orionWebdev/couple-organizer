@@ -16,6 +16,7 @@ import { useExpenses } from '@/composables/useExpenses'
 import type { Couple } from '@/types'
 import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
+import IngredientInputGroup from '@/components/ui/IngredientInputGroup.vue'
 import ShoppingItem from './ShoppingItem.vue'
 import ShoppingModeModal from './ShoppingModeModal.vue'
 
@@ -45,9 +46,7 @@ const {
 const { addExpense } = useExpenses(coupleIdRef)
 
 const newListTitle = ref('')
-const newItemName = ref('')
-const newItemAmount = ref('')
-const newItemUnit = ref('')
+const newItem = ref({ name: '', amount: '', unit: 'Stk' })
 const newItemCategory = ref('Lebensmittel')
 const showAddModal = ref(false)
 const showShoppingMode = ref(false)
@@ -66,17 +65,15 @@ async function handleCreateList() {
 
 async function handleAddItem() {
   if (!activeListId.value) return
-  const parsedAmount = parseFloat(newItemAmount.value.replace(',', '.'))
+  const parsedAmount = parseFloat(String(newItem.value.amount).replace(',', '.'))
   await addItem({
     listId: activeListId.value,
-    name: newItemName.value,
+    name: newItem.value.name,
     amount: isNaN(parsedAmount) || parsedAmount <= 0 ? undefined : parsedAmount,
-    unit: newItemUnit.value.trim() || undefined,
+    unit: newItem.value.unit || undefined,
     category: newItemCategory.value
   })
-  newItemName.value = ''
-  newItemAmount.value = ''
-  newItemUnit.value = ''
+  newItem.value = { name: '', amount: '', unit: 'Stk' }
   showAddModal.value = false
 }
 
@@ -228,38 +225,11 @@ watch(activeList, (list) => {
       @close="showAddModal = false"
     >
       <form @submit.prevent="handleAddItem" class="space-y-4">
-        <ion-input
-          v-model="newItemName"
-          placeholder="Artikel eingeben…"
-          fill="outline"
-          label="Artikel"
-          label-placement="floating"
-          :clear-input="true"
+        <IngredientInputGroup
+          v-model="newItem"
+          name-placeholder="Artikel eingeben…"
+          :autofocus="true"
         />
-
-        <!-- Amount + Unit on one row (both optional) -->
-        <div class="amount-unit-row">
-          <ion-input
-            v-model="newItemAmount"
-            type="number"
-            inputmode="decimal"
-            min="0"
-            step="any"
-            placeholder="–"
-            fill="outline"
-            label="Menge"
-            label-placement="floating"
-            class="amount-input"
-          />
-          <ion-input
-            v-model="newItemUnit"
-            placeholder="–"
-            fill="outline"
-            label="Einheit"
-            label-placement="floating"
-            class="unit-input"
-          />
-        </div>
 
         <ion-select
           v-model="newItemCategory"
@@ -274,7 +244,7 @@ watch(activeList, (list) => {
           <ion-select-option value="Sonstiges">Sonstiges</ion-select-option>
         </ion-select>
 
-        <ion-button expand="block" type="submit" :disabled="!newItemName.trim()">
+        <ion-button expand="block" type="submit" :disabled="!newItem.name.trim()">
           Hinzufügen
         </ion-button>
       </form>
@@ -353,20 +323,6 @@ watch(activeList, (list) => {
 .start-session-btn:active {
   background: rgba(34, 197, 94, 0.22);
   border-color: rgba(34, 197, 94, 0.56);
-}
-
-/* ── Amount + Unit row ───────────────────────────────────────── */
-.amount-unit-row {
-  display: flex;
-  gap: 0.625rem;
-}
-
-.amount-input {
-  flex: 2;
-}
-
-.unit-input {
-  flex: 3;
 }
 
 /* ── Empty list ──────────────────────────────────────────────── */

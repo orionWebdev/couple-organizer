@@ -43,6 +43,30 @@ function normalizeText(value: string): string {
   return value.trim().toLowerCase()
 }
 
+function normalizeUnit(unit?: string): string {
+  if (!unit) return ''
+
+  const u = unit.toLowerCase().trim()
+
+  if (u === 'kg' || u === 'g') return 'g'
+  if (u === 'l' || u === 'ml') return 'ml'
+
+  return u
+}
+
+function convertToBaseUnit(amount?: number, unit?: string): { amount: number, unit: string } {
+  if (!amount) return { amount: 0, unit: normalizeUnit(unit) }
+
+  const u = unit?.toLowerCase().trim()
+
+  if (u === 'kg') return { amount: amount * 1000, unit: 'g' }
+  if (u === 'g') return { amount, unit: 'g' }
+
+  if (u === 'l') return { amount: amount * 1000, unit: 'ml' }
+  if (u === 'ml') return { amount, unit: 'ml' }
+
+  return { amount, unit: u || '' }
+}
 
 function mapShoppingItem(data: Record<string, any>, id: string): ShoppingItem {
   return {
@@ -241,22 +265,45 @@ export function useShopping(coupleId: Ref<string | null>) {
     if (!cleanName) return
     const cleanCategory = input.category?.trim() || 'Sonstiges'
 
+    const key = `${normalizeText(cleanName)}__${normalizeUnit(input.unit)}`
+
+    const existing = items.value.find(item =>
+      item.listId === input.listId &&
+      !item.checked &&
+      `${normalizeText(item.name)}__${normalizeUnit(item.unit)}` === key
+    )
+
     try {
-      await addDoc(collection(db, 'shoppingItems'), {
-        coupleId: coupleId.value,
-        listId: input.listId,
-        name: cleanName,
-        ...(input.amount && input.amount > 0 ? { amount: input.amount } : {}),
-        ...(input.unit?.trim() ? { unit: input.unit.trim() } : {}),
-        category: cleanCategory,
-        checked: false,
-        addedBy: user.value.uid,
-        source: 'manual',
-        sourceWeekKey: null,
-        expenseId: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      })
+   if (existing) {
+  // MERGE
+  const existingBase = convertToBaseUnit(existing.amount, existing.unit)
+  const incomingBase = convertToBaseUnit(input.amount, input.unit)
+
+  const newAmount = existingBase.amount + incomingBase.amount
+
+  await updateDoc(doc(db, 'shoppingItems', existing.id), {
+    amount: newAmount,
+    unit: existingBase.unit, 
+    updatedAt: serverTimestamp()
+  })
+    } else {
+        // NEUES ITEM
+        await addDoc(collection(db, 'shoppingItems'), {
+          coupleId: coupleId.value,
+          listId: input.listId,
+          name: cleanName,
+          ...(input.amount && input.amount > 0 ? { amount: input.amount } : {}),
+          ...(input.unit?.trim() ? { unit: input.unit.trim() } : {}),
+          category: cleanCategory,
+          checked: false,
+          addedBy: user.value.uid,
+          source: 'manual',
+          sourceWeekKey: null,
+          expenseId: null,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        })
+      }
       await updateDoc(doc(db, 'shoppingLists', input.listId), {
         updatedAt: serverTimestamp()
       })
@@ -314,7 +361,7 @@ async function generateItemsFromIngredients(
     items.value
       .filter((item) => item.listId === listId && !item.checked)
       .map((item) => [
-        `${normalizeText(item.name)}__${normalizeText(item.unit ?? '')}`,
+        `${normalizeText(item.name)}__${normalizeUnit(item.unit)}`,
         item
       ])
   )
@@ -327,16 +374,18 @@ async function generateItemsFromIngredients(
   for (const ingredient of merged) {
     if (!ingredient.name) continue
 
-    const key = `${normalizeText(ingredient.name)}__${normalizeText(ingredient.unit ?? '')}`
+    const key = `${normalizeText(ingredient.name)}__${normalizeUnit(ingredient.unit)}`
     const existing = existingItemMap.get(key)
 
     if (existing) {
       // ✅ MERGE
-      const newAmount =
-        (existing.amount ?? 0) + (ingredient.amount ?? 0)
+     const existingBase = convertToBaseUnit(existing.amount, existing.unit)
+      const incomingBase = convertToBaseUnit(ingredient.amount, ingredient.unit)
+      const newAmount = existingBase.amount + incomingBase.amount
 
       batch.update(doc(db, 'shoppingItems', existing.id), {
-        amount: newAmount > 0 ? newAmount : existing.amount,
+        amount: newAmount,
+        unit: existingBase.unit, // <- wichtig!
         updatedAt: serverTimestamp()
       })
 

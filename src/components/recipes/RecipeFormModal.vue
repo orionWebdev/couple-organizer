@@ -6,6 +6,7 @@ import {
   IonSpinner
 } from '@ionic/vue'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
+import IngredientInputGroup from '@/components/ui/IngredientInputGroup.vue'
 import type { Recipe, RecipeCategory, RecipeIngredient } from '@/types'
 
 interface IngredientRow {
@@ -39,7 +40,7 @@ const image = ref('')
 const isFavorite = ref(false)
 const cookingTime = ref('')
 const selectedCategoryIds = ref<string[]>([])
-const ingredientRows = ref<IngredientRow[]>([{ name: '', amount: '', unit: '' }])
+const ingredientRows = ref<IngredientRow[]>([{ name: '', amount: '', unit: 'Stk' }])
 const formError = ref<string | null>(null)
 const saving = ref(false)
 
@@ -59,7 +60,7 @@ watch(() => props.isOpen, (open) => {
       amount: String(i.amount),
       unit: i.unit
     }))
-    if (ingredientRows.value.length === 0) ingredientRows.value = [{ name: '', amount: '', unit: '' }]
+    if (ingredientRows.value.length === 0) ingredientRows.value = [{ name: '', amount: '', unit: 'Stk' }]
   } else {
     title.value = ''
     instructions.value = ''
@@ -67,12 +68,12 @@ watch(() => props.isOpen, (open) => {
     isFavorite.value = false
     cookingTime.value = ''
     selectedCategoryIds.value = []
-    ingredientRows.value = [{ name: '', amount: '', unit: '' }]
+    ingredientRows.value = [{ name: '', amount: '', unit: 'Stk' }]
   }
 })
 
 function addIngredientRow() {
-  ingredientRows.value.push({ name: '', amount: '', unit: '' })
+  ingredientRows.value.push({ name: '', amount: '', unit: 'Stk' })
 }
 
 function removeIngredientRow(index: number) {
@@ -212,31 +213,13 @@ async function handleSubmit() {
         <label class="field-label">Zutaten</label>
         <div class="ingredient-list">
           <div
-            v-for="(row, index) in ingredientRows"
+            v-for="(_, index) in ingredientRows"
             :key="index"
-            class="ingredient-row"
+            class="ingredient-entry"
           >
-            <ion-input
-              v-model="row.name"
-              placeholder="Name"
-              fill="outline"
-              class="ingredient-name"
-            />
-            <ion-input
-              v-model="row.amount"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="Menge"
-              fill="outline"
-              class="ingredient-amount"
-            />
-            <ion-input
-              v-model="row.unit"
-              placeholder="Einh."
-              fill="outline"
-              class="ingredient-unit"
-            />
+            <div class="ingredient-fields">
+              <IngredientInputGroup v-model="ingredientRows[index]" />
+            </div>
             <button class="ingredient-remove" @click="removeIngredientRow(index)">×</button>
           </div>
         </div>
@@ -361,22 +344,24 @@ async function handleSubmit() {
 .ingredient-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
-.ingredient-row {
+.ingredient-entry {
   display: flex;
-  gap: 0.375rem;
-  align-items: center;
+  gap: 0.5rem;
+  align-items: flex-start;
 }
 
-.ingredient-name  { flex: 2; }
-.ingredient-amount { flex: 1; min-width: 0; }
-.ingredient-unit  { flex: 1; min-width: 0; }
+.ingredient-fields {
+  flex: 1;
+  min-width: 0;
+}
 
 .ingredient-remove {
   width: 2rem;
   height: 2rem;
+  margin-top: 0.5rem;
   border-radius: 0.5rem;
   border: 1px solid rgba(239, 68, 68, 0.3);
   background: rgba(239, 68, 68, 0.08);

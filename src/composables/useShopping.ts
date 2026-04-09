@@ -43,6 +43,30 @@ function normalizeText(value: string): string {
   return value.trim().toLowerCase()
 }
 
+function normalizeUnit(unit?: string): string {
+  if (!unit) return ''
+
+  const u = unit.toLowerCase().trim()
+
+  if (u === 'kg' || u === 'g') return 'g'
+  if (u === 'l' || u === 'ml') return 'ml'
+
+  return u
+}
+
+function convertToBaseUnit(amount?: number, unit?: string): { amount: number, unit: string } {
+  if (!amount) return { amount: 0, unit: normalizeUnit(unit) }
+
+  const u = unit?.toLowerCase().trim()
+
+  if (u === 'kg') return { amount: amount * 1000, unit: 'g' }
+  if (u === 'g') return { amount, unit: 'g' }
+
+  if (u === 'l') return { amount: amount * 1000, unit: 'ml' }
+  if (u === 'ml') return { amount, unit: 'ml' }
+
+  return { amount, unit: u || '' }
+}
 
 function mapShoppingItem(data: Record<string, any>, id: string): ShoppingItem {
   return {
@@ -241,22 +265,45 @@ export function useShopping(coupleId: Ref<string | null>) {
     if (!cleanName) return
     const cleanCategory = input.category?.trim() || 'Sonstiges'
 
+    const key = `${normalizeText(cleanName)}__${normalizeUnit(input.unit)}`
+
+    const existing = items.value.find(item =>
+      item.listId === input.listId &&
+      !item.checked &&
+      `${normalizeText(item.name)}__${normalizeUnit(item.unit)}` === key
+    )
+
     try {
-      await addDoc(collection(db, 'shoppingItems'), {
-        coupleId: coupleId.value,
-        listId: input.listId,
-        name: cleanName,
-        ...(input.amount && input.amount > 0 ? { amount: input.amount } : {}),
-        ...(input.unit?.trim() ? { unit: input.unit.trim() } : {}),
-        category: cleanCategory,
-        checked: false,
-        addedBy: user.value.uid,
-        source: 'manual',
-        sourceWeekKey: null,
-        expenseId: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      })
+   if (existing) {
+  // MERGE
+  const existingBase = convertToBaseUnit(existing.amount, existing.unit)
+  const incomingBase = convertToBaseUnit(input.amount, input.unit)
+
+  const newAmount = existingBase.amount + incomingBase.amount
+
+  await updateDoc(doc(db, 'shoppingItems', existing.id), {
+    amount: newAmount,
+    unit: existingBase.unit, 
+    updatedAt: serverTimestamp()
+  })
+    } else {
+        // NEUES ITEM
+        await addDoc(collection(db, 'shoppingItems'), {
+          coupleId: coupleId.value,
+          listId: input.listId,
+          name: cleanName,
+          ...(input.amount && input.amount > 0 ? { amount: input.amount } : {}),
+          ...(input.unit?.trim() ? { unit: input.unit.trim() } : {}),
+          category: cleanCategory,
+          checked: false,
+          addedBy: user.value.uid,
+          source: 'manual',
+          sourceWeekKey: null,
+          expenseId: null,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        })
+      }
       await updateDoc(doc(db, 'shoppingLists', input.listId), {
         updatedAt: serverTimestamp()
       })
@@ -299,46 +346,64 @@ export function useShopping(coupleId: Ref<string | null>) {
     }
   }
 
-  async function generateItemsFromIngredients(
-    listId: string,
-    ingredients: ReadonlyArray<RecipeIngredient>,
-    weekKey: string
-  ): Promise<ShoppingFromMealPlanResult> {
-    if (!coupleId.value || !user.value) {
-      return { added: 0, skipped: 0, totalMerged: 0 }
-    }
+async function generateItemsFromIngredients(
+  listId: string,
+  ingredients: ReadonlyArray<RecipeIngredient>,
+  weekKey: string
+): Promise<ShoppingFromMealPlanResult> {
+  if (!coupleId.value || !user.value) {
+    return { added: 0, skipped: 0, totalMerged: 0 }
+  }
 
-    // Use the shared merge utility (wraps flat array as a single pseudo-recipe)
-    const merged = mergeIngredients([{ ingredients }])
+  const merged = mergeIngredients([{ ingredients }])
 
-    // Build a deduplication set from existing unchecked items on this list.
-    // Key: normalizedName + unit so structured items don't collide on name alone.
-    const existingKeys = new Set(
-      items.value
-        .filter((item) => item.listId === listId && !item.checked)
-        .map((item) => `${normalizeText(item.name)}__${normalizeText(item.unit ?? '')}`)
-    )
+  const existingItemMap = new Map<string, ShoppingItem>(
+    items.value
+      .filter((item) => item.listId === listId && !item.checked)
+      .map((item) => [
+        `${normalizeText(item.name)}__${normalizeUnit(item.unit)}`,
+        item
+      ])
+  )
 
-    let added = 0
-    let skipped = 0
-    const batch = writeBatch(db)
+  let added = 0
+  let mergedCount = 0
 
-    for (const ingredient of merged) {
-      if (!ingredient.name) continue
+  const batch = writeBatch(db)
 
-      const dedupeKey = `${normalizeText(ingredient.name)}__${normalizeText(ingredient.unit ?? '')}`
-      if (existingKeys.has(dedupeKey)) {
-        skipped += 1
-        continue
-      }
+  for (const ingredient of merged) {
+    if (!ingredient.name) continue
 
-      const itemRef = doc(collection(db, 'shoppingItems'))
-      batch.set(itemRef, {
+    const key = `${normalizeText(ingredient.name)}__${normalizeUnit(ingredient.unit)}`
+    const existing = existingItemMap.get(key)
+
+    if (existing) {
+      // ✅ MERGE
+     const existingBase = convertToBaseUnit(existing.amount, existing.unit)
+      const incomingBase = convertToBaseUnit(ingredient.amount, ingredient.unit)
+      const newAmount = existingBase.amount + incomingBase.amount
+
+      batch.update(doc(db, 'shoppingItems', existing.id), {
+        amount: newAmount,
+        unit: existingBase.unit, // <- wichtig!
+        updatedAt: serverTimestamp()
+      })
+
+      mergedCount += 1
+    } else {
+      // ✅ NEW ITEM
+      const ref = doc(collection(db, 'shoppingItems'))
+
+      batch.set(ref, {
         coupleId: coupleId.value,
         listId,
         name: ingredient.name,
-        ...(ingredient.amount && ingredient.amount > 0 ? { amount: ingredient.amount } : {}),
-        ...(ingredient.unit?.trim() ? { unit: ingredient.unit.trim() } : {}),
+        ...(ingredient.amount && ingredient.amount > 0
+          ? { amount: ingredient.amount }
+          : {}),
+        ...(ingredient.unit?.trim()
+          ? { unit: ingredient.unit.trim() }
+          : {}),
         category: 'Lebensmittel',
         checked: false,
         addedBy: user.value.uid,
@@ -348,24 +413,32 @@ export function useShopping(coupleId: Ref<string | null>) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       })
+
       added += 1
-      existingKeys.add(dedupeKey)
-    }
 
-    if (added > 0) {
-      batch.update(doc(db, 'shoppingLists', listId), {
-        updatedAt: serverTimestamp()
-      })
-      await batch.commit()
-    }
-
-    return {
-      added,
-      skipped,
-      totalMerged: merged.length
+      // wichtig für mehrfach-merge innerhalb derselben liste
+      existingItemMap.set(key, {
+        ...ingredient,
+        id: ref.id
+      } as ShoppingItem)
     }
   }
 
+  // ✅ WICHTIG: commit immer wenn etwas passiert ist
+  if (added > 0 || mergedCount > 0) {
+    batch.update(doc(db, 'shoppingLists', listId), {
+      updatedAt: serverTimestamp()
+    })
+
+    await batch.commit()
+  }
+
+  return {
+    added,
+    skipped: 0, 
+    totalMerged: mergedCount
+  }
+}
   async function linkItemsToExpense(itemIds: string[], expenseId: string) {
     if (itemIds.length === 0) return
     try {

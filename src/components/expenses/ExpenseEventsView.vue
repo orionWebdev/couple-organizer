@@ -11,6 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   edit: [expense: Readonly<Expense>]
+  togglePaid: [id: string, paid: boolean]
   archive: [eventId: string]
   openArchive: []
 }>()
@@ -97,6 +98,7 @@ function getBalanceText(balances: Record<string, number>): string {
               :category-label="getCategoryLabel(expense.category)"
               :show-edit-action="true"
               @edit="emit('edit', $event)"
+              @toggle-paid="(id, paid) => emit('togglePaid', id, paid)"
             />
           </div>
         </article>

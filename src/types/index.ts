@@ -164,6 +164,7 @@ export interface Expense {
   source: 'manual' | 'shopping'
   shoppingListId: string | null
   shoppingItemIds: readonly string[]
+  isPaid: boolean
   createdBy: string
   createdAt: Timestamp
   updatedAt: Timestamp

@@ -99,7 +99,7 @@ function navigate(href: string) {
 }
 
 .app-nav-active {
-  color: #22c55e;
+  color: var(--app-primary-tint);
 }
 
 .app-nav-icon {
@@ -119,9 +119,9 @@ function navigate(href: string) {
   top: 0;
   left: 0;
   height: 2.5px;
-  background: #22c55e;
+  background: var(--app-primary);
   border-radius: 0 0 2px 2px;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
+  box-shadow: 0 0 10px rgba(var(--app-primary-rgb), 0.6);
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }

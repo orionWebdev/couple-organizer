@@ -13,6 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   edit: [expense: Readonly<Expense>]
+  togglePaid: [id: string, paid: boolean]
 }>()
 
 const categoryLabels: Record<ExpenseCategory, string> = {
@@ -56,6 +57,7 @@ function getCategoryLabel(category: ExpenseCategory): string {
           :category-label="getCategoryLabel(expense.category)"
           :show-edit-action="true"
           @edit="emit('edit', $event)"
+          @toggle-paid="(id, paid) => emit('togglePaid', id, paid)"
         />
       </div>
     </OverviewSectionCard>

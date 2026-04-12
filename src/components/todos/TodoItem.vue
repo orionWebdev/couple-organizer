@@ -21,6 +21,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   toggle: [id: string, done: boolean]
   assignRequest: [todo: Todo]
+  editRequest: [todo: Todo]
   delete: [id: string]
 }>()
 
@@ -57,8 +58,15 @@ function getTone(index: number): 'green' | 'blue' | 'amber' | 'rose' {
 
 <template>
   <ion-item-sliding class="todo-feed-row">
-    <ion-item lines="none" class="todo-feed-item" :class="{ 'todo-feed-item-done': todo.done }">
-      <div slot="start" class="todo-checkbox-shell">
+    <ion-item
+      lines="none"
+      button
+      :detail="false"
+      class="todo-feed-item"
+      :class="{ 'todo-feed-item-done': todo.done }"
+      @click="emit('editRequest', todo)"
+    >
+      <div slot="start" class="todo-checkbox-shell" @click.stop>
         <div class="todo-checkbox-ring" :class="{ 'todo-checkbox-ring-done': todo.done }">
           <ion-checkbox
             :checked="todo.done"
@@ -146,8 +154,8 @@ function getTone(index: number): 'green' | 'blue' | 'amber' | 'rose' {
 }
 
 .todo-checkbox-ring-done {
-  border-color: rgb(74 222 128);
-  background: rgb(74 222 128);
+  border-color: var(--app-success);
+  background: var(--app-success);
 }
 
 .todo-checkbox-ring :deep(ion-checkbox) {

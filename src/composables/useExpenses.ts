@@ -72,6 +72,7 @@ function mapExpense(data: Record<string, any>, id: string): Expense {
     source: data.source || 'manual',
     shoppingListId: data.shoppingListId ?? null,
     shoppingItemIds: Array.isArray(data.shoppingItemIds) ? data.shoppingItemIds : [],
+    isPaid: data.isPaid ?? false,
     createdBy: data.createdBy || '',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt || data.createdAt
@@ -292,6 +293,7 @@ export function useExpenses(coupleId: Ref<string | null>) {
       source: input.source ?? 'manual',
       shoppingListId: input.shoppingListId ?? null,
       shoppingItemIds: input.shoppingItemIds ?? [],
+      isPaid: false,
       createdBy: user.value.uid,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -356,6 +358,18 @@ export function useExpenses(coupleId: Ref<string | null>) {
       console.error('Failed to update expense:', err)
       error.value = err.message
       return false
+    }
+  }
+
+  async function setExpensePaid(id: string, isPaid: boolean) {
+    try {
+      await updateDoc(doc(db, 'expenses', id), {
+        isPaid,
+        updatedAt: serverTimestamp()
+      })
+    } catch (err: any) {
+      console.error('Failed to toggle expense paid state:', err)
+      error.value = err.message
     }
   }
 
@@ -436,6 +450,7 @@ export function useExpenses(coupleId: Ref<string | null>) {
     addExpense,
     updateExpense,
     deleteExpense,
+    setExpensePaid,
     createEvent,
     deleteEvent,
     setEventArchived

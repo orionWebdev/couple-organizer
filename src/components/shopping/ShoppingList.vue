@@ -297,9 +297,9 @@ watch(activeList, (list) => {
 }
 
 .chip-active {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: rgba(34, 197, 94, 0.45);
-  color: #4ade80;
+  background: rgba(var(--app-primary-rgb), 0.15);
+  border-color: rgba(var(--app-primary-rgb), 0.45);
+  color: var(--app-primary-tint);
 }
 
 /* ── Start session button ────────────────────────────────────── */
@@ -308,9 +308,9 @@ watch(activeList, (list) => {
   align-items: center;
   gap: 0.375rem;
   padding: 0.4rem 0.875rem;
-  background: rgba(34, 197, 94, 0.14);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.36);
+  background: rgba(var(--app-primary-rgb), 0.14);
+  color: var(--app-primary-tint);
+  border: 1px solid rgba(var(--app-primary-rgb), 0.36);
   border-radius: 9999px;
   font-family: var(--ion-font-family);
   font-size: 1.0625rem;
@@ -321,8 +321,8 @@ watch(activeList, (list) => {
 }
 
 .start-session-btn:active {
-  background: rgba(34, 197, 94, 0.22);
-  border-color: rgba(34, 197, 94, 0.56);
+  background: rgba(var(--app-primary-rgb), 0.22);
+  border-color: rgba(var(--app-primary-rgb), 0.56);
 }
 
 /* ── Empty list ──────────────────────────────────────────────── */

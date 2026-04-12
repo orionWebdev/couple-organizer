@@ -45,7 +45,8 @@ const {
   updateExpense,
   createEvent,
   deleteEvent,
-  setEventArchived
+  setEventArchived,
+  setExpensePaid
 } = useExpenses(coupleIdRef)
 
 const activeView = ref<FinanceView>('overview')
@@ -419,6 +420,7 @@ watch(() => props.createRequestKey, (next, previous) => {
         :balance-info="balanceInfo"
         :recent-expenses="recentExpenses"
         @edit="openEditExpenseModal"
+        @toggle-paid="setExpensePaid"
       />
 
       <ExpenseMonthlyView
@@ -426,6 +428,7 @@ watch(() => props.createRequestKey, (next, previous) => {
         :couple="couple"
         :months="monthlySummaries"
         @edit="openEditExpenseModal"
+        @toggle-paid="setExpensePaid"
       />
 
       <ExpenseEventsView
@@ -433,6 +436,7 @@ watch(() => props.createRequestKey, (next, previous) => {
         :couple="couple"
         :events="activeEventSummaries"
         @edit="openEditExpenseModal"
+        @toggle-paid="setExpensePaid"
         @archive="setEventArchived($event, true)"
         @open-archive="showArchiveModal = true"
       />

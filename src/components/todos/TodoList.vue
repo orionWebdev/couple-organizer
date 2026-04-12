@@ -17,6 +17,7 @@ import AppSegmentToggle from '@/components/ui/AppSegmentToggle.vue'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
 import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
 import TodoItem from './TodoItem.vue'
+import TodoEditModal from './TodoEditModal.vue'
 
 const props = defineProps<{
   coupleId: string
@@ -34,6 +35,7 @@ const showSearch = ref(false)
 const newTitle = ref('')
 const showAddModal = ref(false)
 const showAssignModal = ref(false)
+const showEditModal = ref(false)
 const selectedTodo = ref<Todo | null>(null)
 
 const filterOptions = [
@@ -74,6 +76,16 @@ async function assignTodo(assignedTo: string | null) {
   if (!selectedTodo.value) return
   await updateTodo(selectedTodo.value.id, { assignedTo })
   showAssignModal.value = false
+  selectedTodo.value = null
+}
+
+function openEditModal(todo: Todo) {
+  selectedTodo.value = todo
+  showEditModal.value = true
+}
+
+function closeEditModal() {
+  showEditModal.value = false
   selectedTodo.value = null
 }
 
@@ -130,6 +142,7 @@ watch(() => props.createRequestKey, (next, previous) => {
           :couple="couple"
           @toggle="toggleTodo"
           @assign-request="openAssignModal"
+          @edit-request="openEditModal"
           @delete="deleteTodo"
         />
       </ion-list>
@@ -188,6 +201,15 @@ watch(() => props.createRequestKey, (next, previous) => {
         </ion-list>
       </div>
     </AppSheetModal>
+
+    <TodoEditModal
+      :is-open="showEditModal"
+      :todo="selectedTodo"
+      @close="closeEditModal"
+      @update="(id, updates) => updateTodo(id, updates)"
+      @toggle="toggleTodo"
+      @delete="deleteTodo"
+    />
   </section>
 </template>
 

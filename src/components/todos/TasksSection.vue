@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import {
   IonButton,
   IonIcon,
@@ -11,6 +11,7 @@ import {
 import {
   addOutline,
   closeOutline,
+  ellipsisHorizontal,
   searchOutline,
   checkmarkCircleOutline
 } from 'ionicons/icons'
@@ -18,7 +19,6 @@ import { useAuth } from '@/composables/useAuth'
 import { useTodos } from '@/composables/useTodos'
 import type { Couple, Todo, TodoCategory } from '@/types'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
-import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
 import TaskItem from './TaskItem.vue'
 
 const props = defineProps<{
@@ -45,6 +45,22 @@ const newCategory = ref<TodoCategory | null>(null)
 const newDueDateStr = ref('')
 const newAssignedTo = ref<string | null>(null)
 const newRecurring = ref(false)
+
+const quickAddTitle = ref('')
+const quickAddInput = ref<HTMLInputElement | null>(null)
+
+async function handleQuickAdd() {
+  const title = quickAddTitle.value.trim()
+  if (!title) return
+  await addTodo(title, {
+    assignedTo: null,
+    category: null,
+    dueDate: null,
+    recurring: false
+  })
+  quickAddTitle.value = ''
+  nextTick(() => quickAddInput.value?.focus())
+}
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 function startOfToday(): Date {
@@ -309,8 +325,37 @@ const todayStr = new Date().toISOString().slice(0, 10)
       </div>
     </div>
 
-    <!-- FAB -->
-    <AppFloatingActionButton :icon="addOutline" aria-label="Aufgabe hinzufügen" @click="openAdd" />
+    <!-- ── Inline quick-add ──────────────────────────────────── -->
+    <form class="quick-add" @submit.prevent="handleQuickAdd">
+      <input
+        ref="quickAddInput"
+        v-model="quickAddTitle"
+        type="text"
+        enterkeyhint="done"
+        placeholder="Aufgabe hinzufügen…"
+        class="quick-add-input"
+      />
+      <button
+        type="button"
+        class="quick-add-more"
+        aria-label="Mit Details hinzufügen"
+        @click="openAdd"
+      >
+        <ion-icon :icon="ellipsisHorizontal" />
+      </button>
+      <button
+        type="submit"
+        class="quick-add-btn"
+        :disabled="!quickAddTitle.trim()"
+        aria-label="Aufgabe hinzufügen"
+      >
+        <ion-icon :icon="addOutline" />
+      </button>
+    </form>
+
+    <button type="button" class="add-detail-btn" @click="openAdd">
+      + Aufgabe mit Details
+    </button>
 
     <!-- ─── Add task sheet ──────────────────────────────────────────────── -->
     <AppSheetModal
@@ -785,5 +830,93 @@ const todayStr = new Date().toISOString().slice(0, 10)
   background: rgba(34, 197, 94, 0.15);
   border-color: rgba(34, 197, 94, 0.5);
   color: #4ade80;
+}
+
+/* ── Quick-add ──────────────────────────────────────────────── */
+.quick-add {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 1.25rem;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+.quick-add-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--app-text);
+  font-family: var(--ion-font-family);
+  font-size: 1.0625rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.quick-add-input::placeholder {
+  color: var(--app-text-muted);
+}
+
+.quick-add-more,
+.quick-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.14s, color 0.14s, transform 0.1s;
+}
+
+.quick-add-more {
+  background: rgba(71, 85, 105, 0.35);
+  color: var(--app-text-muted);
+}
+
+.quick-add-more:active {
+  background: rgba(71, 85, 105, 0.55);
+}
+
+.quick-add-btn {
+  background: var(--app-primary);
+  color: #fff;
+}
+
+.quick-add-btn:active:not(:disabled) {
+  transform: scale(0.94);
+  background: var(--app-primary-strong);
+}
+
+.quick-add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.add-detail-btn {
+  width: 100%;
+  padding: 0.7rem;
+  background: transparent;
+  border: 1px dashed rgba(71, 85, 105, 0.55);
+  border-radius: 1rem;
+  color: var(--app-text-muted);
+  font-family: var(--ion-font-family);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.14s, border-color 0.14s, background 0.14s;
+}
+
+.add-detail-btn:active {
+  color: var(--app-text);
+  border-color: rgba(71, 85, 105, 0.85);
+  background: rgba(30, 41, 59, 0.5);
 }
 </style>

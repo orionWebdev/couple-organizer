@@ -291,11 +291,6 @@ ion-button[fill="outline"] {
   --color: var(--app-text);
 }
 
-ion-fab-button {
-  --border-radius: 9999px;
-  --box-shadow: 0 16px 32px rgba(15, 23, 42, 0.36);
-}
-
 ion-checkbox {
   --border-color: var(--app-border-strong);
   --checkbox-background: transparent;

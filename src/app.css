@@ -187,9 +187,17 @@ ion-list {
   background: transparent;
 }
 
+.list-ios {
+  background: transparent;
+}
+
 ion-item-sliding {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+ion-list > ion-item:not(:last-child) {
+  margin-bottom: 0.75rem;
 }
 
 ion-item {
@@ -305,46 +313,51 @@ ion-textarea {
   --highlight-height: 0;
 }
 
+ion-input,
 ion-input[fill="outline"],
 ion-select[fill="outline"],
+ion-textarea,
 ion-textarea[fill="outline"] {
-  --background: var(--input-bg);
-  --border-color: var(--input-border);
-  --border-radius: var(--input-radius);
+  --background: var(--ion-item-background, var(--ion-background-color, #fff));
+  --border-color: transparent;
+  --border-radius: 10px;
   --border-width: 1px;
   --highlight-height: 0;
-  --padding-start: 1rem;
-  --padding-end: 1rem;
-  --padding-top: 0.875rem;
-  --padding-bottom: 0.875rem;
+  --padding-start: 1.25rem;
+  --padding-end: 1.25rem;
+  --padding-top: 1.25rem;
+  --padding-bottom: 1.25rem;
 }
 
 /* Explicit part overrides – these win over Ionic defaults */
+ion-input::part(container),
 ion-input[fill="outline"]::part(container),
 ion-select[fill="outline"]::part(container),
+ion-textarea::part(container),
 ion-textarea[fill="outline"]::part(container) {
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-  border-radius: var(--input-radius);
+  background: var(--ion-item-background, var(--ion-background-color, #fff));
+  border: 1px solid transparent;
+  border-radius: 10px;
   transition: var(--input-transition);
 }
 
+ion-input:hover:not(:focus-within)::part(container),
 ion-input[fill="outline"]:hover:not(:focus-within)::part(container),
 ion-select[fill="outline"]:hover:not(.ion-focused)::part(container),
+ion-textarea:hover:not(:focus-within)::part(container),
 ion-textarea[fill="outline"]:hover:not(:focus-within)::part(container) {
-  background: var(--input-bg-hover);
   border-color: var(--input-border-hover);
 }
 
+ion-input:focus-within::part(container),
 ion-input[fill="outline"]:focus-within::part(container),
+ion-textarea:focus-within::part(container),
 ion-textarea[fill="outline"]:focus-within::part(container) {
-  background: var(--input-bg-focus);
   border-color: var(--input-border-focus);
   box-shadow: 0 0 0 3px var(--input-glow);
 }
 
 ion-select[fill="outline"].ion-focused::part(container) {
-  background: var(--input-bg-focus);
   border-color: var(--input-border-focus);
   box-shadow: 0 0 0 3px var(--input-glow);
 }
@@ -355,8 +368,7 @@ ion-textarea::part(native) {
   color: var(--app-text);
   font-family: var(--ion-font-family);
   font-size: 1.1875rem;
-  padding-top: 0.875rem;
-  padding-bottom: 0.875rem;
+  padding: 1.25rem;
 }
 
 /* ── Native HTML inputs/selects – utility classes ───────────── */

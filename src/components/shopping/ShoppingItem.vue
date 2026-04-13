@@ -84,7 +84,7 @@ async function handleRowClick(id: string, currentlyChecked: boolean) {
 
 <style scoped>
 .shop-sliding {
-  margin: 0;
+  margin: 0 0 0.75rem 0;
   border-radius: 1rem;
   overflow: hidden;
 }

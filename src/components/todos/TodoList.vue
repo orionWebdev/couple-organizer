@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import {
   IonButton,
   IonIcon,
@@ -9,13 +9,12 @@ import {
   IonList,
   IonSpinner
 } from '@ionic/vue'
-import { addOutline, closeOutline, searchOutline } from 'ionicons/icons'
+import { addOutline, closeOutline, ellipsisHorizontal, searchOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useTodos } from '@/composables/useTodos'
 import type { Couple, Todo } from '@/types'
 import AppSegmentToggle from '@/components/ui/AppSegmentToggle.vue'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
-import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
 import TodoItem from './TodoItem.vue'
 import TodoEditModal from './TodoEditModal.vue'
 
@@ -37,6 +36,9 @@ const showAddModal = ref(false)
 const showAssignModal = ref(false)
 const showEditModal = ref(false)
 const selectedTodo = ref<Todo | null>(null)
+
+const quickAddTitle = ref('')
+const quickAddInput = ref<HTMLInputElement | null>(null)
 
 const filterOptions = [
   { label: 'Alle', value: 'all' },
@@ -65,6 +67,14 @@ async function handleAdd() {
   await addTodo(title)
   newTitle.value = ''
   showAddModal.value = false
+}
+
+async function handleQuickAdd() {
+  const title = quickAddTitle.value.trim()
+  if (!title) return
+  await addTodo(title)
+  quickAddTitle.value = ''
+  nextTick(() => quickAddInput.value?.focus())
 }
 
 function openAssignModal(todo: Todo) {
@@ -148,7 +158,33 @@ watch(() => props.createRequestKey, (next, previous) => {
       </ion-list>
     </section>
 
-    <AppFloatingActionButton :icon="addOutline" aria-label="Aufgabe hinzufügen" @click="showAddModal = true" />
+    <!-- ── Inline quick-add ──────────────────────────────────── -->
+    <form class="quick-add" @submit.prevent="handleQuickAdd">
+      <input
+        ref="quickAddInput"
+        v-model="quickAddTitle"
+        type="text"
+        enterkeyhint="done"
+        placeholder="Aufgabe hinzufügen…"
+        class="quick-add-input"
+      />
+      <button
+        type="button"
+        class="quick-add-more"
+        aria-label="Mit Details hinzufügen"
+        @click="showAddModal = true"
+      >
+        <ion-icon :icon="ellipsisHorizontal" />
+      </button>
+      <button
+        type="submit"
+        class="quick-add-btn"
+        :disabled="!quickAddTitle.trim()"
+        aria-label="Aufgabe hinzufügen"
+      >
+        <ion-icon :icon="addOutline" />
+      </button>
+    </form>
 
     <AppSheetModal
       :is-open="showAddModal"
@@ -255,5 +291,72 @@ watch(() => props.createRequestKey, (next, previous) => {
 .todo-list-shell {
   background: transparent;
   padding: 1.15rem 1.2rem;
+}
+
+/* ── Quick-add ──────────────────────────────────────────────── */
+.quick-add {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 1.25rem;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+.quick-add-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--app-text);
+  font-family: var(--ion-font-family);
+  font-size: 1.0625rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.quick-add-input::placeholder {
+  color: var(--app-text-muted);
+}
+
+.quick-add-more,
+.quick-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.14s, color 0.14s, transform 0.1s;
+}
+
+.quick-add-more {
+  background: rgba(71, 85, 105, 0.35);
+  color: var(--app-text-muted);
+}
+
+.quick-add-more:active {
+  background: rgba(71, 85, 105, 0.55);
+}
+
+.quick-add-btn {
+  background: var(--app-primary);
+  color: #fff;
+}
+
+.quick-add-btn:active:not(:disabled) {
+  transform: scale(0.94);
+  background: var(--app-primary-strong);
+}
+
+.quick-add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import {
   IonList,
   IonIcon,
@@ -10,11 +10,10 @@ import {
   IonSpinner,
   IonNote
 } from '@ionic/vue'
-import { addOutline, cartOutline, trashOutline } from 'ionicons/icons'
+import { addOutline, cartOutline, ellipsisHorizontal, trashOutline } from 'ionicons/icons'
 import { useShopping } from '@/composables/useShopping'
 import { useExpenses } from '@/composables/useExpenses'
 import type { Couple } from '@/types'
-import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
 import IngredientInputGroup from '@/components/ui/IngredientInputGroup.vue'
 import ShoppingItem from './ShoppingItem.vue'
@@ -52,6 +51,9 @@ const showAddModal = ref(false)
 const showShoppingMode = ref(false)
 const pendingCreateRequestKey = ref<number | null>(null)
 
+const quickAddName = ref('')
+const quickAddInput = ref<HTMLInputElement | null>(null)
+
 const hasCheckedItems = computed(() => activeItems.value.some((item) => item.checked))
 const canArchiveActiveList = computed(() => {
   if (!activeList.value) return false
@@ -75,6 +77,18 @@ async function handleAddItem() {
   })
   newItem.value = { name: '', amount: '', unit: 'Stk' }
   showAddModal.value = false
+}
+
+async function handleQuickAdd() {
+  const name = quickAddName.value.trim()
+  if (!name || !activeListId.value) return
+  await addItem({
+    listId: activeListId.value,
+    name,
+    category: newItemCategory.value
+  })
+  quickAddName.value = ''
+  nextTick(() => quickAddInput.value?.focus())
 }
 
 function handleModalToggle(id: string, checked: boolean, uid?: string) {
@@ -195,7 +209,7 @@ watch(activeList, (list) => {
         <svg xmlns="http://www.w3.org/2000/svg" class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
         </svg>
-        <p class="text-slate-500 text-sm">Noch keine Artikel · tippe + um Artikel hinzuzufügen</p>
+        <p class="text-slate-500 text-sm">Noch keine Artikel · trage unten deinen ersten ein</p>
       </div>
 
       <ion-list v-else lines="none" class="space-y-2">
@@ -207,15 +221,35 @@ watch(activeList, (list) => {
           @delete="deleteItem"
         />
       </ion-list>
-    </section>
 
-    <!-- ── FAB: add item ──────────────────────────────────────── -->
-    <AppFloatingActionButton
-      v-if="activeList"
-      :icon="addOutline"
-      aria-label="Artikel hinzufügen"
-      @click="showAddModal = true"
-    />
+      <!-- ── Inline quick-add ──────────────────────────────────── -->
+      <form class="quick-add" @submit.prevent="handleQuickAdd">
+        <input
+          ref="quickAddInput"
+          v-model="quickAddName"
+          type="text"
+          enterkeyhint="done"
+          placeholder="Artikel hinzufügen…"
+          class="quick-add-input"
+        />
+        <button
+          type="button"
+          class="quick-add-more"
+          aria-label="Mit Details hinzufügen"
+          @click="showAddModal = true"
+        >
+          <ion-icon :icon="ellipsisHorizontal" />
+        </button>
+        <button
+          type="submit"
+          class="quick-add-btn"
+          :disabled="!quickAddName.trim()"
+          aria-label="Artikel hinzufügen"
+        >
+          <ion-icon :icon="addOutline" />
+        </button>
+      </form>
+    </section>
 
     <!-- ── Sheet: add item ────────────────────────────────────── -->
     <AppSheetModal
@@ -331,6 +365,74 @@ watch(activeList, (list) => {
 .start-session-btn:active {
   background: rgba(var(--app-primary-rgb), 0.22);
   border-color: rgba(var(--app-primary-rgb), 0.56);
+}
+
+/* ── Quick-add ───────────────────────────────────────────────── */
+.quick-add {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 1.25rem;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  margin-top: 0.5rem;
+}
+
+.quick-add-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--app-text);
+  font-family: var(--ion-font-family);
+  font-size: 1.0625rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.quick-add-input::placeholder {
+  color: var(--app-text-muted);
+}
+
+.quick-add-more,
+.quick-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.14s, color 0.14s, transform 0.1s;
+}
+
+.quick-add-more {
+  background: rgba(71, 85, 105, 0.35);
+  color: var(--app-text-muted);
+}
+
+.quick-add-more:active {
+  background: rgba(71, 85, 105, 0.55);
+}
+
+.quick-add-btn {
+  background: var(--app-primary);
+  color: #fff;
+}
+
+.quick-add-btn:active:not(:disabled) {
+  transform: scale(0.94);
+  background: var(--app-primary-strong);
+}
+
+.quick-add-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ── Empty list ──────────────────────────────────────────────── */

@@ -139,9 +139,11 @@ watch(activeList, (list) => {
         <ion-button
           type="submit"
           :disabled="!newListTitle.trim()"
-          color="medium"
+          fill="outline"
+          color="primary"
+          class="add-list-btn"
         >
-          <ion-icon :icon="addOutline" slot="icon-only" />
+          <ion-icon :icon="addOutline" slot="icon-only" color="primary" />
         </ion-button>
       </form>
 
@@ -266,6 +268,12 @@ watch(activeList, (list) => {
 </template>
 
 <style scoped>
+/* ── Add list button ─────────────────────────────────────────── */
+.add-list-btn {
+  width: 50px;
+  min-width: 50px;
+}
+
 /* ── List selector chips ─────────────────────────────────────── */
 .chips-row {
   display: flex;

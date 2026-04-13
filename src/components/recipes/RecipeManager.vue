@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { IonSpinner } from '@ionic/vue'
+import { IonIcon, IonSpinner } from '@ionic/vue'
 import { addOutline } from 'ionicons/icons'
 import { useRecipes } from '@/composables/useRecipes'
 import { useRecipeCategories } from '@/composables/useRecipeCategories'
 import { useShopping } from '@/composables/useShopping'
 import type { Recipe, RecipeCategory, RecipeCategoryColor } from '@/types'
-import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
 import RecipeCategoryCard from './RecipeCategoryCard.vue'
 import RecipeCard from './RecipeCard.vue'
@@ -214,6 +213,10 @@ async function handleAddToShoppingList() {
               </svg>
               Kategorien
             </button>
+            <button class="toolbar-add-btn" @click="openNewRecipe">
+              <ion-icon :icon="addOutline" />
+              Rezept
+            </button>
           </div>
         </div>
 
@@ -221,7 +224,7 @@ async function handleAddToShoppingList() {
         <div v-if="categories.length === 0 && recipes.length === 0" class="empty-state">
           <div class="empty-icon">🍝</div>
           <p class="empty-title">Noch keine Rezepte</p>
-          <p class="empty-hint">Tippe unten auf +, um dein erstes Rezept zu erstellen.</p>
+          <p class="empty-hint">Tippe oben auf „Rezept", um dein erstes zu erstellen.</p>
         </div>
 
         <!-- Category grid -->
@@ -268,7 +271,13 @@ async function handleAddToShoppingList() {
             </svg>
             Zurück
           </button>
-          <span class="screen-count">{{ recipes.length }} Rezepte</span>
+          <div class="toolbar-actions">
+            <span class="screen-count">{{ recipes.length }}</span>
+            <button class="toolbar-add-btn" @click="openNewRecipe">
+              <ion-icon :icon="addOutline" />
+              Rezept
+            </button>
+          </div>
         </div>
         <div v-if="recipes.length === 0" class="empty-state">
           <div class="empty-icon">📋</div>
@@ -299,7 +308,13 @@ async function handleAddToShoppingList() {
             <span v-if="selectedCategory.icon">{{ selectedCategory.icon }}</span>
             {{ selectedCategory.name }}
           </div>
-          <span class="screen-count">{{ displayedRecipes.length }}</span>
+          <div class="toolbar-actions">
+            <span class="screen-count">{{ displayedRecipes.length }}</span>
+            <button class="toolbar-add-btn" @click="openNewRecipe">
+              <ion-icon :icon="addOutline" />
+              Rezept
+            </button>
+          </div>
         </div>
 
         <div v-if="displayedRecipes.length === 0" class="empty-state">
@@ -320,9 +335,6 @@ async function handleAddToShoppingList() {
       </div>
 
     </template>
-
-    <!-- ── FAB ────────────────────────────────────────────────── -->
-    <AppFloatingActionButton :icon="addOutline" aria-label="Rezept hinzufügen" @click="openNewRecipe" />
 
     <!-- ── Recipe detail modal ────────────────────────────────── -->
     <RecipeDetailModal
@@ -504,6 +516,32 @@ async function handleAddToShoppingList() {
 .toolbar-btn:active {
   background: rgba(71, 85, 105, 0.15);
   color: var(--app-text);
+}
+
+.toolbar-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 9999px;
+  background: rgba(34, 197, 94, 0.16);
+  color: rgb(134 239 172);
+  font-family: var(--ion-font-family);
+  font-size: 1.03rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.14s, transform 0.1s;
+}
+
+.toolbar-add-btn ion-icon {
+  font-size: 1.15rem;
+}
+
+.toolbar-add-btn:active {
+  background: rgba(34, 197, 94, 0.28);
+  transform: scale(0.97);
 }
 
 .back-btn {

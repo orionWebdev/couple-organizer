@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import {
   IonButton,
+  IonIcon,
   IonInput,
   IonSelect,
   IonSelectOption,
@@ -11,7 +12,6 @@ import { addOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useExpenses } from '@/composables/useExpenses'
 import type { Couple, Expense, ExpenseCategory, FinanceEvent } from '@/types'
-import AppFloatingActionButton from '@/components/ui/AppFloatingActionButton.vue'
 import AppSegmentToggle from '@/components/ui/AppSegmentToggle.vue'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
 import ExpenseArchiveModal from './ExpenseArchiveModal.vue'
@@ -392,9 +392,15 @@ watch(() => props.createRequestKey, (next, previous) => {
         <h1 class="mt-2 text-[2rem] font-semibold tracking-tight text-slate-50">Einfach geteilt</h1>
       </div>
 
-      <button type="button" class="finance-pill-button" @click="showEventModal = true">
-        Event
-      </button>
+      <div class="finance-header-actions">
+        <button type="button" class="finance-pill-button" @click="showEventModal = true">
+          Event
+        </button>
+        <button type="button" class="finance-add-button" @click="openAddExpenseModal">
+          <ion-icon :icon="addOutline" />
+          Ausgabe
+        </button>
+      </div>
     </div>
 
     <AppSegmentToggle
@@ -441,12 +447,6 @@ watch(() => props.createRequestKey, (next, previous) => {
         @open-archive="showArchiveModal = true"
       />
     </template>
-
-    <AppFloatingActionButton
-      :icon="addOutline"
-      aria-label="Ausgabe hinzufügen"
-      @click="openAddExpenseModal"
-    />
 
     <AppSheetModal
       :is-open="showAddExpenseModal"
@@ -615,15 +615,50 @@ watch(() => props.createRequestKey, (next, previous) => {
   padding-top: 0.25rem;
 }
 
+.finance-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 .finance-pill-button {
-  border: 1px solid rgba(34, 197, 94, 0.28);
+  border: 1px solid rgba(71, 85, 105, 0.5);
   border-radius: 9999px;
-  padding: 0.75rem 1rem;
-  background: rgba(34, 197, 94, 0.14);
-  color: rgb(134 239 172);
-  font-size: 1.2rem;
+  padding: 0.65rem 1rem;
+  background: rgba(30, 41, 59, 0.7);
+  color: var(--app-text-muted);
+  font-size: 1.0625rem;
   font-weight: 600;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.finance-add-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 9999px;
+  padding: 0.65rem 1rem;
+  background: rgba(34, 197, 94, 0.16);
+  color: rgb(134 239 172);
+  font-family: var(--ion-font-family);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.14s, transform 0.1s;
+}
+
+.finance-add-button ion-icon {
+  font-size: 1.15rem;
+}
+
+.finance-add-button:active {
+  background: rgba(34, 197, 94, 0.26);
+  transform: scale(0.97);
 }
 
 .finance-inline-link {

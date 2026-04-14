@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import {
   IonPage,
   IonContent
 } from '@ionic/vue'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
+import { useActionHub } from '@/composables/useActionHub'
 import TasksSection from '@/components/todos/TasksSection.vue'
 import RecipeManager from '@/components/recipes/RecipeManager.vue'
 import MealPlanBoard from '@/components/meal-plan/MealPlanBoard.vue'
@@ -13,9 +14,19 @@ import SegmentShell from '@/components/ui/SegmentShell.vue'
 
 const { user } = useAuth()
 const { couple } = useCouple()
+const { requestedPlanSegment, consumePlanSegment } = useActionHub()
 
 type Segment = 'aufgaben' | 'rezepte' | 'wochenplan'
 const active = ref<Segment>('aufgaben')
+
+const pending = consumePlanSegment()
+if (pending) active.value = pending
+
+watch(requestedPlanSegment, (next) => {
+  if (!next) return
+  active.value = next
+  consumePlanSegment()
+})
 
 const SEGMENTS: { id: Segment; label: string; emoji: string }[] = [
   { id: 'aufgaben',   label: 'Aufgaben',   emoji: '✓' },

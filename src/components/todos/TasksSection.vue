@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import {
   IonButton,
   IonIcon,
@@ -17,6 +17,7 @@ import {
 } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useTodos } from '@/composables/useTodos'
+import { useActionHub } from '@/composables/useActionHub'
 import type { Couple, Todo, TodoCategory } from '@/types'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
 import TaskItem from './TaskItem.vue'
@@ -25,6 +26,8 @@ const props = defineProps<{
   coupleId: string
   couple: Couple | null
 }>()
+
+const { pendingAction, consumePending } = useActionHub()
 
 const { user } = useAuth()
 const coupleIdRef = computed<string | null>(() => props.coupleId)
@@ -206,6 +209,13 @@ function openAdd() {
   resetForm()
   showAddModal.value = true
 }
+
+watch(pendingAction, (a) => {
+  if (a === 'task') {
+    consumePending('task')
+    openAdd()
+  }
+}, { immediate: true })
 
 // Today as YYYY-MM-DD for date input min attribute
 const todayStr = new Date().toISOString().slice(0, 10)

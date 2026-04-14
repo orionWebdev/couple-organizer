@@ -12,7 +12,13 @@ const props = defineProps<{
 const emit = defineEmits<{
   edit: [expense: Readonly<Expense>]
   togglePaid: [id: string, paid: boolean]
+  delete: [id: string]
+  settle: [monthKey: string]
 }>()
+
+function hasUnpaid(expenses: ReadonlyArray<Expense>): boolean {
+  return expenses.some((expense) => !expense.isPaid)
+}
 
 const memberCount = computed(() => {
   const count = Object.keys(props.couple?.memberNames || {}).length
@@ -74,9 +80,19 @@ function getBalanceText(balances: Record<string, number>): string {
             </p>
             <p class="mt-2 text-sm font-medium text-emerald-300">{{ getBalanceText(month.balances) }}</p>
           </div>
-          <span class="rounded-full border border-slate-700/80 bg-slate-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Monthly
-          </span>
+          <div class="flex flex-col items-end gap-2">
+            <span class="rounded-full border border-slate-700/80 bg-slate-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Monthly
+            </span>
+            <button
+              v-if="hasUnpaid(month.expenses)"
+              type="button"
+              class="settle-button"
+              @click="emit('settle', month.monthKey)"
+            >
+              Abschließen
+            </button>
+          </div>
         </div>
 
         <div v-if="month.expenses.length === 0" class="pt-4 text-sm text-slate-500">
@@ -93,9 +109,27 @@ function getBalanceText(balances: Record<string, number>): string {
             :show-edit-action="true"
             @edit="emit('edit', $event)"
             @toggle-paid="(id, paid) => emit('togglePaid', id, paid)"
+            @delete="emit('delete', $event)"
           />
         </div>
       </article>
     </div>
   </OverviewSectionCard>
 </template>
+
+<style scoped>
+.settle-button {
+  border: 0;
+  border-radius: 9999px;
+  padding: 0.5rem 0.9rem;
+  background: rgba(16, 185, 129, 0.18);
+  color: rgb(134 239 172);
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.settle-button:active {
+  background: rgba(16, 185, 129, 0.28);
+}
+</style>

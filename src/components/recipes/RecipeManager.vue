@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { IonIcon, IonSpinner } from '@ionic/vue'
 import { addOutline } from 'ionicons/icons'
 import { useRecipes } from '@/composables/useRecipes'
@@ -12,8 +12,11 @@ import RecipeCard from './RecipeCard.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
 import RecipeFormModal from './RecipeFormModal.vue'
 import RecipeCategoryFormModal from './RecipeCategoryFormModal.vue'
+import { useActionHub } from '@/composables/useActionHub'
 
 const props = defineProps<{ coupleId: string }>()
+
+const { pendingAction, consumePending } = useActionHub()
 
 const coupleIdRef = computed<string | null>(() => props.coupleId)
 const { recipes, loading, addRecipe, updateRecipe, deleteRecipe, toggleFavorite } = useRecipes(coupleIdRef)
@@ -94,6 +97,13 @@ function openNewRecipe() {
   editingRecipe.value = null
   showRecipeForm.value = true
 }
+
+watch(pendingAction, (a) => {
+  if (a === 'recipe') {
+    consumePending('recipe')
+    openNewRecipe()
+  }
+}, { immediate: true })
 
 function openEditRecipe(recipe: Readonly<Recipe>) {
   editingRecipe.value = recipe

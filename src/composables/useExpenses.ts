@@ -97,10 +97,12 @@ function mapFinanceEvent(data: Record<string, any>, id: string): FinanceEvent {
 }
 
 function buildBalanceSummary(entries: Expense[]): ExpenseBalanceSummary {
+  const unpaid = entries.filter((expense) => !expense.isPaid)
+
   const totals: Record<string, number> = {}
   const owedTotals: Record<string, number> = {}
 
-  for (const expense of entries) {
+  for (const expense of unpaid) {
     totals[expense.paidBy] = (totals[expense.paidBy] || 0) + expense.amount
 
     for (const [uid, amount] of Object.entries(expense.owedBy)) {
@@ -122,7 +124,7 @@ function buildBalanceSummary(entries: Expense[]): ExpenseBalanceSummary {
     totals,
     owedTotals,
     balances,
-    totalSpent: entries.reduce((sum, expense) => sum + expense.amount, 0)
+    totalSpent: unpaid.reduce((sum, expense) => sum + expense.amount, 0)
   }
 }
 
@@ -246,7 +248,9 @@ export function useExpenses(coupleId: Ref<string | null>) {
 
         return {
           monthKey,
-          total: orderedExpenses.reduce((sum, expense) => sum + expense.amount, 0),
+          total: orderedExpenses
+            .filter((expense) => !expense.isPaid)
+            .reduce((sum, expense) => sum + expense.amount, 0),
           balances: buildBalanceSummary(orderedExpenses).balances,
           expenses: orderedExpenses
         }
@@ -263,7 +267,9 @@ export function useExpenses(coupleId: Ref<string | null>) {
 
         return {
           event,
-          total: eventExpenses.reduce((sum, expense) => sum + expense.amount, 0),
+          total: eventExpenses
+            .filter((expense) => !expense.isPaid)
+            .reduce((sum, expense) => sum + expense.amount, 0),
           balances: buildBalanceSummary(eventExpenses).balances,
           expenses: eventExpenses
         }
@@ -373,6 +379,23 @@ export function useExpenses(coupleId: Ref<string | null>) {
     }
   }
 
+  async function markAllPaid(expenseIds: string[]) {
+    if (expenseIds.length === 0) return
+    try {
+      const batch = writeBatch(db)
+      for (const id of expenseIds) {
+        batch.update(doc(db, 'expenses', id), {
+          isPaid: true,
+          updatedAt: serverTimestamp()
+        })
+      }
+      await batch.commit()
+    } catch (err: any) {
+      console.error('Failed to mark expenses as paid:', err)
+      error.value = err.message
+    }
+  }
+
   async function createEvent(title: string, options: { kind?: FinanceEventKind } = {}) {
     if (!coupleId.value || !user.value) return
     const cleanTitle = title.trim()
@@ -451,6 +474,7 @@ export function useExpenses(coupleId: Ref<string | null>) {
     updateExpense,
     deleteExpense,
     setExpensePaid,
+    markAllPaid,
     createEvent,
     deleteEvent,
     setEventArchived

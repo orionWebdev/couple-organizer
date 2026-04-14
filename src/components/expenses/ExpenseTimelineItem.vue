@@ -6,6 +6,7 @@ import {
   filmOutline,
   homeOutline,
   trainOutline,
+  trashOutline,
   walletOutline
 } from 'ionicons/icons'
 import type { Expense } from '@/types'
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   edit: [expense: Readonly<Expense>]
   togglePaid: [id: string, paid: boolean]
+  delete: [id: string]
 }>()
 
 const icon = computed(() => {
@@ -56,6 +58,11 @@ function handleRowClick() {
 function handleTogglePaid(e: MouseEvent) {
   e.stopPropagation()
   emit('togglePaid', props.expense.id, !props.expense.isPaid)
+}
+
+function handleDelete(e: MouseEvent) {
+  e.stopPropagation()
+  emit('delete', props.expense.id)
 }
 </script>
 
@@ -99,6 +106,15 @@ function handleTogglePaid(e: MouseEvent) {
       <svg v-if="expense.isPaid" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
+    </button>
+
+    <button
+      type="button"
+      class="delete-btn"
+      aria-label="Ausgabe löschen"
+      @click="handleDelete"
+    >
+      <ion-icon :icon="trashOutline" />
     </button>
   </article>
 </template>
@@ -173,5 +189,27 @@ function handleTogglePaid(e: MouseEvent) {
 .paid-toggle svg {
   width: 1rem;
   height: 1rem;
+}
+
+.delete-btn {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(239, 68, 68, 0.35);
+  background: transparent;
+  color: rgb(252 165 165);
+  transition: background 0.14s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.delete-btn:active {
+  background: rgba(239, 68, 68, 0.18);
+  transform: scale(0.92);
 }
 </style>

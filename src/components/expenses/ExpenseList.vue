@@ -6,11 +6,13 @@ import {
   IonInput,
   IonSelect,
   IonSelectOption,
-  IonSpinner
+  IonSpinner,
+  alertController
 } from '@ionic/vue'
 import { addOutline } from 'ionicons/icons'
 import { useAuth } from '@/composables/useAuth'
 import { useExpenses } from '@/composables/useExpenses'
+import { useActionHub } from '@/composables/useActionHub'
 import type { Couple, Expense, ExpenseCategory, FinanceEvent } from '@/types'
 import AppSegmentToggle from '@/components/ui/AppSegmentToggle.vue'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
@@ -25,8 +27,9 @@ type ExpenseMode = 'monthly' | 'event'
 const props = defineProps<{
   coupleId: string
   couple: Couple | null
-  createRequestKey?: number
 }>()
+
+const { pendingAction, consumePending } = useActionHub()
 
 const { user } = useAuth()
 
@@ -43,10 +46,12 @@ const {
   activeEvents,
   addExpense,
   updateExpense,
+  deleteExpense,
   createEvent,
   deleteEvent,
   setEventArchived,
-  setExpensePaid
+  setExpensePaid,
+  markAllPaid
 } = useExpenses(coupleIdRef)
 
 const activeView = ref<FinanceView>('overview')
@@ -378,10 +383,75 @@ function openEditExpenseModal(expense: Readonly<Expense>) {
   showAddExpenseModal.value = true
 }
 
-watch(() => props.createRequestKey, (next, previous) => {
-  if (!next || next === previous) return
+watch(pendingAction, (a) => {
+  if (a !== 'expense') return
+  consumePending('expense')
   openAddExpenseModal()
-})
+}, { immediate: true })
+
+function formatMonthLabel(monthKey: string): string {
+  const [year, month] = monthKey.split('-').map(Number)
+  return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' })
+    .format(new Date(year, month - 1, 1))
+}
+
+async function handleSettleMonth(monthKey: string) {
+  const summary = monthlySummaries.value.find((entry) => entry.monthKey === monthKey)
+  if (!summary) return
+  const unpaidIds = summary.expenses.filter((expense) => !expense.isPaid).map((expense) => expense.id)
+  if (unpaidIds.length === 0) return
+
+  const alert = await alertController.create({
+    header: 'Wirklich abschließen?',
+    message: `Alle ${unpaidIds.length} offenen Ausgaben für ${formatMonthLabel(monthKey)} werden als bezahlt markiert.`,
+    buttons: [
+      { text: 'Abbrechen', role: 'cancel' },
+      {
+        text: 'Abschließen',
+        role: 'confirm',
+        handler: () => { markAllPaid(unpaidIds) }
+      }
+    ]
+  })
+  await alert.present()
+}
+
+async function handleSettleEvent(eventId: string) {
+  const summary = activeEventSummaries.value.find((entry) => entry.event.id === eventId)
+  if (!summary) return
+  const unpaidIds = summary.expenses.filter((expense) => !expense.isPaid).map((expense) => expense.id)
+  if (unpaidIds.length === 0) return
+
+  const alert = await alertController.create({
+    header: 'Wirklich abschließen?',
+    message: `Alle ${unpaidIds.length} offenen Ausgaben für "${summary.event.title}" werden als bezahlt markiert.`,
+    buttons: [
+      { text: 'Abbrechen', role: 'cancel' },
+      {
+        text: 'Abschließen',
+        role: 'confirm',
+        handler: () => { markAllPaid(unpaidIds) }
+      }
+    ]
+  })
+  await alert.present()
+}
+
+async function handleDeleteExpense(id: string) {
+  const alert = await alertController.create({
+    header: 'Ausgabe löschen?',
+    message: 'Dieser Eintrag wird dauerhaft entfernt.',
+    buttons: [
+      { text: 'Abbrechen', role: 'cancel' },
+      {
+        text: 'Löschen',
+        role: 'destructive',
+        handler: () => { deleteExpense(id) }
+      }
+    ]
+  })
+  await alert.present()
+}
 </script>
 
 <template>
@@ -427,6 +497,7 @@ watch(() => props.createRequestKey, (next, previous) => {
         :recent-expenses="recentExpenses"
         @edit="openEditExpenseModal"
         @toggle-paid="setExpensePaid"
+        @delete="handleDeleteExpense"
       />
 
       <ExpenseMonthlyView
@@ -435,6 +506,8 @@ watch(() => props.createRequestKey, (next, previous) => {
         :months="monthlySummaries"
         @edit="openEditExpenseModal"
         @toggle-paid="setExpensePaid"
+        @delete="handleDeleteExpense"
+        @settle="handleSettleMonth"
       />
 
       <ExpenseEventsView
@@ -443,6 +516,8 @@ watch(() => props.createRequestKey, (next, previous) => {
         :events="activeEventSummaries"
         @edit="openEditExpenseModal"
         @toggle-paid="setExpensePaid"
+        @delete="handleDeleteExpense"
+        @settle="handleSettleEvent"
         @archive="setEventArchived($event, true)"
         @open-archive="showArchiveModal = true"
       />

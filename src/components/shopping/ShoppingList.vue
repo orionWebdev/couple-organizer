@@ -13,6 +13,7 @@ import {
 import { addOutline, cartOutline, ellipsisHorizontal, trashOutline } from 'ionicons/icons'
 import { useShopping } from '@/composables/useShopping'
 import { useExpenses } from '@/composables/useExpenses'
+import { useActionHub } from '@/composables/useActionHub'
 import type { Couple } from '@/types'
 import AppSheetModal from '@/components/ui/AppSheetModal.vue'
 import IngredientInputGroup from '@/components/ui/IngredientInputGroup.vue'
@@ -22,8 +23,9 @@ import ShoppingModeModal from './ShoppingModeModal.vue'
 const props = defineProps<{
   coupleId: string
   couple: Couple | null
-  createRequestKey?: number
 }>()
+
+const { pendingAction, consumePending } = useActionHub()
 
 const coupleIdRef = computed<string | null>(() => props.coupleId)
 const {
@@ -109,15 +111,16 @@ async function handleAddExpense(input: {
   return addExpense(input)
 }
 
-watch(() => props.createRequestKey, (next, previous) => {
-  if (!next || next === previous) return
+watch(pendingAction, (a) => {
+  if (a !== 'shopping') return
+  consumePending('shopping')
   if (activeList.value) {
     showAddModal.value = true
     pendingCreateRequestKey.value = null
     return
   }
-  pendingCreateRequestKey.value = next
-})
+  pendingCreateRequestKey.value = 1
+}, { immediate: true })
 
 watch(activeList, (list) => {
   if (!list || pendingCreateRequestKey.value === null) return
@@ -153,11 +156,11 @@ watch(activeList, (list) => {
         <ion-button
           type="submit"
           :disabled="!newListTitle.trim()"
-          fill="outline"
+          fill="solid"
           color="primary"
           class="add-list-btn"
         >
-          <ion-icon :icon="addOutline" slot="icon-only" color="primary" />
+          <ion-icon :icon="addOutline" slot="icon-only" />
         </ion-button>
       </form>
 
@@ -304,8 +307,9 @@ watch(activeList, (list) => {
 <style scoped>
 /* ── Add list button ─────────────────────────────────────────── */
 .add-list-btn {
-  width: 50px;
-  min-width: 50px;
+  width: 54px;
+  min-width: 54px;
+  height: 48px;
 }
 
 /* ── List selector chips ─────────────────────────────────────── */
@@ -371,9 +375,9 @@ watch(activeList, (list) => {
 .quick-add {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 1.25rem;
+  gap: 0.6rem;
+  padding: 0.65rem;
+  border-radius: 1.4rem;
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(71, 85, 105, 0.5);
   margin-top: 0.5rem;
@@ -387,8 +391,8 @@ watch(activeList, (list) => {
   outline: none;
   color: var(--app-text);
   font-family: var(--ion-font-family);
-  font-size: 1.0625rem;
-  padding: 0.65rem 0.75rem;
+  font-size: 1.125rem;
+  padding: 0.8rem 0.9rem;
 }
 
 .quick-add-input::placeholder {
@@ -400,12 +404,12 @@ watch(activeList, (list) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3rem;
+  height: 3rem;
   border-radius: 9999px;
   border: 0;
   cursor: pointer;
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.14s, color 0.14s, transform 0.1s;

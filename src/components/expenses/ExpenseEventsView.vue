@@ -12,9 +12,15 @@ const props = defineProps<{
 const emit = defineEmits<{
   edit: [expense: Readonly<Expense>]
   togglePaid: [id: string, paid: boolean]
+  delete: [id: string]
+  settle: [eventId: string]
   archive: [eventId: string]
   openArchive: []
 }>()
+
+function hasUnpaid(expenses: ReadonlyArray<Expense>): boolean {
+  return expenses.some((expense) => !expense.isPaid)
+}
 
 const memberCount = computed(() => {
   const count = Object.keys(props.couple?.memberNames || {}).length
@@ -76,13 +82,23 @@ function getBalanceText(balances: Record<string, number>): string {
               </p>
               <p class="mt-2 text-sm font-medium text-emerald-300">{{ getBalanceText(entry.balances) }}</p>
             </div>
-            <button
-              type="button"
-              class="event-archive-button"
-              @click="emit('archive', entry.event.id)"
-            >
-              Archivieren
-            </button>
+            <div class="flex flex-col items-end gap-2">
+              <button
+                type="button"
+                class="event-archive-button"
+                @click="emit('archive', entry.event.id)"
+              >
+                Archivieren
+              </button>
+              <button
+                v-if="hasUnpaid(entry.expenses)"
+                type="button"
+                class="event-settle-button"
+                @click="emit('settle', entry.event.id)"
+              >
+                Abschließen
+              </button>
+            </div>
           </div>
 
           <div v-if="entry.expenses.length === 0" class="pt-4 text-sm text-slate-500">
@@ -99,6 +115,7 @@ function getBalanceText(balances: Record<string, number>): string {
               :show-edit-action="true"
               @edit="emit('edit', $event)"
               @toggle-paid="(id, paid) => emit('togglePaid', id, paid)"
+              @delete="emit('delete', $event)"
             />
           </div>
         </article>
@@ -116,5 +133,20 @@ function getBalanceText(balances: Record<string, number>): string {
   color: rgb(226 232 240);
   font-size: 1.1rem;
   font-weight: 600;
+}
+
+.event-settle-button {
+  border: 0;
+  border-radius: 9999px;
+  padding: 0.5rem 0.9rem;
+  background: rgba(16, 185, 129, 0.18);
+  color: rgb(134 239 172);
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.event-settle-button:active {
+  background: rgba(16, 185, 129, 0.28);
 }
 </style>

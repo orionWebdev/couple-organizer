@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import Toast from '@/components/ui/Toast.vue'
+import BottomSheet from '@/components/ui/BottomSheet.vue'
+import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
 
 const { user } = useAuth()
-const { watchCouple } = useCouple()
+const { couple, watchCouple } = useCouple()
 
 if (user.value?.coupleId) {
   watchCouple(user.value.coupleId)
@@ -14,6 +16,12 @@ if (user.value?.coupleId) {
 
 const route = useRoute()
 const router = useRouter()
+
+// Show invite prompt while the partner has not joined yet
+const partnerMissing = computed(() =>
+  !!couple.value && couple.value.memberIds.length < 2
+)
+const showInvite = ref(false)
 
 const tabs = [
   { id: 'finanzen',  label: 'Finanzen',  href: '/finanzen' },
@@ -29,9 +37,22 @@ const activeId = computed(() => {
 
 <template>
   <div class="tabs-shell">
+    <button
+      v-if="partnerMissing"
+      class="invite-banner"
+      @click="showInvite = true"
+    >
+      <span class="invite-banner__text">Warte auf deine Person — Einladungscode zeigen</span>
+      <span class="invite-banner__arrow">›</span>
+    </button>
+
     <div class="tabs-content">
       <RouterView />
     </div>
+
+    <BottomSheet :isOpen="showInvite" title="Person einladen" @close="showInvite = false">
+      <InviteCodeBox v-if="couple" :code="couple.inviteCode" />
+    </BottomSheet>
 
     <nav class="tab-bar">
       <button
@@ -62,6 +83,29 @@ const activeId = computed(() => {
   flex: 1;
   padding-bottom: calc(60px + var(--safe-bottom));
   overflow-y: auto;
+}
+
+.invite-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: calc(var(--safe-top) + 12px) var(--screen-pad) 12px;
+  background: var(--accent-tint);
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.invite-banner__arrow {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .tab-bar {

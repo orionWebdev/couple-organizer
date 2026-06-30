@@ -23,15 +23,30 @@ const partnerUid = computed(() => {
   return props.couple.memberIds.find(id => id !== props.currentUserId) ?? null
 })
 
-const openTodos = computed(() =>
-  props.todos.filter(t => !t.done)
-)
+function matchesFilter(t: Todo): boolean {
+  if (filter.value === 'mine') return t.assignedTo === props.currentUserId
+  if (filter.value === 'partner') return !!partnerUid.value && t.assignedTo === partnerUid.value
+  return true
+}
 
-const filtered = computed(() => {
-  if (filter.value === 'mine') return openTodos.value.filter(t => t.assignedTo === props.currentUserId)
-  if (filter.value === 'partner' && partnerUid.value) return openTodos.value.filter(t => t.assignedTo === partnerUid.value)
-  return openTodos.value
-})
+function isToday(t: Todo): boolean {
+  const date = (t.updatedAt as any)?.toDate?.() ?? null
+  if (!date) return false
+  const now = new Date()
+  return date.getDate() === now.getDate()
+    && date.getMonth() === now.getMonth()
+    && date.getFullYear() === now.getFullYear()
+}
+
+const openTodos = computed(() => props.todos.filter(t => !t.done))
+
+const filtered = computed(() => openTodos.value.filter(matchesFilter))
+
+// Keep tasks completed today visible in the pool so they don't vanish on tick.
+// The full archive lives in the Verlauf tab.
+const doneToday = computed(() =>
+  props.todos.filter(t => t.done && isToday(t) && matchesFilter(t))
+)
 
 const openCount = computed(() => openTodos.value.length)
 </script>
@@ -68,19 +83,36 @@ const openCount = computed(() => openTodos.value.length)
     </div>
 
     <!-- List -->
-    <div v-if="filtered.length === 0" class="empty">
+    <div v-if="filtered.length === 0 && doneToday.length === 0" class="empty">
       Keine offenen Aufgaben.
     </div>
-    <div v-else class="chore-list">
-      <ChoreRow
-        v-for="t in filtered"
-        :key="t.id"
-        :todo="t"
-        :couple="couple"
-        @toggle="emit('toggle', t.id, !t.done)"
-        @delete="emit('delete', t.id)"
-      />
-    </div>
+    <template v-else>
+      <div v-if="filtered.length > 0" class="chore-list">
+        <ChoreRow
+          v-for="t in filtered"
+          :key="t.id"
+          :todo="t"
+          :couple="couple"
+          @toggle="emit('toggle', t.id, !t.done)"
+          @delete="emit('delete', t.id)"
+        />
+      </div>
+
+      <!-- Completed today – stay visible instead of disappearing -->
+      <div v-if="doneToday.length > 0" class="done-section">
+        <div class="done-label">Heute erledigt</div>
+        <div class="chore-list">
+          <ChoreRow
+            v-for="t in doneToday"
+            :key="t.id"
+            :todo="t"
+            :couple="couple"
+            @toggle="emit('toggle', t.id, !t.done)"
+            @delete="emit('delete', t.id)"
+          />
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -139,5 +171,18 @@ const openCount = computed(() => openTodos.value.length)
 
 .chore-list {
   border-top: 1px solid var(--border-softer);
+}
+
+.done-section {
+  margin-top: 22px;
+}
+
+.done-label {
+  padding: 0 var(--screen-pad) 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-faint);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 </style>

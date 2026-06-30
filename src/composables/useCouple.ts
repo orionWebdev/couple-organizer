@@ -40,8 +40,8 @@ export function useCouple() {
     watchCouple(user.value.coupleId)
   }
 
-  async function createCouple() {
-    if (!user.value) return
+  async function createCouple(): Promise<string | null> {
+    if (!user.value) return null
     error.value = null
     loading.value = true
     try {
@@ -59,8 +59,10 @@ export function useCouple() {
       await updateDoc(doc(db, 'users', user.value.uid), { coupleId: coupleRef.id })
       await refreshUser()
       watchCouple(coupleRef.id)
+      return inviteCode
     } catch (e: any) {
       error.value = e.message
+      return null
     } finally {
       loading.value = false
     }

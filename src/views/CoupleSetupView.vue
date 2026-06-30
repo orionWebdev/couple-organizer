@@ -3,20 +3,26 @@ import { ref } from 'vue'
 import { useCouple } from '@/composables/useCouple'
 import { useAuth } from '@/composables/useAuth'
 import { useRouter } from 'vue-router'
+import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
 
 const { createCouple, joinCouple, loading, error } = useCouple()
 const { logout } = useAuth()
 const router = useRouter()
 
-const mode = ref<'choose' | 'create' | 'join'>('choose')
+const mode = ref<'choose' | 'create' | 'join' | 'created'>('choose')
 const inviteCode = ref('')
+const createdCode = ref('')
 const localError = ref('')
 
 async function handleCreate() {
   localError.value = ''
-  await createCouple()
-  if (!error.value) router.push('/')
-  else localError.value = error.value || ''
+  const code = await createCouple()
+  if (code) {
+    createdCode.value = code
+    mode.value = 'created'
+  } else {
+    localError.value = error.value || ''
+  }
 }
 
 async function handleJoin() {
@@ -61,6 +67,16 @@ async function handleLogout() {
           {{ loading ? 'Erstellen…' : 'Paar erstellen' }}
         </button>
         <button class="back-btn" @click="mode = 'choose'">Zurück</button>
+      </div>
+
+      <!-- Couple created – show invite code -->
+      <div v-else-if="mode === 'created'" class="setup-card">
+        <p class="setup-info">
+          Dein Paar ist erstellt! Teile diesen Code mit deiner Person,
+          damit sie beitreten kann.
+        </p>
+        <InviteCodeBox :code="createdCode" />
+        <button class="btn-primary" @click="router.push('/')">Weiter zur App</button>
       </div>
 
       <!-- Join couple -->

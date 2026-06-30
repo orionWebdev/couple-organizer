@@ -50,86 +50,11 @@ export interface ShoppingItem {
   updatedAt: Timestamp
 }
 
-export interface ShoppingSession {
-  id: string
-  coupleId: string
-  listId: string
-  participants: string[]
-  active: boolean
-  createdBy: string
-  createdAt: Timestamp
-  endedAt: Timestamp | null
-}
-
 export interface ShoppingList {
   id: string
   coupleId: string
   title: string
   archived: boolean
-  createdBy: string
-  createdAt: Timestamp
-  updatedAt: Timestamp
-}
-
-export type RecipeCategoryColor = 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'orange' | 'pink' | 'teal'
-
-export interface RecipeCategory {
-  id: string
-  coupleId: string
-  name: string
-  color: RecipeCategoryColor
-  icon?: string
-  createdBy: string
-  createdAt: Timestamp
-  updatedAt: Timestamp
-}
-
-export interface RecipeIngredient {
-  name: string
-  amount: number
-  unit: string
-}
-
-export interface Recipe {
-  id: string
-  coupleId: string
-  title: string
-  ingredients: ReadonlyArray<RecipeIngredient>
-  instructions: string
-  categories: ReadonlyArray<string> // category IDs
-  image?: string // optional image URL
-  isFavorite: boolean
-  cookingTime?: number // minutes
-  lastUsedAt?: Timestamp
-  createdBy: string
-  createdAt: Timestamp
-  updatedAt: Timestamp
-}
-
-export type MealPlanDayKey =
-  | 'monday'
-  | 'tuesday'
-  | 'wednesday'
-  | 'thursday'
-  | 'friday'
-  | 'saturday'
-  | 'sunday'
-
-export type MealType = 'breakfast' | 'lunch' | 'dinner'
-
-export interface MealPlanDayMeals {
-  breakfast: string | null
-  lunch: string | null
-  dinner: string | null
-}
-
-export type MealPlanDays = Record<MealPlanDayKey, MealPlanDayMeals>
-
-export interface MealPlan {
-  id: string
-  coupleId: string
-  weekKey: string // YYYY-MM-DD (Montag)
-  days: MealPlanDays
   createdBy: string
   createdAt: Timestamp
   updatedAt: Timestamp

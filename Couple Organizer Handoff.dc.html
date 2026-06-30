@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#120f0c;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#efe9e2;-webkit-font-smoothing:antialiased}
+  pre{margin:0;font-family:'Geist Mono',monospace;font-size:12.5px;line-height:1.6;white-space:pre;overflow-x:auto}
+  code{font-family:'Geist Mono',monospace}
+</style>
+</helmet>
+
+<div style="max-width:880px;margin:0 auto;padding:64px 40px 100px">
+
+  <!-- Cover -->
+  <div style="display:flex;align-items:center;gap:11px;margin-bottom:22px">
+    <span style="width:11px;height:11px;border-radius:3px;background:#86a596"></span>
+    <span style="font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#8c8379">Couple Organizer · Handoff</span>
+  </div>
+  <h1 style="margin:0 0 14px;font-size:40px;font-weight:600;letter-spacing:-.025em;line-height:1.08">Design-System &amp; Komponenten-Spezifikation</h1>
+  <p style="margin:0;max-width:620px;font-size:15.5px;line-height:1.6;color:#a89f95">Alles, was du brauchst, um das Frontend mit Claude Code zu bauen: Designprinzipien, Tokens, Tailwind-Config, Komponenten-Inventar und die drei Kern-Flows. Mobile-first PWA, Dark Mode als Primär-Ansicht, „Calm Tech".</p>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:24px">
+    <span style="font-size:12.5px;color:#c9c1b7;border:1px solid #332c25;background:#1a1613;border-radius:9px;padding:7px 12px">Mobile-first PWA</span>
+    <span style="font-size:12.5px;color:#c9c1b7;border:1px solid #332c25;background:#1a1613;border-radius:9px;padding:7px 12px">React + Tailwind</span>
+    <span style="font-size:12.5px;color:#c9c1b7;border:1px solid #332c25;background:#1a1613;border-radius:9px;padding:7px 12px">Dark primär</span>
+    <span style="font-size:12.5px;color:#c9c1b7;border:1px solid #332c25;background:#1a1613;border-radius:9px;padding:7px 12px">Deutsch · EUR</span>
+  </div>
+
+  <!-- 01 Prinzipien -->
+  <div style="margin-top:64px;border-top:1px solid #221d18;padding-top:30px">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#86a596;margin-bottom:6px">01</div>
+    <h2 style="margin:0 0 18px;font-size:24px;font-weight:600;letter-spacing:-.01em">Designprinzipien</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="border:1px solid #251f1a;background:#1a1613;border-radius:16px;padding:18px">
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px">Ruhe vor Reiz</div>
+        <p style="margin:0;font-size:13.5px;line-height:1.55;color:#8c8379">Kein Gamification, keine Badges, kein sozialer Druck. Reine Utility. Jedes Element muss sich verdienen, da zu sein.</p>
+      </div>
+      <div style="border:1px solid #251f1a;background:#1a1613;border-radius:16px;padding:18px">
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px">Wertfrei, nicht kompetitiv</div>
+        <p style="margin:0;font-size:13.5px;line-height:1.55;color:#8c8379">Statistik zeigt gemeinsame Leistung, kein Ranking. Sprache bleibt neutral: „Aufteilung", nie „Gewinner".</p>
+      </div>
+      <div style="border:1px solid #251f1a;background:#1a1613;border-radius:16px;padding:18px">
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px">Einhand-tauglich</div>
+        <p style="margin:0;font-size:13.5px;line-height:1.55;color:#8c8379">Aktionen unten erreichbar, Hit-Boxes ≥ 44px, im Einkaufsmodus ≥ 46px. Optimiert für unterwegs.</p>
+      </div>
+      <div style="border:1px solid #251f1a;background:#1a1613;border-radius:16px;padding:18px">
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px">Whitespace &amp; ein Akzent</div>
+        <p style="margin:0;font-size:13.5px;line-height:1.55;color:#8c8379">Genau eine Akzentfarbe (Salbei) für Aktionen. Personen als ruhige, entsättigte Farb-Initialen — keine Fotos.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 Architektur -->
+  <div style="margin-top:56px;border-top:1px solid #221d18;padding-top:30px">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#86a596;margin-bottom:6px">02</div>
+    <h2 style="margin:0 0 18px;font-size:24px;font-weight:600;letter-spacing:-.01em">UI-Architektur</h2>
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#a89f95;max-width:640px">Persistente App-Shell mit Bottom-Navigation (3 Tabs). Jeder Tab hat einen Stack; Detail-Screens schieben sich darüber, Eingaben kommen als Bottom-Sheets. Der Einkaufsmodus ist ein modaler Vollbild-Zustand, der die Shell temporär ersetzt.</p>
+    <div style="border:1px solid #251f1a;background:#1a1613;border-radius:16px;padding:6px 18px">
+      <sc-for list="{{ arch }}" as="a" hint-placeholder-count="3">
+      <div style="display:flex;gap:16px;padding:15px 0;border-bottom:1px solid #221d18;align-items:flex-start">
+        <div style="flex:0 0 96px;font-size:14px;font-weight:600;color:#efe9e2">{{ a.tab }}</div>
+        <div style="flex:1;font-size:13.5px;line-height:1.55;color:#8c8379">{{ a.screens }}</div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- 03 Farben -->
+  <div style="margin-top:56px;border-top:1px solid #221d18;padding-top:30px">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#86a596;margin-bottom:6px">03</div>
+    <h2 style="margin:0 0 18px;font-size:24px;font-weight:600;letter-spacing:-.01em">Farb-Tokens</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <sc-for list="{{ colors }}" as="c" hint-placeholder-count="14">
+      <div style="display:flex;align-items:center;gap:13px;border:1px solid #251f1a;background:#1a1613;border-radius:12px;padding:11px 13px">
+        <span style="flex:0 0 auto;width:34px;height:34px;border-radius:9px;border:1px solid rgba(255,255,255,.08);background:{{ c.hex }}"></span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13.5px;font-weight:600;color:#efe9e2">{{ c.name }}</div>
+          <div style="font-size:11.5px;color:#8c8379">{{ c.use }}</div>
+        </div>
+        <code style="font-size:11.5px;color:#a89f95">{{ c.hex }}</code>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- 04 Typografie -->
+  <div style="margin-top:56px;border-top:1px solid #221d18;padding-top:30px">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#86a596;margin-bottom:6px">04</div>
+    <h2 style="margin:0 0 8px;font-size:24px;font-weight:600;letter-spacing:-.01em">Typografie</h2>
+    <p style="margin:0 0 18px;font-size:14px;color:#8c8379"><strong style="color:#c9c1b7">Hanken Grotesk</strong> für UI · <strong style="color:#c9c1b7">Geist Mono</strong> für alle Beträge (tabellarische Ziffern, <code style="font-size:12px">font-variant-numeric: tabular-nums</code>).</p>
+    <div style="border:1px solid #251f1a;background:#1a1613;border-radius:16px;padding:4px 18px">
+      <sc-for list="{{ type }}" as="t" hint-placeholder-count="7">
+      <div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid #221d18">
+        <div style="flex:1;color:#efe9e2;font-family:{{ t.fam }};font-size:{{ t.px }};font-weight:{{ t.w }};letter-spacing:{{ t.ls }}">{{ t.sample }}</div>
+        <div style="flex:0 0 200px;text-align:right"><div style="font-size:13px;font-weight:600;color:#c9c1b7">{{ t.name }}</div><code style="font-size:11px;color:#8c8379">{{ t.spec }}</code></div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- 05 Spacing & Radius -->
+  <div style="margin-top:56px;border-top:1px solid #221d18;padding-top:30px">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#86a596;margin-bottom:6px">05</div>
+    <h2 style="margin:0 0 18px;font-size:24px;font-weight:600;letter-spacing:-.01em">Spacing &amp; Radius</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div>
+        <div style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6f665d;margin-bottom:12px">Spacing-Skala · Basis 4</div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <sc-for list="{{ spacing }}" as="s" hint-placeholder-count="7">
+          <div style="display:flex;align-items:center;gap:12px">
+            <code style="flex:0 0 38px;font-size:12px;color:#a89f95">{{ s.px }}</code>
+            <span style="height:12px;border-radius:3px;background:#86a596;width:{{ s.px }}"></span>
+          </div>
+          </sc-for>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6f665d;margin-bottom:12px">Radius</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <sc-for list="{{ radius }}" as="r" hint-placeholder-count="6">
+          <div style="border:1px solid #332c25;background:#1a1613;padding:12px;border-radius:{{ r.px }}">
+            <div style="font-size:13px;font-weight:600;color:#efe9e2">{{ r.name }}</div>
+            <code style="font-size:11px;color:#8c8379">{{ r.px }}</code>
+          </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 06 Komponenten -->
+  <div style="margin-top:56px;border-top:1px solid #221d18;padding-top:30px">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#86a596;margin-bottom:6px">06</div>
+    <h2 style="margin:0 0 18px;font-size:24px;font-weight:600;letter-spacing:-.01em">Komponenten-Inventar</h2>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ components }}" as="k" hint-placeholder-count="10">
+      <div style="border:1px solid #251f1a;background:#1a1613;border-radius:14px;padding:15px 17px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:5px">
+          <span style="font-size:14.5px;font-weight:600;color:#efe9e2">{{ k.name }}</span>
+          <code style="font-size:11px;color:#86a596">{{ k.tag }}</code>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.55;color:#8c8379">{{ k.spec }}</p>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- 07 Flows -->
+  <div style="margin-top:56px;border-top:1px solid #221d18;padding-top:30px">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#86a596;margin-bottom:6px">07</div>
+    <h2 style="margin:0 0 18px;font-size:24px;font-weight:600;letter-spacing:-.01em">Kern-Flows</h2>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <sc-for list="{{ flows }}" as="f" hint-placeholder-count="3">
+      <div style="border:1px solid #251f1a;background:#1a1613;border-radius:16px;padding:18px">
+        <div style="font-size:15.5px;font-weight:600;margin-bottom:12px;color:#efe9e2">{{ f.title }}</div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+          <sc-for list="{{ f.steps }}" as="st" hint-placeholder-count="4">
+          <span style="display:inline-flex;align-items:center;gap:8px">
+            <span style="font-size:12.5px;color:#c9c1b7;background:#221d18;border:1px solid #332c25;border-radius:8px;padding:6px 11px">{{ st.label }}</span>
+            <span style="color:#5f574e">{{ st.arrow }}</span>
+          </span>
+          </sc-for>
+        </div>
+        <p style="margin:12px 0 0;font-size:13px;line-height:1.55;color:#8c8379">{{ f.note }}</p>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- 08 Tailwind config -->
+  <div style="margin-top:56px;border-top:1px solid #221d18;padding-top:30px">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#86a596;margin-bottom:6px">08</div>
+    <h2 style="margin:0 0 16px;font-size:24px;font-weight:600;letter-spacing:-.01em">Tailwind-Config</h2>
+    <div style="background:#0d0b09;border:1px solid #251f1a;border-radius:16px;padding:20px 22px;overflow-x:auto"><pre style="color:#cdc6bc">{{ tailwindCode }}</pre></div>
+  </div>
+
+  <!-- 09 Sample component -->
+  <div style="margin-top:56px;border-top:1px solid #221d18;padding-top:30px">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#86a596;margin-bottom:6px">09</div>
+    <h2 style="margin:0 0 8px;font-size:24px;font-weight:600;letter-spacing:-.01em">Beispiel-Komponente · BalanceCard</h2>
+    <p style="margin:0 0 16px;font-size:13.5px;color:#8c8379">Variante B (Karte) — die festgelegte und einzige Header-Variante in v1. Beträge als <code style="font-size:12px">font-mono</code>. Übergib diese Datei direkt als Referenz für Stil &amp; Token-Nutzung.</p>
+    <div style="background:#0d0b09;border:1px solid #251f1a;border-radius:16px;padding:20px 22px;overflow-x:auto"><pre style="color:#cdc6bc">{{ sampleCode }}</pre></div>
+  </div>
+
+  <!-- 10 PWA -->
+  <div style="margin-top:56px;border-top:1px solid #221d18;padding-top:30px">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#86a596;margin-bottom:6px">10</div>
+    <h2 style="margin:0 0 18px;font-size:24px;font-weight:600;letter-spacing:-.01em">PWA-Hinweise</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <sc-for list="{{ pwa }}" as="p" hint-placeholder-count="4">
+      <div style="border:1px solid #251f1a;background:#1a1613;border-radius:14px;padding:16px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:5px;color:#efe9e2">{{ p.t }}</div>
+        <p style="margin:0;font-size:13px;line-height:1.55;color:#8c8379">{{ p.d }}</p>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="margin-top:64px;border-top:1px solid #221d18;padding-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <span style="font-size:12.5px;color:#6f665d">Couple Organizer · Calm-Tech Design-System · v1</span>
+    <span style="font-size:12.5px;color:#6f665d">Begleitend zum interaktiven Prototyp</span>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){
+    return {
+      tailwindCode: `// tailwind.config.js\nmodule.exports = {\n  darkMode: 'class',\n  theme: {\n    extend: {\n      colors: {\n        bg:       '#1a1613',\n        surface:  '#221d18',\n        surface2: '#2b251f',\n        hairline: '#332c25',\n        subtle:   '#251f1a',\n        ink: { DEFAULT: '#efe9e2', mid: '#a89f95', lo: '#8c8379', faint: '#6f665d' },\n        accent: { DEFAULT: '#86a596', press: '#738f81', tint: 'rgba(134,165,150,0.14)' },\n        chris: '#8aa2c2',\n        sarah: '#c69a86',\n        tag: { abo:'#8aa2c2', auto:'#c69a86', haushalt:'#a99ac2', essen:'#c98a7e' },\n      },\n      fontFamily: {\n        sans: ['Hanken Grotesk', 'system-ui', 'sans-serif'],\n        mono: ['Geist Mono', 'ui-monospace', 'monospace'],\n      },\n      borderRadius: { sm:'11px', md:'14px', lg:'18px', xl:'22px', sheet:'26px' },\n    },\n  },\n};`,
+      sampleCode: `type Props = { amount: string; subject: string; onSettle: () => void };\n\nexport function BalanceCard({ amount, subject, onSettle }: Props) {\n  return (\n    <section className="relative overflow-hidden rounded-xl border border-[#38423d]\n                        bg-gradient-to-br from-[#2c3833] to-[#23201b] p-5">\n      <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40\n                      rounded-full bg-accent/20 blur-2xl" />\n\n      <div className="flex items-center justify-between">\n        <span className="text-xs font-semibold uppercase tracking-wider text-[#9fb5ac]">\n          Gemeinsamer Saldo\n        </span>\n        <span className="flex items-center gap-1.5 text-xs text-[#9fb5ac]">\n          <i className="h-1.5 w-1.5 rounded-full bg-accent" />aktiv\n        </span>\n      </div>\n\n      <p className="mt-5 font-mono text-4xl font-medium tracking-tight text-ink">\n        {amount}\n      </p>\n\n      <div className="mt-1.5 flex items-center gap-2 text-sm text-[#bcd0c7]">\n        <span className="grid h-5 w-5 place-items-center rounded-md\n                         bg-sarah text-[11px] font-semibold text-bg">S</span>\n        <span>{subject}</span>\n      </div>\n\n      <button onClick={onSettle}\n        className="mt-5 w-full rounded-[13px] bg-accent py-3\n                   text-sm font-semibold text-bg active:bg-accent-press">\n        Begleichen\n      </button>\n    </section>\n  );\n}`,
+      arch: [
+        { tab:'Finanzen', screens:'Dashboard (Saldo-Header + Letzte Ausgaben + Event-Schiene) · Event-Detail (offen / abgeschlossen) · Bottom-Sheet „Ausgabe hinzufügen" · FAB (+)' },
+        { tab:'Chores', screens:'Segmented Control: Pool ↔ Statistik · Quick-Actions (2×2 Grid) · Aufgaben-Pool (Tap-to-check, mehrfach/Tag) · Statistik (wertfrei, gemeinsam)' },
+        { tab:'Einkaufen', screens:'Listen-Übersicht (Multi-Listen + wiederkehrende Vorlage) · Listen-Detail (gruppiert) · Einkaufsmodus (Vollbild, kontrastreich) · Checkout-Modal → Finanzen' },
+      ],
+      colors: [
+        { name:'bg', use:'App-Hintergrund', hex:'#1a1613' },
+        { name:'surface', use:'Karten, Sheets', hex:'#221d18' },
+        { name:'surface2', use:'Inputs, erhöhte Flächen', hex:'#2b251f' },
+        { name:'hairline', use:'Rahmen, Trennlinien', hex:'#332c25' },
+        { name:'ink', use:'Primärtext', hex:'#efe9e2' },
+        { name:'ink.mid', use:'Sekundärtext', hex:'#a89f95' },
+        { name:'ink.lo', use:'Meta-Text', hex:'#8c8379' },
+        { name:'ink.faint', use:'Labels / Uppercase', hex:'#6f665d' },
+        { name:'accent', use:'Salbei · primäre Aktion', hex:'#86a596' },
+        { name:'accent.press', use:'Aktiv-Zustand', hex:'#738f81' },
+        { name:'chris', use:'Person Chris', hex:'#8aa2c2' },
+        { name:'sarah', use:'Person Sarah', hex:'#c69a86' },
+        { name:'tag.haushalt', use:'Tag-Punkt', hex:'#a99ac2' },
+        { name:'tag.essen', use:'Tag-Punkt', hex:'#c98a7e' },
+      ],
+      type: [
+        { name:'Display / Betrag', spec:'Geist Mono · 500 · 44px', fam:"'Geist Mono',monospace", px:'40px', w:'500', ls:'-.02em', sample:'23,40 €' },
+        { name:'H1', spec:'Hanken · 600 · 30px', fam:"'Hanken Grotesk',sans-serif", px:'28px', w:'600', ls:'-.02em', sample:'Überschrift' },
+        { name:'Screen-Titel', spec:'Hanken · 600 · 22px', fam:"'Hanken Grotesk',sans-serif", px:'22px', w:'600', ls:'-.01em', sample:'Finanzen' },
+        { name:'Body', spec:'Hanken · 500 · 15px', fam:"'Hanken Grotesk',sans-serif", px:'15px', w:'500', ls:'0', sample:'REWE Wocheneinkauf' },
+        { name:'Meta', spec:'Hanken · 400 · 12px', fam:"'Hanken Grotesk',sans-serif", px:'12px', w:'400', ls:'0', sample:'Sarah · Heute' },
+        { name:'Label', spec:'Hanken · 600 · 12px · .12em', fam:"'Hanken Grotesk',sans-serif", px:'12px', w:'600', ls:'.12em', sample:'AKTUELLER SALDO' },
+        { name:'Mono-Betrag', spec:'Geist Mono · 500 · 14px', fam:"'Geist Mono',monospace", px:'14px', w:'500', ls:'0', sample:'52,40 €' },
+      ],
+      spacing: [
+        { px:'4px' },{ px:'8px' },{ px:'12px' },{ px:'16px' },{ px:'20px' },{ px:'24px' },{ px:'32px' },
+      ],
+      radius: [
+        { name:'sm', px:'11px' },{ name:'md', px:'14px' },{ name:'lg', px:'18px' },{ name:'xl', px:'22px' },{ name:'sheet', px:'26px' },{ name:'pill', px:'999px' },
+      ],
+      components: [
+        { name:'BalanceHeader (Variante B · Karte) ✓ final', tag:'<BalanceHeader>', spec:'FESTGELEGT. Salbei-Gradient-Karte mit Glow, Betrag zentral (Mono), Person-Initial + Subjekt, Full-width „Begleichen". An die Referenz angelehnt. Einzige Header-Variante im Build.' },
+        { name:'BalanceHeader — verworfene Varianten', tag:'archiviert', spec:'A · Ledger (reine Textzeile, kein Container) und C · Balance-Bar (visuelle Waage Chris↔Sarah) wurden im Prototyp evaluiert und nicht gewählt. Bei Bedarf reaktivierbar, aber nicht Teil von v1.' },
+        { name:'ExpenseRow', tag:'<ExpenseRow>', spec:'Avatar-Initial (Zahler-Farbe) + Titel/Sub + Betrag (Mono) + Tag-Punkt. Trennlinie subtle. 14px vertikales Padding.' },
+        { name:'EventCard', tag:'<EventCard>', spec:'Horizontale Schiene, 168px breit. Name, Topf-Summe, Fortschrittsbalken, Meta. Tap → Event-Detail.' },
+        { name:'QuickAction (persönlich, editierbar)', tag:'<QuickAction>', spec:'2×2 Grid persönlicher Routinen — vier pro Person. „Für dich / Für Sarah"-Toggle + „Bearbeiten" macht die Kacheln zu Textfeldern. One-Tap loggt sofort mit Toast. Pro Partner separat gepflegt.' },
+        { name:'ChoreRow + Filter', tag:'<ChoreRow>', spec:'Große Tap-Checkbox (30px) + Name + „Fällig · Tag · Frequenz" + Zahler-Initial-Chip rechts. Darüber Filter „Mir zugewiesen" (Default) / „Sarah" / „Alle" plus abgesetzt „Offen N" (gestrichelter Terracotta-Rand, Count-Badge) für nicht zugewiesene Aufgaben — deren Chip zeigt ein gestricheltes „?". Mehrfach/Tag erlaubt; abgehakt → durchgestrichen + Salbei-Box. Leerer Zustand mit ruhiger Bestätigung.' },
+        { name:'TimelineEntry (Verlauf)', tag:'<TimelineEntry>', spec:'Vertikale Timeline, gruppiert nach Tag. Linie + farbiger Punkt (Zahler-Farbe, Salbei bei gemeinsam), Karte mit Name, überlappenden Initial-Chips, „Wer · Uhrzeit". „⋯" klappt inline Aktionen auf: Zuweisen (Chris / Sarah / Beide) und „Eintrag löschen". Gemeinsame Aufgaben (Chris & Sarah) als eigener Zustand.' },
+        { name:'ListCard', tag:'<ListCard>', spec:'Mono-Zähler-Badge + Name + Meta + Chevron. Wiederkehrende Vorlage als gestrichelte Variante.' },
+        { name:'ShoppingItem (Modus)', tag:'<ShoppingItem big>', spec:'Vollbreite Tap-Zeile, 46px Checkbox links, 22px Label. Hoher Kontrast (#0a0908). Einhand-optimiert.' },
+        { name:'BottomNav', tag:'<BottomNav>', spec:'3 Text-Tabs, aktiver mit Salbei-Punkt + heller Schrift. Blur-Hintergrund, Safe-Area-Padding. Bewusst icon-frei (Calm).' },
+        { name:'Sheet / Modal', tag:'<BottomSheet>', spec:'Von unten, Radius 26px oben, Grab-Handle, abgedunkelter Backdrop. Für „Ausgabe hinzufügen" & Checkout.' },
+        { name:'Toast', tag:'<Toast>', spec:'Kurz, zentriert über der Nav. Bestätigt Aktionen („erledigt ✓"). Auto-Dismiss ~1,9s.' },
+      ],
+      flows: [
+        { title:'Saldo begleichen', steps:[ {label:'Dashboard',arrow:'→'},{label:'„Begleichen"',arrow:'→'},{label:'Saldo = 0',arrow:'→'},{label:'Toast',arrow:''} ], note:'Ein Tap gleicht den offenen Netto-Betrag aus. Header wechselt auf „Alles ausgeglichen". Optional: Bestätigungs-Sheet bei großen Beträgen.' },
+        { title:'Aufgabe erledigen & filtern', steps:[ {label:'Filter „Mir zugewiesen" (Default)',arrow:'→'},{label:'Tap Checkbox',arrow:'→'},{label:'sofort geloggt',arrow:'→'},{label:'in Statistik',arrow:''} ], note:'Default-Ansicht zeigt die mir zugewiesenen Aufgaben; „Sarah" und „Alle" als weitere Filter (Zahler-Chip pro Zeile), abgesetzt der „Offen"-Reiter für noch nicht zugewiesene Aufgaben. Abhaken jederzeit, auch mehrfach am Tag — kein Punktestand, ruhiges Feedback.' },
+        { title:'Schnellaktionen anpassen', steps:[ {label:'„Für dich / Für Sarah"',arrow:'→'},{label:'„Bearbeiten"',arrow:'→'},{label:'4 Kacheln umbenennen',arrow:'→'},{label:'„Fertig"',arrow:''} ], note:'Jede Person pflegt vier eigene Routinen (Dinge, die man regelmäßig für sich erledigt). Im Edit-Modus werden die Kacheln zu Textfeldern; pro Partner getrennt gespeichert.' },
+        { title:'Einkauf → Finanzen', steps:[ {label:'Liste',arrow:'→'},{label:'Einkaufsmodus',arrow:'→'},{label:'abhaken',arrow:'→'},{label:'„Beenden"',arrow:'→'},{label:'Checkout',arrow:'→'},{label:'#Lebensmittel',arrow:''} ], note:'Signatur-Flow: Vollbild-Modus zum Abhaken unterwegs → beim Beenden Betrag per Keypad eingeben → Toggle „In Finanzen übertragen" legt die Ausgabe getaggt im Finanzplaner an.' },
+        { title:'Ausgabe erfassen', steps:[ {label:'FAB (+)',arrow:'→'},{label:'Betrag (Keypad)',arrow:'→'},{label:'Titel · Zahler · Tag',arrow:'→'},{label:'Aufteilung 50/50 ∣ individuell',arrow:'→'},{label:'„Hinzufügen"',arrow:''} ], note:'Bottom-Sheet mit eigenem Keypad. Zahler-Toggle (Chris/Sarah), horizontale Tag-Chips, Aufteilung 50/50 oder per Slider individuell (%-Anzeige beider Partner). Erscheint sofort in „Letzte Ausgaben".' },
+        { title:'Liste & Artikel anlegen', steps:[ {label:'Übersicht',arrow:'→'},{label:'„+ Neue Liste"',arrow:'→'},{label:'Name',arrow:'→'},{label:'Detail: „Artikel hinzufügen…"',arrow:'→'},{label:'Add',arrow:''} ], note:'Leere Liste per Sheet anlegen. In der Detail-Ansicht inline-Eingabe am Ende der Gruppen; neue Artikel sammeln sich unter „Neu hinzugefügt" und sind sofort abhakbar.' },
+        { title:'Verlauf · ansehen, zuweisen, löschen', steps:[ {label:'Tab „Verlauf"',arrow:'→'},{label:'aktueller Monat (Default)',arrow:'→'},{label:'Monat filtern',arrow:'→'},{label:'„⋯" am Eintrag',arrow:'→'},{label:'zuweisen ∣ löschen',arrow:''} ], note:'Vertikale Timeline mit aktuellem Datum oben, immer der laufende Monat als Default; vergangene Monate per Filter. Pro Eintrag inline Neu-Zuweisung (Chris / Sarah / Beide) oder Löschen. Aufgaben lassen sich gemeinsam tracken — z. B. „Spülen · Chris & Sarah" mit zwei Initial-Chips.' },
+      ],
+      pwa: [
+        { t:'Manifest & Theme', d:'display: standalone · theme-color #1a1613 · background-color #120f0c · Hochformat. Icons maskable.' },
+        { t:'Safe Areas', d:'viewport-fit=cover; Bottom-Nav und Sheets nutzen env(safe-area-inset-bottom). Status-Bar-Padding oben.' },
+        { t:'Dark als Default', d:'Dark ist Primär-Ansicht, nicht nur prefers-color-scheme. Optionaler heller Modus später — Tokens sind dafür vorbereitet.' },
+        { t:'Offline & Sync', d:'Service Worker cached Shell; Aktionen (Ausgaben, Chores, Abhaken) optimistisch lokal, Sync im Hintergrund. Zwei-Personen-Realtime genügt.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

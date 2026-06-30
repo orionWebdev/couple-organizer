@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from '@ionic/vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 
 const router = createRouter({
@@ -22,27 +22,22 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: '/overview'
+          redirect: '/finanzen'
         },
         {
-          path: 'overview',
-          name: 'overview',
-          component: () => import('@/views/OverviewView.vue')
+          path: 'finanzen',
+          name: 'finanzen',
+          component: () => import('@/views/FinanzenView.vue')
         },
         {
-          path: 'plan',
-          name: 'plan',
-          component: () => import('@/views/PlanenView.vue')
+          path: 'haushalt',
+          name: 'haushalt',
+          component: () => import('@/views/HaushaltView.vue')
         },
         {
-          path: 'shopping',
-          name: 'shopping',
-          component: () => import('@/views/ShoppingView.vue')
-        },
-        {
-          path: 'finance',
-          name: 'finance',
-          component: () => import('@/views/FinanceView.vue')
+          path: 'einkaufen',
+          name: 'einkaufen',
+          component: () => import('@/views/EinkaufenView.vue')
         }
       ]
     }
@@ -59,7 +54,6 @@ router.beforeEach(async (to) => {
   const isAuthenticated = !!user.value
   const hasCouple = !!user.value?.coupleId
 
-  // Meta is merged from parent routes in Vue Router 4
   if (to.meta.requiresAuth && !isAuthenticated) {
     return { name: 'login' }
   }
@@ -69,11 +63,11 @@ router.beforeEach(async (to) => {
   }
 
   if (to.name === 'login' && isAuthenticated) {
-    return hasCouple ? { name: 'overview' } : { name: 'couple-setup' }
+    return hasCouple ? { name: 'finanzen' } : { name: 'couple-setup' }
   }
 
   if (to.name === 'couple-setup' && hasCouple) {
-    return { name: 'overview' }
+    return { name: 'finanzen' }
   }
 })
 

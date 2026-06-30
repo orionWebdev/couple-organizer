@@ -1,117 +1,203 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import {
-  IonPage,
-  IonContent,
-  IonInput,
-  IonButton
-} from '@ionic/vue'
-import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
+import { useAuth } from '@/composables/useAuth'
+import { useRouter } from 'vue-router'
 
-const router = useRouter()
+const { createCouple, joinCouple, loading, error } = useCouple()
 const { logout } = useAuth()
-const { couple, loading, error, createCouple, joinCouple } = useCouple()
+const router = useRouter()
 
-const inviteInput = ref('')
-const created = ref(false)
+const mode = ref<'choose' | 'create' | 'join'>('choose')
+const inviteCode = ref('')
+const localError = ref('')
 
 async function handleCreate() {
+  localError.value = ''
   await createCouple()
-  created.value = true
+  if (!error.value) router.push('/')
+  else localError.value = error.value || ''
 }
 
 async function handleJoin() {
-  await joinCouple(inviteInput.value)
-  if (!error.value) {
-    router.push('/')
-  }
+  localError.value = ''
+  if (!inviteCode.value.trim()) return
+  await joinCouple(inviteCode.value.trim())
+  if (!error.value) router.push('/')
+  else localError.value = error.value || ''
 }
 
-function goToDashboard() {
-  router.push('/')
+async function handleLogout() {
+  await logout()
+  router.push('/login')
 }
 </script>
 
 <template>
-  <ion-page>
-    <ion-content class="ion-padding">
-      <div class="min-h-full flex items-center justify-center">
-        <div class="w-full max-w-sm">
-          <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-green-500">Paarplaner</h1>
-            <p class="text-slate-400 mt-2">Paar einrichten</p>
-          </div>
-
-          <div class="space-y-6">
-            <!-- After creating: show invite code -->
-            <div v-if="created && couple" class="text-center space-y-4">
-              <h2 class="text-xl font-semibold text-green-400">Paar erstellt!</h2>
-              <p class="text-slate-300">Teile diesen Einladungscode mit deinem Partner:</p>
-              <div class="bg-slate-700 rounded-xl py-4 px-6">
-                <span class="text-3xl font-mono font-bold tracking-widest text-green-400">
-                  {{ couple.inviteCode }}
-                </span>
-              </div>
-              <p class="text-sm text-slate-400">Dein Partner gibt diesen Code ein, um beizutreten</p>
-              <ion-button expand="block" @click="goToDashboard">
-                Zur Übersicht
-              </ion-button>
-            </div>
-
-            <!-- Default: create or join -->
-            <template v-else>
-              <div>
-                <h3 class="font-semibold text-lg mb-3">Paar erstellen</h3>
-                <ion-button expand="block" @click="handleCreate" :disabled="loading">
-                  {{ loading ? 'Erstelle...' : 'Neues Paar erstellen' }}
-                </ion-button>
-              </div>
-
-              <div class="relative">
-                <div class="absolute inset-0 flex items-center">
-                  <div class="w-full border-t border-slate-700"></div>
-                </div>
-                <div class="relative flex justify-center text-sm">
-                  <span class="bg-slate-900 px-4 text-slate-400">oder</span>
-                </div>
-              </div>
-
-              <div>
-                <h3 class="font-semibold text-lg mb-3">Mit Einladungscode beitreten</h3>
-                <div class="flex gap-2">
-                  <ion-input
-                    v-model="inviteInput"
-                    type="text"
-                    placeholder="Code eingeben"
-                    :maxlength="6"
-                    fill="outline"
-                    class="flex-1 uppercase tracking-widest font-mono text-center"
-                  />
-                  <ion-button
-                    @click="handleJoin"
-                    :disabled="loading || inviteInput.length < 6"
-                  >
-                    Beitreten
-                  </ion-button>
-                </div>
-              </div>
-            </template>
-
-            <p v-if="error" class="text-red-400 text-sm text-center">{{ error }}</p>
-
-            <ion-button
-              expand="block"
-              fill="clear"
-              color="medium"
-              @click="logout"
-            >
-              Abmelden
-            </ion-button>
-          </div>
-        </div>
+  <div class="setup-page">
+    <div class="setup-inner">
+      <div class="setup-header">
+        <h1 class="setup-title">Paarplaner</h1>
+        <p class="setup-sub">Verbinde dich mit deiner Person</p>
       </div>
-    </ion-content>
-  </ion-page>
+
+      <!-- Choose mode -->
+      <div v-if="mode === 'choose'" class="setup-actions">
+        <button class="btn-primary" @click="mode = 'create'">
+          Neues Paar erstellen
+        </button>
+        <button class="btn-secondary" @click="mode = 'join'">
+          Mit Code beitreten
+        </button>
+      </div>
+
+      <!-- Create couple -->
+      <div v-else-if="mode === 'create'" class="setup-card">
+        <p class="setup-info">
+          Erstelle ein neues Paar und teile den Einladungscode mit deiner Person.
+        </p>
+        <p v-if="localError" class="error-msg">{{ localError }}</p>
+        <button class="btn-primary" :disabled="loading" @click="handleCreate">
+          {{ loading ? 'Erstellen…' : 'Paar erstellen' }}
+        </button>
+        <button class="back-btn" @click="mode = 'choose'">Zurück</button>
+      </div>
+
+      <!-- Join couple -->
+      <div v-else-if="mode === 'join'" class="setup-card">
+        <p class="setup-info">Gib den Einladungscode deiner Person ein:</p>
+        <input
+          v-model="inviteCode"
+          class="app-field invite-input"
+          type="text"
+          placeholder="XXXXXX"
+          maxlength="6"
+          autocomplete="off"
+          spellcheck="false"
+          @input="inviteCode = inviteCode.toUpperCase()"
+        />
+        <p v-if="localError" class="error-msg">{{ localError }}</p>
+        <button class="btn-primary" :disabled="loading || !inviteCode.trim()" @click="handleJoin">
+          {{ loading ? 'Verbinden…' : 'Beitreten' }}
+        </button>
+        <button class="back-btn" @click="mode = 'choose'">Zurück</button>
+      </div>
+
+      <button class="logout-btn" @click="handleLogout">Abmelden</button>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.setup-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px var(--screen-pad);
+  background: var(--bg);
+}
+
+.setup-inner {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.setup-header {
+  text-align: center;
+}
+
+.setup-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+
+.setup-sub {
+  font-size: 14px;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+.setup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px 20px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.btn-secondary:active {
+  background: var(--surface-deep);
+}
+
+.setup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.setup-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.invite-input {
+  font-family: 'Geist Mono', monospace;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.error-msg {
+  font-size: 13px;
+  color: var(--danger);
+  margin: 0;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px;
+  text-align: center;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px;
+  text-align: center;
+  margin-top: 8px;
+}
+</style>

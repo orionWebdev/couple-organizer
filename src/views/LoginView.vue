@@ -1,112 +1,145 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import {
-  IonPage,
-  IonContent,
-  IonInput,
-  IonButton
-} from '@ionic/vue'
 import { useAuth } from '@/composables/useAuth'
+import { useRouter } from 'vue-router'
 
+const { login, register } = useAuth()
 const router = useRouter()
-const { login, register, error } = useAuth()
 
-const isRegister = ref(false)
+const mode = ref<'login' | 'register'>('login')
 const email = ref('')
 const password = ref('')
 const displayName = ref('')
-const submitting = ref(false)
+const loading = ref(false)
+const localError = ref('')
 
-async function handleSubmit() {
-  submitting.value = true
+async function submit() {
+  localError.value = ''
+  loading.value = true
   try {
-    if (isRegister.value) {
-      await register(email.value, password.value, displayName.value)
-    } else {
+    if (mode.value === 'login') {
       await login(email.value, password.value)
+    } else {
+      await register(email.value, password.value, displayName.value)
     }
     router.push('/')
-  } catch {
-    // error is set by useAuth
+  } catch (e: any) {
+    localError.value = e.message || 'Ein Fehler ist aufgetreten.'
   } finally {
-    submitting.value = false
+    loading.value = false
   }
 }
 </script>
 
 <template>
-  <ion-page>
-    <ion-content class="ion-padding">
-      <div class="min-h-full flex items-center justify-center">
-        <div class="w-full max-w-sm">
-          <!-- Logo / Title -->
-          <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-green-500">Paarplaner</h1>
-            <p class="text-slate-400 mt-2">Gemeinsam organisiert</p>
-          </div>
-
-          <!-- Form -->
-          <div class="space-y-4">
-            <h2 class="text-xl font-semibold text-center">
-              {{ isRegister ? 'Konto erstellen' : 'Willkommen zurück' }}
-            </h2>
-
-            <ion-input
-              v-if="isRegister"
-              v-model="displayName"
-              type="text"
-              label="Name"
-              label-placement="floating"
-              fill="outline"
-              placeholder="Dein Name"
-              required
-            />
-
-            <ion-input
-              v-model="email"
-              type="email"
-              label="E-Mail"
-              label-placement="floating"
-              fill="outline"
-              placeholder="du@beispiel.de"
-              required
-            />
-
-            <ion-input
-              v-model="password"
-              type="password"
-              label="Passwort"
-              label-placement="floating"
-              fill="outline"
-              placeholder="Mindestens 6 Zeichen"
-              required
-              :minlength="6"
-            />
-
-            <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
-
-            <ion-button
-              expand="block"
-              @click="handleSubmit"
-              :disabled="submitting"
-            >
-              {{ submitting ? 'Bitte warten...' : (isRegister ? 'Registrieren' : 'Anmelden') }}
-            </ion-button>
-
-            <p class="text-center text-sm text-slate-400">
-              {{ isRegister ? 'Bereits ein Konto?' : 'Noch kein Konto?' }}
-              <button
-                type="button"
-                @click="isRegister = !isRegister"
-                class="text-green-400 font-medium hover:underline ml-1"
-              >
-                {{ isRegister ? 'Anmelden' : 'Registrieren' }}
-              </button>
-            </p>
-          </div>
-        </div>
+  <div class="login-page">
+    <div class="login-inner">
+      <div class="login-header">
+        <h1 class="app-name">Paarplaner</h1>
+        <p class="app-tagline">Gemeinsam organisiert</p>
       </div>
-    </ion-content>
-  </ion-page>
+
+      <form class="login-form" @submit.prevent="submit">
+        <input
+          v-if="mode === 'register'"
+          v-model="displayName"
+          class="app-field"
+          type="text"
+          placeholder="Dein Name"
+          autocomplete="name"
+          required
+        />
+
+        <input
+          v-model="email"
+          class="app-field"
+          type="email"
+          placeholder="E-Mail"
+          autocomplete="email"
+          required
+        />
+
+        <input
+          v-model="password"
+          class="app-field"
+          type="password"
+          :placeholder="mode === 'register' ? 'Passwort wählen' : 'Passwort'"
+          autocomplete="current-password"
+          required
+        />
+
+        <p v-if="localError" class="error-msg">{{ localError }}</p>
+
+        <button type="submit" class="btn-primary" :disabled="loading">
+          {{ loading ? 'Laden…' : mode === 'login' ? 'Anmelden' : 'Registrieren' }}
+        </button>
+      </form>
+
+      <button class="toggle-btn" @click="mode = mode === 'login' ? 'register' : 'login'">
+        {{ mode === 'login' ? 'Noch kein Konto? Registrieren' : 'Bereits ein Konto? Anmelden' }}
+      </button>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.login-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px var(--screen-pad);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(134, 165, 150, 0.08) 0%, transparent 40%),
+    var(--bg);
+}
+
+.login-inner {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.login-header {
+  text-align: center;
+}
+
+.app-name {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+
+.app-tagline {
+  font-size: 14px;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.error-msg {
+  font-size: 13px;
+  color: var(--danger);
+  margin: 0;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  padding: 8px;
+}
+</style>

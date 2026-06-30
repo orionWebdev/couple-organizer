@@ -1,20 +1,42 @@
 <script setup lang="ts">
-import { IonApp, IonRouterOutlet } from '@ionic/vue'
+import { RouterView } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 
 const { loading } = useAuth()
 </script>
 
 <template>
-  <ion-app>
-    <!-- Global loading state while auth initializes -->
-    <div v-if="loading" class="min-h-screen flex items-center justify-center">
-      <div class="text-center">
-        <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-green-500 border-r-transparent"></div>
-        <p class="mt-2 text-slate-400 text-sm">Laden...</p>
-      </div>
+  <div class="app-root">
+    <div v-if="loading" class="loading-screen">
+      <div class="loading-spinner" />
     </div>
-
-    <ion-router-outlet v-else />
-  </ion-app>
+    <RouterView v-else />
+  </div>
 </template>
+
+<style scoped>
+.app-root {
+  min-height: 100dvh;
+  background: var(--bg);
+}
+
+.loading-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>

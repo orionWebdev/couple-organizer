@@ -11,12 +11,11 @@ import {
   doc,
   serverTimestamp,
   setDoc,
-  writeBatch
+  writeBatch,
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { RecipeIngredient, ShoppingItem, ShoppingList } from '@/types'
-import { mergeIngredients } from '@/utils/mergeIngredients'
+import type { ShoppingItem, ShoppingList } from '@/types'
 
 interface AddShoppingItemInput {
   listId: string
@@ -24,12 +23,6 @@ interface AddShoppingItemInput {
   amount?: number
   unit?: string
   category?: string
-}
-
-interface ShoppingFromMealPlanResult {
-  added: number
-  skipped: number
-  totalMerged: number
 }
 
 function toMillis(timestamp: unknown): number {
@@ -346,99 +339,6 @@ export function useShopping(coupleId: Ref<string | null>) {
     }
   }
 
-async function generateItemsFromIngredients(
-  listId: string,
-  ingredients: ReadonlyArray<RecipeIngredient>,
-  weekKey: string
-): Promise<ShoppingFromMealPlanResult> {
-  if (!coupleId.value || !user.value) {
-    return { added: 0, skipped: 0, totalMerged: 0 }
-  }
-
-  const merged = mergeIngredients([{ ingredients }])
-
-  const existingItemMap = new Map<string, ShoppingItem>(
-    items.value
-      .filter((item) => item.listId === listId && !item.checked)
-      .map((item) => [
-        `${normalizeText(item.name)}__${normalizeUnit(item.unit)}`,
-        item
-      ])
-  )
-
-  let added = 0
-  let mergedCount = 0
-
-  const batch = writeBatch(db)
-
-  for (const ingredient of merged) {
-    if (!ingredient.name) continue
-
-    const key = `${normalizeText(ingredient.name)}__${normalizeUnit(ingredient.unit)}`
-    const existing = existingItemMap.get(key)
-
-    if (existing) {
-      // ✅ MERGE
-     const existingBase = convertToBaseUnit(existing.amount, existing.unit)
-      const incomingBase = convertToBaseUnit(ingredient.amount, ingredient.unit)
-      const newAmount = existingBase.amount + incomingBase.amount
-
-      batch.update(doc(db, 'shoppingItems', existing.id), {
-        amount: newAmount,
-        unit: existingBase.unit, // <- wichtig!
-        updatedAt: serverTimestamp()
-      })
-
-      mergedCount += 1
-    } else {
-      // ✅ NEW ITEM
-      const ref = doc(collection(db, 'shoppingItems'))
-
-      batch.set(ref, {
-        coupleId: coupleId.value,
-        listId,
-        name: ingredient.name,
-        ...(ingredient.amount && ingredient.amount > 0
-          ? { amount: ingredient.amount }
-          : {}),
-        ...(ingredient.unit?.trim()
-          ? { unit: ingredient.unit.trim() }
-          : {}),
-        category: 'Lebensmittel',
-        checked: false,
-        addedBy: user.value.uid,
-        source: 'mealPlan',
-        sourceWeekKey: weekKey,
-        expenseId: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      })
-
-      added += 1
-
-      // wichtig für mehrfach-merge innerhalb derselben liste
-      existingItemMap.set(key, {
-        ...ingredient,
-        id: ref.id
-      } as ShoppingItem)
-    }
-  }
-
-  // ✅ WICHTIG: commit immer wenn etwas passiert ist
-  if (added > 0 || mergedCount > 0) {
-    batch.update(doc(db, 'shoppingLists', listId), {
-      updatedAt: serverTimestamp()
-    })
-
-    await batch.commit()
-  }
-
-  return {
-    added,
-    skipped: 0, 
-    totalMerged: mergedCount
-  }
-}
   async function linkItemsToExpense(itemIds: string[], expenseId: string) {
     if (itemIds.length === 0) return
     try {
@@ -482,7 +382,6 @@ async function generateItemsFromIngredients(
     toggleChecked,
     deleteItem,
     clearChecked,
-    generateItemsFromIngredients,
     linkItemsToExpense
   }
 }

@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import type { Chore, ChoreAssignee, Couple } from '@/types'
 import TaskRowAll from './TaskRowAll.vue'
+import { useJustAdded } from '@/composables/useJustAdded'
 
 const props = defineProps<{
   chores: readonly Chore[]
@@ -36,6 +37,8 @@ const filtered = computed(() => {
 function toggleMenu(id: string) {
   menuOpenId.value = menuOpenId.value === id ? null : id
 }
+
+const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
 </script>
 
 <template>
@@ -49,13 +52,14 @@ function toggleMenu(id: string) {
     </div>
 
     <div v-if="filtered.length === 0" class="empty">Hier ist gerade nichts. Schön ruhig. ✓</div>
-    <div v-else class="list">
+    <TransitionGroup v-else tag="div" name="list-add" class="list">
       <TaskRowAll
         v-for="c in filtered"
         :key="c.id"
         :chore="c"
         :couple="couple"
         :menuOpen="menuOpenId === c.id"
+        :class="{ 'just-added': justAdded.has(c.id) }"
         @pick="emit('pick', c, $event)"
         @undo="emit('undo', c)"
         @toggleMenu="toggleMenu(c.id)"
@@ -63,7 +67,7 @@ function toggleMenu(id: string) {
         @edit="emit('edit', c)"
         @delete="emit('delete', c)"
       />
-    </div>
+    </TransitionGroup>
   </div>
 </template>
 

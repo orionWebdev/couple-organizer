@@ -50,7 +50,7 @@ function toggleExpand() {
 
 <template>
   <div
-    class="row"
+    class="row list-row"
     @click="toggleExpand"
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"

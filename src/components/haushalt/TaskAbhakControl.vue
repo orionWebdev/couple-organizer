@@ -18,21 +18,35 @@ const chips = computed(() => assigneeChips(props.chore.completedBy, props.couple
 </script>
 
 <template>
-  <div v-if="!done" class="cluster">
-    <button class="pick pick--chris" title="Chris" @click="emit('pick', couple?.memberIds[0] ?? null)">C</button>
-    <button class="pick pick--sarah" title="Sarah" @click="emit('pick', couple?.memberIds[1] ?? null)">S</button>
-    <button class="pick pick--both" title="Beide" @click="emit('pick', 'both')">B</button>
+  <div class="switch">
+    <Transition name="task-switch">
+      <div v-if="!done" class="cluster actions" key="actions">
+        <button class="pick pick--chris" title="Chris" @click="emit('pick', couple?.memberIds[0] ?? null)">C</button>
+        <button class="pick pick--sarah" title="Sarah" @click="emit('pick', couple?.memberIds[1] ?? null)">S</button>
+        <button class="pick pick--both" title="Beide" @click="emit('pick', 'both')">B</button>
+      </div>
+      <button v-else class="chips chip" key="chip" @click="emit('undo')">
+        <span v-for="(chip, i) in chips" :key="i" class="chip-ini" :style="{ background: chip.bg }">{{ chip.ch }}</span>
+      </button>
+    </Transition>
   </div>
-  <button v-else class="chips" @click="emit('undo')">
-    <span v-for="(chip, i) in chips" :key="i" class="chip" :style="{ background: chip.bg }">{{ chip.ch }}</span>
-  </button>
 </template>
 
 <style scoped>
+/* Both states stack in a fixed-size box so enter/leave can overlap */
+.switch {
+  position: relative;
+  width: 86px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
 .cluster {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
   gap: 4px;
-  flex-shrink: 0;
 }
 
 .pick {
@@ -65,15 +79,17 @@ const chips = computed(() => assigneeChips(props.chore.completedBy, props.couple
 }
 
 .chips {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
   background: transparent;
   border: none;
   padding: 0;
   cursor: pointer;
-  flex-shrink: 0;
 }
 
-.chip {
+.chip-ini {
   width: 26px;
   height: 26px;
   border-radius: 8px;
@@ -87,7 +103,47 @@ const chips = computed(() => assigneeChips(props.chore.completedBy, props.couple
   border: 1.5px solid var(--surface-deep);
 }
 
-.chip:first-child {
+.chip-ini:first-child {
   margin-left: 0;
+}
+
+/* ── Spring Pop ────────────────────────────────────────────
+   Enter + leave run at the same time (no <Transition mode>):
+   the result chip pops in with overshoot while the buttons
+   shrink+fade out, and vice-versa on undo. */
+.task-switch-enter-active.chip,
+.task-switch-leave-active.chip {
+  transition: transform var(--dur-pop) var(--ease-overshoot),
+              opacity var(--dur-base) var(--ease-standard);
+}
+
+.task-switch-enter-from.chip,
+.task-switch-leave-to.chip {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.task-switch-enter-to.chip,
+.task-switch-leave-from.chip {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.task-switch-enter-active.actions,
+.task-switch-leave-active.actions {
+  transition: transform var(--dur-fast) var(--ease-standard),
+              opacity var(--dur-fast) var(--ease-standard);
+}
+
+.task-switch-enter-from.actions,
+.task-switch-leave-to.actions {
+  opacity: 0;
+  transform: scale(0.85);
+}
+
+.task-switch-enter-to.actions,
+.task-switch-leave-from.actions {
+  opacity: 1;
+  transform: scale(1);
 }
 </style>

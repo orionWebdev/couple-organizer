@@ -10,6 +10,7 @@ import EventCard from '@/components/finance/EventCard.vue'
 import EventDetail from '@/components/finance/EventDetail.vue'
 import AddExpenseSheet from '@/components/finance/AddExpenseSheet.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import { useJustAdded } from '@/composables/useJustAdded'
 
 const { user } = useAuth()
 const { couple } = useCouple()
@@ -113,6 +114,8 @@ const sortedExpenses = computed(() =>
       return tb - ta
     })
 )
+
+const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value, e => e.id)
 </script>
 
 <template>
@@ -132,7 +135,7 @@ const sortedExpenses = computed(() =>
       />
 
       <!-- Events rail -->
-      <div v-if="!loading" class="events-rail">
+      <TransitionGroup v-if="!loading" tag="div" name="list-add" class="events-rail">
         <EventCard
           v-for="summary in activeEventSummaries"
           :key="summary.event.id"
@@ -140,27 +143,28 @@ const sortedExpenses = computed(() =>
           :couple="couple"
           @click="openEvent(summary.event.id)"
         />
-        <button class="new-event-card" @click="openNewEvent">
+        <button key="new-event" class="new-event-card" @click="openNewEvent">
           <span class="new-event-icon">+</span>
           <span class="new-event-label">Neues Event</span>
         </button>
-      </div>
+      </TransitionGroup>
 
       <!-- Expense list -->
       <div v-if="loading" class="loading-row">Laden…</div>
       <div v-else-if="sortedExpenses.length === 0" class="empty-state">
         Noch keine Ausgaben. Füge die erste hinzu.
       </div>
-      <div v-else class="expense-list">
+      <TransitionGroup v-else tag="div" name="list-add" class="expense-list">
         <ExpenseRow
           v-for="exp in sortedExpenses"
           :key="exp.id"
           :expense="exp"
           :couple="couple"
           :currentUserId="user?.uid ?? ''"
+          :class="{ 'just-added': justAddedExpense.has(exp.id) }"
           @delete="onDeleteExpense"
         />
-      </div>
+      </TransitionGroup>
 
       <!-- FAB -->
       <button class="fab" @click="openAddExpense">Ausgabe +</button>

@@ -179,13 +179,10 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
 .tab-bar {
   display: flex;
   width: 100%;
-  gap: 4px;
   border-radius: 12px;
-  padding: 4px;
 }
 
 .tab-bar :deep(.seg-btn) {
-  flex: 1;
   padding: 9px 0;
   font-size: 12px;
 }

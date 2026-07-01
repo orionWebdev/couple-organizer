@@ -86,10 +86,10 @@ export function useChores(coupleId: Ref<string | null>) {
     }
   }, { immediate: true })
 
-  async function addChore(input: AddChoreInput) {
-    if (!coupleId.value || !user.value) return
+  async function addChore(input: AddChoreInput): Promise<boolean> {
+    if (!coupleId.value || !user.value) return false
     const cleanName = input.name.trim()
-    if (!cleanName) return
+    if (!cleanName) return false
 
     try {
       await addDoc(collection(db, 'chores'), {
@@ -106,15 +106,18 @@ export function useChores(coupleId: Ref<string | null>) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       })
+      error.value = null
+      return true
     } catch (err: any) {
       console.error('Failed to add chore:', err)
       error.value = err.message
+      return false
     }
   }
 
-  async function updateChore(id: string, input: UpdateChoreInput) {
+  async function updateChore(id: string, input: UpdateChoreInput): Promise<boolean> {
     const cleanName = input.name.trim()
-    if (!cleanName) return
+    if (!cleanName) return false
 
     try {
       await updateDoc(doc(db, 'chores', id), {
@@ -125,32 +128,41 @@ export function useChores(coupleId: Ref<string | null>) {
         assignee: input.assignee,
         updatedAt: serverTimestamp()
       })
+      error.value = null
+      return true
     } catch (err: any) {
       console.error('Failed to update chore:', err)
       error.value = err.message
+      return false
     }
   }
 
-  async function deleteChore(id: string) {
+  async function deleteChore(id: string): Promise<boolean> {
     try {
       await deleteDoc(doc(db, 'chores', id))
+      error.value = null
+      return true
     } catch (err: any) {
       console.error('Failed to delete chore:', err)
       error.value = err.message
+      return false
     }
   }
 
-  async function reassignChore(id: string, assignee: ChoreAssignee) {
+  async function reassignChore(id: string, assignee: ChoreAssignee): Promise<boolean> {
     try {
       await updateDoc(doc(db, 'chores', id), { assignee, updatedAt: serverTimestamp() })
+      error.value = null
+      return true
     } catch (err: any) {
       console.error('Failed to reassign chore:', err)
       error.value = err.message
+      return false
     }
   }
 
-  async function completeChore(chore: Chore, by: ChoreAssignee) {
-    if (!coupleId.value) return
+  async function completeChore(chore: Chore, by: ChoreAssignee): Promise<boolean> {
+    if (!coupleId.value) return false
     try {
       await updateDoc(doc(db, 'chores', chore.id), {
         done: chore.type === 'once' ? true : chore.done,
@@ -166,13 +178,16 @@ export function useChores(coupleId: Ref<string | null>) {
         completedAt: serverTimestamp(),
         createdAt: serverTimestamp()
       })
+      error.value = null
+      return true
     } catch (err: any) {
       console.error('Failed to complete chore:', err)
       error.value = err.message
+      return false
     }
   }
 
-  async function undoChore(chore: Chore) {
+  async function undoChore(chore: Chore): Promise<boolean> {
     try {
       await updateDoc(doc(db, 'chores', chore.id), {
         done: false,
@@ -188,27 +203,36 @@ export function useChores(coupleId: Ref<string | null>) {
       if (latestEntry) {
         await deleteDoc(doc(db, 'choreHistory', latestEntry.id))
       }
+      error.value = null
+      return true
     } catch (err: any) {
       console.error('Failed to undo chore:', err)
       error.value = err.message
+      return false
     }
   }
 
-  async function reassignHistoryEntry(entryId: string, completedBy: ChoreAssignee) {
+  async function reassignHistoryEntry(entryId: string, completedBy: ChoreAssignee): Promise<boolean> {
     try {
       await updateDoc(doc(db, 'choreHistory', entryId), { completedBy })
+      error.value = null
+      return true
     } catch (err: any) {
       console.error('Failed to reassign history entry:', err)
       error.value = err.message
+      return false
     }
   }
 
-  async function deleteHistoryEntry(entryId: string) {
+  async function deleteHistoryEntry(entryId: string): Promise<boolean> {
     try {
       await deleteDoc(doc(db, 'choreHistory', entryId))
+      error.value = null
+      return true
     } catch (err: any) {
       console.error('Failed to delete history entry:', err)
       error.value = err.message
+      return false
     }
   }
 

@@ -295,7 +295,7 @@ watch(() => props.isOpen, (open) => {
 .mode-btn {
   flex: 1;
   border: none;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 13.5px;
   font-weight: 600;
   padding: 11px 0;
@@ -307,7 +307,7 @@ watch(() => props.isOpen, (open) => {
 
 .mode-btn--active {
   background: var(--accent);
-  color: #15110d;
+  color: var(--on-accent);
 }
 
 .event-hint {
@@ -359,7 +359,7 @@ watch(() => props.isOpen, (open) => {
   border: 1px solid var(--border-soft);
   border-radius: 10px;
   color: var(--text-meta);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -384,7 +384,7 @@ watch(() => props.isOpen, (open) => {
   border: 1px solid var(--border-soft);
   border-radius: 100px;
   color: var(--text-meta);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -406,7 +406,7 @@ watch(() => props.isOpen, (open) => {
   border: 1px solid var(--border-soft);
   border-radius: 10px;
   color: var(--text-meta);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

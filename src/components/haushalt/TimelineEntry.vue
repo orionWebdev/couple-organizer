@@ -108,7 +108,7 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   border-radius: 6px;
   font-size: 10px;
   font-weight: 600;
-  color: #15110d;
+  color: var(--on-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -161,7 +161,7 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 .menu-pill {
   flex: 1;
   border: 1px solid var(--border);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 12px;
   font-weight: 600;
   padding: 8px 0;
@@ -178,7 +178,7 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 .delete-btn {
   width: 100%;
   border: 1px solid var(--danger-border);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 12.5px;
   font-weight: 600;
   padding: 9px 0;

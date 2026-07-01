@@ -166,7 +166,7 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   flex: 1;
   border: 1px solid var(--border);
   background: transparent;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 12px;
   font-weight: 600;
   padding: 8px 0;
@@ -183,12 +183,12 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   flex: 1;
   border: 1px solid var(--border);
   background: transparent;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 12.5px;
   font-weight: 600;
   padding: 9px 0;
   border-radius: 9px;
-  color: #c9c1b7;
+  color: var(--text-secondary);
   cursor: pointer;
 }
 

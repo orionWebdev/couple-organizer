@@ -82,7 +82,7 @@ function toggleMenu(id: string) {
 
 .filter-chip {
   flex-shrink: 0;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 12.5px;
   font-weight: 600;
   padding: 7px 13px;

@@ -53,7 +53,7 @@ const itemCount = computed(() => props.summary.expenses.length)
   flex: 0 0 168px;
   text-align: left;
   cursor: pointer;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: 16px;

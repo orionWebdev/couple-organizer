@@ -102,7 +102,7 @@ const settleAmountFormatted = computed(() => {
   background: none;
   border: none;
   color: var(--text-meta);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -110,8 +110,8 @@ const settleAmountFormatted = computed(() => {
 }
 
 .balance-card {
-  background: linear-gradient(150deg, #2c3833 0%, #23201b 58%);
-  border: 1px solid #38423d;
+  background: linear-gradient(150deg, #e7efe7 0%, #f7f1de 58%);
+  border: 1px solid #cfe0d2;
   border-radius: 22px;
   padding: 22px;
   margin: 12px var(--screen-pad) 24px;
@@ -144,11 +144,11 @@ const settleAmountFormatted = computed(() => {
   display: block;
   width: 100%;
   margin-top: 14px;
-  border: 1px dashed #3d362e;
+  border: 1px dashed var(--border);
   cursor: pointer;
   background: transparent;
   color: var(--accent);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
   padding: 13px;
@@ -194,8 +194,8 @@ const settleAmountFormatted = computed(() => {
   border: none;
   cursor: pointer;
   background: var(--accent);
-  color: #14110d;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  color: var(--on-accent);
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14.5px;
   font-weight: 600;
   padding: 13px;
@@ -206,11 +206,11 @@ const settleAmountFormatted = computed(() => {
   display: block;
   width: calc(100% - 2 * var(--screen-pad));
   margin: 16px var(--screen-pad) 0;
-  border: 1px dashed #3d362e;
+  border: 1px dashed var(--border);
   cursor: pointer;
   background: transparent;
   color: var(--accent);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
   padding: 13px;

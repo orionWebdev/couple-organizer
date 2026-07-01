@@ -22,7 +22,7 @@ const { message, visible } = useToastState()
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 500;
   padding: 10px 20px;

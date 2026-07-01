@@ -127,8 +127,9 @@ async function handleLogout() {
 }
 
 .setup-title {
-  font-size: 26px;
-  font-weight: 600;
+  font-family: var(--font-headline);
+  font-size: 34px;
+  font-weight: 700;
   color: var(--text);
   margin: 0 0 6px;
 }
@@ -155,7 +156,7 @@ async function handleLogout() {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 14px;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -198,7 +199,7 @@ async function handleLogout() {
   background: none;
   border: none;
   color: var(--text-faint);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   cursor: pointer;
   padding: 8px;
@@ -209,7 +210,7 @@ async function handleLogout() {
   background: none;
   border: none;
   color: var(--text-faint);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 13px;
   cursor: pointer;
   padding: 8px;

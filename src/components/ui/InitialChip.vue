@@ -49,7 +49,7 @@ const tint = computed(() => {
   align-items: center;
   justify-content: center;
   border-radius: 7px;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-weight: 600;
   flex-shrink: 0;
   user-select: none;

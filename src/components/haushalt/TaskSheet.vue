@@ -149,7 +149,7 @@ function handleSubmit() {
 .toggle-btn {
   flex: 1;
   border: none;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 12.5px;
   font-weight: 600;
   padding: 9px 0;
@@ -161,7 +161,7 @@ function handleSubmit() {
 
 .toggle-btn--active {
   background: var(--accent);
-  color: #15110d;
+  color: var(--on-accent);
 }
 
 .field-block {
@@ -186,7 +186,7 @@ function handleSubmit() {
 .pill {
   flex: 1;
   border: none;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 12px;
   font-weight: 600;
   padding: 8px 0;
@@ -198,6 +198,6 @@ function handleSubmit() {
 
 .pill--active {
   background: var(--accent);
-  color: #15110d;
+  color: var(--on-accent);
 }
 </style>

@@ -98,7 +98,7 @@ async function share() {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 14px;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;

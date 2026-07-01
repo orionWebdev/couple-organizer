@@ -51,44 +51,49 @@ function openEditChore(chore: Chore) {
   showSheet.value = true
 }
 
+const FAILURE_MESSAGE = 'Fehler beim Speichern — bitte erneut versuchen'
+
 async function onSheetSubmit(payload: Parameters<typeof addChore>[0]) {
-  if (editingChore.value) {
-    await updateChore(editingChore.value.id, payload)
-    showToast('Änderungen gespeichert')
-  } else {
-    await addChore(payload)
-    showToast('Aufgabe angelegt')
+  const ok = editingChore.value
+    ? await updateChore(editingChore.value.id, payload)
+    : await addChore(payload)
+
+  if (!ok) {
+    showToast(FAILURE_MESSAGE)
+    return
   }
+  showToast(editingChore.value ? 'Änderungen gespeichert' : 'Aufgabe angelegt')
   showSheet.value = false
 }
 
 async function onPick(chore: Chore, assignee: ChoreAssignee) {
-  await completeChore(chore, assignee)
-  showToast('Erledigt!')
+  const ok = await completeChore(chore, assignee)
+  showToast(ok ? 'Erledigt!' : FAILURE_MESSAGE)
 }
 
 async function onUndo(chore: Chore) {
-  await undoChore(chore)
+  const ok = await undoChore(chore)
+  if (!ok) showToast(FAILURE_MESSAGE)
 }
 
 async function onAssign(chore: Chore, assignee: ChoreAssignee) {
-  await reassignChore(chore.id, assignee)
-  showToast('Aufgabe übertragen')
+  const ok = await reassignChore(chore.id, assignee)
+  showToast(ok ? 'Aufgabe übertragen' : FAILURE_MESSAGE)
 }
 
 async function onDelete(chore: Chore) {
-  await deleteChore(chore.id)
-  showToast('Aufgabe gelöscht')
+  const ok = await deleteChore(chore.id)
+  showToast(ok ? 'Aufgabe gelöscht' : FAILURE_MESSAGE)
 }
 
 async function onHistoryAssign(entry: ChoreHistoryEntry, assignee: ChoreAssignee) {
-  await reassignHistoryEntry(entry.id, assignee)
-  showToast('Eintrag übertragen')
+  const ok = await reassignHistoryEntry(entry.id, assignee)
+  showToast(ok ? 'Eintrag übertragen' : FAILURE_MESSAGE)
 }
 
 async function onHistoryDelete(entry: ChoreHistoryEntry) {
-  await deleteHistoryEntry(entry.id)
-  showToast('Eintrag gelöscht')
+  const ok = await deleteHistoryEntry(entry.id)
+  showToast(ok ? 'Eintrag gelöscht' : FAILURE_MESSAGE)
 }
 </script>
 
@@ -159,8 +164,9 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
 }
 
 .page-title {
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--font-headline);
+  font-size: 28px;
+  font-weight: 700;
   color: var(--text);
   margin: 0;
 }
@@ -197,10 +203,10 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
   right: 22px;
   padding: 13px 20px;
   background: var(--accent);
-  color: #14110d;
+  color: var(--on-accent);
   border: none;
   border-radius: 100px;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;

@@ -46,7 +46,7 @@ const chips = computed(() => assigneeChips(props.chore.completedBy, props.couple
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
 }
 
 .pick--chris {
@@ -79,7 +79,7 @@ const chips = computed(() => assigneeChips(props.chore.completedBy, props.couple
   border-radius: 8px;
   font-size: 11px;
   font-weight: 700;
-  color: #15110d;
+  color: var(--on-accent);
   display: flex;
   align-items: center;
   justify-content: center;

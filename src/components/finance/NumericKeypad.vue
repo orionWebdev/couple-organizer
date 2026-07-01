@@ -75,7 +75,7 @@ function press(key: string) {
 
 .key--delete {
   color: var(--text-meta);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 20px;
 }
 </style>

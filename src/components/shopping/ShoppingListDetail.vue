@@ -114,7 +114,7 @@ const uncheckedCount = computed(() => props.items.filter(i => !i.checked).length
   background: none;
   border: none;
   color: var(--accent);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;

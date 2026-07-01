@@ -9,6 +9,7 @@ const props = defineProps<{
   chores: readonly Chore[]
   couple: Couple | null
   currentUserId: string
+  todayCounts: ReadonlyMap<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -57,6 +58,7 @@ const { justAdded } = useJustAdded(() => myChores.value, c => c.id)
         :key="c.id"
         :chore="c"
         :couple="couple"
+        :todayCount="todayCounts.get(c.id) ?? 0"
         :class="{ 'just-added': justAdded.has(c.id) }"
         @pick="emit('pick', c, $event)"
         @undo="emit('undo', c)"
@@ -71,6 +73,7 @@ const { justAdded } = useJustAdded(() => myChores.value, c => c.id)
           :key="c.id"
           :chore="c"
           :couple="couple"
+          :todayCount="todayCounts.get(c.id) ?? 0"
           :class="{ 'just-added': justAdded.has(c.id) }"
           @pick="emit('pick', c, $event)"
           @undo="emit('undo', c)"

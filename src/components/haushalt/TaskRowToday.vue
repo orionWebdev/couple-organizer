@@ -4,25 +4,27 @@ import type { Chore, ChoreAssignee, Couple } from '@/types'
 import TaskAbhakControl from './TaskAbhakControl.vue'
 import { isDoneToday, metaLine, recurLabel } from '@/utils/chores'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   chore: Chore
   couple: Couple | null
-}>()
+  todayCount?: number
+}>(), { todayCount: 0 })
 
 const emit = defineEmits<{
   pick: [assignee: ChoreAssignee]
   undo: []
 }>()
 
-const done = computed(() => isDoneToday(props.chore))
+// Only one-off chores get struck through; recurring ones can be done again.
+const struck = computed(() => props.chore.type === 'once' && isDoneToday(props.chore))
 </script>
 
 <template>
   <div class="row list-row">
-    <TaskAbhakControl :chore="chore" :couple="couple" @pick="emit('pick', $event)" @undo="emit('undo')" />
+    <TaskAbhakControl :chore="chore" :couple="couple" :todayCount="todayCount" @pick="emit('pick', $event)" @undo="emit('undo')" />
     <div class="row-text">
-      <span class="row-name" :class="{ 'row-name--done': done }">{{ chore.name }}</span>
-      <span class="row-meta">{{ metaLine(chore, couple) }}</span>
+      <span class="row-name" :class="{ 'row-name--done': struck }">{{ chore.name }}</span>
+      <span class="row-meta">{{ metaLine(chore, couple, todayCount) }}</span>
     </div>
     <span class="row-recur">{{ recurLabel(chore) }}</span>
   </div>

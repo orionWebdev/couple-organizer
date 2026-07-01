@@ -40,9 +40,11 @@ export function recurLabel(chore: Chore): string {
 
 const dueDateFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })
 
-export function metaLine(chore: Chore, couple: Couple | null): string {
+export function metaLine(chore: Chore, couple: Couple | null, todayCount = 0): string {
   if (isDoneToday(chore)) {
-    return `${chore.type === 'once' ? 'Erledigt' : 'Heute erledigt'} · ${personName(chore.completedBy, couple)}`
+    if (chore.type === 'once') return `Erledigt · ${personName(chore.completedBy, couple)}`
+    const times = todayCount > 1 ? `${todayCount}× heute` : 'Heute erledigt'
+    return `${times} · zuletzt ${personName(chore.completedBy, couple)}`
   }
 
   const bucket = dueBucket(chore)

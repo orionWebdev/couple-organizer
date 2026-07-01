@@ -10,6 +10,7 @@ import HaushaltHeute from '@/components/haushalt/HaushaltHeute.vue'
 import HaushaltAlle from '@/components/haushalt/HaushaltAlle.vue'
 import HaushaltUebersicht from '@/components/haushalt/HaushaltUebersicht.vue'
 import HaushaltVerlauf from '@/components/haushalt/HaushaltVerlauf.vue'
+import { isSameDay } from '@/utils/chores'
 import type { Chore, ChoreAssignee, ChoreHistoryEntry } from '@/types'
 
 const { user } = useAuth()
@@ -29,6 +30,20 @@ const {
   reassignHistoryEntry,
   deleteHistoryEntry
 } = useChores(coupleId)
+
+// How many times each chore was completed today — drives the repeat-count
+// badge on recurring tasks.
+const todayCounts = computed(() => {
+  const counts = new Map<string, number>()
+  const now = new Date()
+  for (const entry of history.value) {
+    const date = (entry.completedAt as any)?.toDate?.() ?? null
+    if (date && isSameDay(date, now)) {
+      counts.set(entry.choreId, (counts.get(entry.choreId) ?? 0) + 1)
+    }
+  }
+  return counts
+})
 
 const tab = ref<'heute' | 'alle' | 'uebersicht' | 'verlauf'>('heute')
 const tabOptions = [
@@ -113,6 +128,7 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
         :chores="chores"
         :couple="couple"
         :currentUserId="user?.uid ?? ''"
+        :todayCounts="todayCounts"
         @pick="onPick"
         @undo="onUndo"
       />
@@ -120,6 +136,7 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
         v-else-if="tab === 'alle'"
         :chores="chores"
         :couple="couple"
+        :todayCounts="todayCounts"
         @pick="onPick"
         @undo="onUndo"
         @assign="onAssign"

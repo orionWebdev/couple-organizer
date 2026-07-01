@@ -18,7 +18,7 @@ Die HTML-Prototypen sind als „Design Components" gebaut; die Logik darin (Stat
 ## Screens / Views
 
 ### Bottom-Navigation (global)
-- 3 reine **Text-Tabs**: Finanzen · Haushalt · Einkaufen. Bewusst **icon-frei**.
+- 3 reine **Text-Tabs**: Finanzen · Haushalt · Einkaufen (Label bewusst „Haushalt", nicht „Chores"). Bewusst **icon-frei**.
 - Aktiver Tab: heller Text `#efe9e2` + kleiner Salbei-Punkt `#86a596` darüber/daneben. Inaktiv: `#6f665d`.
 - Hintergrund mit Blur, Safe-Area-Padding unten. Fixiert am unteren Rand des Phone-Frames.
 
@@ -47,30 +47,41 @@ Die HTML-Prototypen sind als „Design Components" gebaut; die Logik darin (Stat
 - **Keypad:** 3×4 Grid (1–9, „,", 0, „⌫"), Geist Mono 18px, Tasten bg `#1a1613` Border `#2f2823` Radius 11px.
 - **„Hinzufügen"** Full-width Salbei-Button. Bestätigt mit Toast.
 
-### 1c. Finanzen — Event-Detail
-Horizontale **EventCards** (168px breit) auf dem Dashboard: Name, Topf-Summe, Fortschrittsbalken, Meta. Tap → Detail-Ansicht mit denselben Salbei-Tokens wie BalanceHeader B und einer Beitragsliste (EventItem-Rows).
+### 1c. Finanzen — Event-Detail & Finanzevent anlegen
+Horizontale **EventCards** (168px breit) auf dem Dashboard: Name, Topf-Summe, Fortschrittsbalken, Meta. Tap → Detail-Ansicht mit denselben Salbei-Tokens wie BalanceHeader B und einer Beitragsliste (EventItem-Rows). Ganz rechts in der Schiene eine gestrichelte **„+ Neues Event"**-Karte.
+
+**Neues Event anlegen:** öffnet **dasselbe Bottom-Sheet** wie „Ausgabe hinzufügen" — direkt unter dem Titel sitzt ein Segment-Toggle **„Ausgabe" ↔ „Neues Event"**. Im Event-Modus zeigt das Sheet nur Name + optionalen Zeitraum; der Bestätigen-Button wechselt zu „Event anlegen". Ein neues Event landet leer in der Detail-Ansicht (Empty State „Noch keine Ausgaben…" mit CTA). Ausgaben werden von dort aus über denselben Sheet-Typ hinzugefügt (Kontext = dieses Event). Der Ausgleichsbetrag beim Abschließen wird **dynamisch** aus den erfassten Ausgaben berechnet (nicht hartkodiert).
 
 ---
 
-### 2. Haushalt — drei Reiter: Pool · Statistik · Verlauf
-Segmented Toggle oben rechts neben „Haushalt"-Titel. Container `#221d18` Border `#332c25` Radius 11px Padding 3px. Aktiv-Pill bg `#86a596`, Text `#15110d`.
+### 2. Haushalt — vier Reiter: Heute · Alle · Übersicht · Verlauf
+Segmented Toggle unter dem „Haushalt"-Titel, 4 gleich breite Segmente. Container `#221d18` Border `#332c25` Radius 12px Padding 4px. Aktiv-Pill bg `#86a596`, Text `#15110d`. **„Heute" ist der Default-Tab** beim Öffnen von Haushalt.
 
-#### 2a. Pool (Default)
-**Schnell erledigt** (persönliche Routinen, editierbar):
-- Sektion-Header „SCHNELL ERLEDIGT" + rechts Text-Button „Bearbeiten"/„Fertig" (`#86a596`).
-- Personen-Toggle „Für dich" / „Für Sarah" (segmented, bg `#1a1613` Border `#2b251f`). Aktiv-Pill Salbei.
-- **2×2 Grid QuickActions:** Kachel bg `#221d18` Border `#332c25` Radius 14px, Label 14px/500 + Kreis-„+" (26px, `rgba(134,165,150,.16)`, `#86a596`). One-Tap loggt sofort (Toast). Im Edit-Modus werden die vier Kacheln zu **Text-Inputs** (umbenennbar). **Jede Person pflegt vier eigene Routinen, getrennt gespeichert.**
+**Datenmodell pro Aufgabe:** `name`, `type` (`recurring` | `once`), `interval` (`täglich`|`wöchentlich`|`monatlich`, nur bei `recurring`), `due` (`today`|`none`|Zahl-Tage-bis-fällig), `assignee` (`chris`|`sarah`|`both`|`open`). **Wiederkehrende Aufgaben werden nie gelöscht** beim Abhaken — sie werden nur für den aktuellen Tag als erledigt markiert und würden in Produktion beim nächsten Intervall zurückgesetzt. **Einmalige Aufgaben** verschwinden nach Erledigung dauerhaft aus dem aktiven Pool (bleiben nur im Verlauf).
 
-**Aufgaben** (mit Zuweisungs-Filter):
-- Filter-Chips: **„Mir zugewiesen" (Default)** · „Sarah" · „Alle", dann ein **Trenner** (1px `#2b251f`) und abgesetzt **„Offen N"**. Aktive Chips: bg `rgba(134,165,150,.16)`, Border `#86a596`. Der „Offen"-Chip ist visuell abgehoben: **gestrichelter** Terracotta-Rand (`#5a3d36` → aktiv `#c98a7e`), getönt `rgba(201,138,126,.18)`, mit Mono-Count-Badge.
-- **ChoreRow:** große Tap-Checkbox (30px, Border `1.5px #4a4138`; erledigt → bg `#86a596` + „✓") + Name (15px/500) / Sub („Fällig · Tag · Frequenz"; bei offen „Offen · …") + rechts **Zahler-Initial-Chip** (24px). Nicht zugewiesene Aufgaben: Chip zeigt **gestricheltes „?"** (Border `1px dashed #5a5048`, Text `#86a596`). Mehrfach pro Tag erlaubt; erledigt → durchgestrichener Look (Name `#8c8379`).
-- **Empty State:** zentriert, ruhig („Hier ist gerade nichts offen. Schön ruhig. ✓").
+**Abhak-Kontrolle (überall gleich):** statt einer einzelnen Checkbox hat jede offene Aufgabe **drei kleine Buttons „C" / „S" / „B"** (Chris/Sarah/Beide) — ein Tap erledigt sie direkt der gewählten Person(en) zugeordnet (kein zweiter Schritt). Erledigt → die Buttons werden zu (ggf. zwei überlappenden) Initial-Chip(s) in Personenfarbe; Tap auf den Chip macht die Erledigung rückgängig.
 
-#### 2b. Statistik
-- Karte „Diesen Monat gemeinsam": große Mono-Zahl (z. B. 84) + zweifarbiger Verhältnisbalken (Chris blau / Sarah terracotta) + Legende + ruhiger Kontext-Satz („Keine Wertung, nur Überblick").
-- „Nach Aufgabe": Liste mit pro-Aufgabe-Verhältnisbalken (chrisW/sarahW als %-Breiten) + Total „N×".
+#### 2a. Heute (Default)
+**Purpose:** Zeigt, was die eingeloggte Person (Chris) heute zu tun hat.
+- Fortschritts-Header „HEUTE" + Mono-Zähler „X / Y" + dünner Fortschrittsbalken (Salbei).
+- **Sektion „Heute":** alle mir zugewiesenen (oder „Beide"-)Aufgaben ohne festen Tag **und** die für heute fälligen — bewusst zusammen oben, wie gewünscht.
+- **Sektion „Demnächst"** (nur wenn vorhanden): terminierte, noch nicht fällige Aufgaben, sortiert nach Fälligkeit.
+- Empty State: „Nichts für heute geplant. ✓".
 
-#### 2c. Verlauf (vertikale Timeline)
+#### 2b. Alle (voller Aufgaben-Pool)
+- Filter-Chips: **Alle** (Default) · Chris · Sarah · Beide · abgesetzt **Offen** (gestrichelter Terracotta-Rand `#5a3d36`→`#c98a7e`, getönt `rgba(201,138,126,.18)`, wie zuvor).
+- **TaskRow:** Abhak-Cluster links + Name + kleines Recurrence-Badge (getönt, `#86a596`) + Meta-Zeile (Termin bzw. „Heute erledigt · Person") + Zuweisungs-Avatar rechts (bei „Beide": Chip zweifarbig gesplittet; bei „Offen": gestricheltes „–") + „⋯"-Button.
+- **„⋯"-Menü (inline):** „Zuweisen an" (Chris/Sarah/Beide/Offen — **Aufgabe übertragen**), „Bearbeiten" (öffnet Aufgabe-Sheet vorbefüllt, inkl. Termin/Intervall ändern), „**Aus Pool löschen**" (terracotta, entfernt die Aufgabe dauerhaft aus Heute/Alle/Übersicht).
+- **FAB (+)** unten rechts, nur auf diesem Tab: öffnet das Aufgabe-Sheet leer (Neuanlage).
+
+**Aufgabe-Sheet (anlegen/bearbeiten):** Name-Input · Segment-Toggle **Wiederkehrend / Einmalig** · bei Wiederkehrend: Intervall-Pills Täglich/Wöchentlich/Monatlich · Termin-Pills Kein fester Tag/Heute/Bald · Zuweisen-Pills Chris/Sarah/Beide/Offen · Bestätigen-Button „Aufgabe anlegen" bzw. „Änderungen speichern" im Edit-Modus.
+
+#### 2c. Übersicht (Bonus)
+**Purpose:** Wer hat heute was, auf einen Blick — plus die gemeinsame Monats-Statistik.
+- Zwei **PersonSummaryCards** (Chris, Sarah): Avatar, „X von Y heute erledigt" + Fortschrittsbalken in Personenfarbe, Vorschau der nächsten 3 offenen Aufgaben (+N weitere) bzw. „Alles für heute erledigt ✓".
+- Darunter dieselbe Statistik-Karte wie zuvor: „Diesen Monat gemeinsam" (große Mono-Zahl + zweifarbiger Verhältnisbalken) + „Nach Aufgabe"-Liste (pro-Aufgabe-Verhältnisbalken).
+
+#### 2d. Verlauf (vertikale Timeline)
 **Purpose:** Erledigte Aufgaben chronologisch sehen, neu zuweisen oder löschen.
 - **Kopf:** links „HEUTE" (uppercase 11px) + aktuelles Datum (18px/600, z. B. „30. Juni 2026"), rechts Mono-Eintragszahl.
 - **Monatsfilter:** Chip-Reihe (scrollbar) „Juni 2026 / Mai 2026 / April 2026". Default = **laufender Monat**. Vergangene Monate auswählbar. Aktiv: getönt + Salbei-Border.
@@ -102,22 +113,25 @@ Segmented Toggle oben rechts neben „Haushalt"-Titel. Container `#221d18` Borde
 - **Navigation:** Bottom-Nav wechselt Top-Level-Bereiche; innerhalb Bereichen Sub-Views (finView, choresView, shopView).
 - **Begleichen:** ein Tap setzt Netto-Saldo auf 0, Header wechselt auf „Alles ausgeglichen". (Optional in Prod: Bestätigungs-Sheet bei großen Beträgen.)
 - **Add-Ausgabe:** Keypad-Eingabe (max. 2 Nachkommastellen, „,"-Sperre nach Dezimal), Zahler/Tag/Aufteilung wählbar, Slider bei „Individuell". Bestätigen schließt Sheet + Toast.
-- **QuickAction:** Tap loggt sofort + Toast. „Bearbeiten" toggelt Inline-Rename der vier Kacheln; pro Person separat.
-- **Aufgaben-Filter:** wechselt sichtbare ChoreRows (me/sarah/all/open). Checkbox-Tap toggelt erledigt + Toast.
-- **Verlauf:** Monatsfilter wechselt Datensatz; „⋯" öffnet genau ein Inline-Menü (andere schließen). Zuweisen überschreibt den Zahler des Eintrags; Löschen entfernt ihn. Beides mit Toast.
+- **Neues Finanzevent:** Sheet-Toggle „Ausgabe" ↔ „Neues Event" (im selben Bottom-Sheet wie Ausgabe-Erfassung). Anlegen springt direkt in die leere Event-Detailseite.
+- **Aufgabe erledigen:** Tap auf C/S/Beide erledigt sofort (kein zweiter Bestätigungsschritt) + Toast + Verlauf-Eintrag. Tap auf den erledigt-Chip macht es rückgängig. Einmalige Aufgaben verschwinden dabei aus dem Pool, wiederkehrende bleiben (nur optisch „erledigt" markiert).
+- **Aufgaben-Filter (Alle):** wechselt sichtbare TaskRows (alle/chris/sarah/beide/offen).
+- **Aufgabe anlegen/bearbeiten:** FAB bzw. „⋯" → Bearbeiten öffnen dasselbe Sheet (leer bzw. vorbefüllt). Speichern schließt das Sheet + Toast.
+- **Aufgabe zuweisen/löschen:** „⋯" → Zuweisen überschreibt den Assignee sofort; „Aus Pool löschen" entfernt die Aufgabe dauerhaft. Beides mit Toast.
+- **Verlauf:** Monatsfilter wechselt Datensatz; „⋯" öffnet genau ein Inline-Menü (andere schließen). Zuweisen überschreibt den Zahler des Eintrags; Löschen entfernt ihn (z. B. bei Fehleingabe). Beides mit Toast.
 - **Einkaufsmodus → Checkout:** optionaler Transfer in Finanzen.
 - **Toast:** kurz, zentriert über der Nav, Auto-Dismiss ~1,9 s.
 - **Transitions:** sanft, kurz; keine auffälligen Animationen (Calm-Haltung).
 
 ## State Management
 Pro Bereich ein aktiver View-State plus Interaktions-State:
-- **Navigation:** `tab` (finanzen|haushalt|einkaufen), `finView` (dashboard|event), `choresView` (pool|stats|hist), `shopView` (overview|detail|mode).
-- **Finanzen:** `net` (offener Saldo), `expenses[]`. Add-Form: `addAmount`, `addTitle`, `addPayer`, `addTag`, `addSplit` (50|custom), `addChrisPct`.
-- **Haushalt:** `chores[]` (mit `who: chris|sarah|null`), `checked{}` (erledigt-Status pro id), `choreFilter` (me|sarah|all|open), `quickData{chris[],sarah[]}`, `quickPerson`, `quickEdit`.
-- **Verlauf:** `histMonth`, `history{monat: entry[]}` (entry.who = chris|sarah|both), `histAssign{id:who}` (Overrides), `histDeleted{id}`, `histMenu` (offener Eintrag).
+- **Navigation:** `tab` (finanzen|chores|einkaufen), `finView` (dashboard|event), `choresTab` (heute|alle|uebersicht|verlauf), `shopView` (overview|detail|mode).
+- **Finanzen:** `net` (offener Saldo), `expenses[]`, `extraEvents[]`, `eventItemsExtra{eventId:item[]}`, `eventSettled{eventId:true}`, `currentEventId`. Sheet: `sheet` (add|newlist|checkout|task), `addMode` (expense|event), `addContext` (dashboard|event) + Ausgabe-Formfelder; `newEventText`/`newEventDate` für die Event-Erstellung.
+- **Haushalt:** `_tasks[]` (Basisdaten: id/name/type/interval/due/assignee) + `extraTasks[]` (neu angelegte). Overrides statt Mutation: `taskEdits{id:{...}}` (Bearbeiten/Zuweisen), `poolDeleted{id:true}` (Löschen), `onceDone{id:true}` (einmalige Aufgabe abgeschlossen), `doneToday{id:who}` (heutiger Erledigt-Status). `poolFilter` (alle|chris|sarah|both|offen), `menuOpenId`. Aufgabe-Sheet: `taskEditingId`, `formName`, `formType`, `formInterval`, `formDue`, `formAssignee`.
+- **Verlauf (beide Bereiche teilen das Muster):** `histMonth`, `history{monat: entry[]}` (entry.who = chris|sarah|both) + `historyExtra[]` (frisch erledigte Aufgaben, oben angehängt), `histAssign{id:who}` (Overrides), `histDeleted{id}`, `histMenu` (offener Eintrag).
 - **Einkaufen:** `lists[]` (+`extraLists`), `items[]` (+`extraItems`), `checked{}`, `newListText`, `newItemText`, Checkout: `checkoutVal`, `transfer`.
 - **Global:** `toast` (Auto-Clear via Timeout).
-- **Daten-Hinweis:** in den Mocks sind Aufgaben-Abhaken und Verlauf **nicht** verknüpft (Verlauf nutzt Beispiel-Datensatz). In Prod sollte ein erledigtes Chore einen Verlaufseintrag erzeugen.
+- **Daten-Hinweis:** Erledigen einer Haushaltsaufgabe erzeugt in den Mocks direkt einen `historyExtra`-Eintrag (Verlauf und Abhaken sind hier bereits verknüpft, anders als im ursprünglichen Chores-Entwurf).
 
 ## Design Tokens
 **Farben**

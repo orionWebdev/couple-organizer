@@ -6,6 +6,8 @@ import { useExpenses } from '@/composables/useExpenses'
 import { showToast } from '@/composables/useToast'
 import BalanceCard from '@/components/finance/BalanceCard.vue'
 import ExpenseRow from '@/components/finance/ExpenseRow.vue'
+import EventCard from '@/components/finance/EventCard.vue'
+import EventDetail from '@/components/finance/EventDetail.vue'
 import AddExpenseSheet from '@/components/finance/AddExpenseSheet.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 
@@ -17,18 +19,64 @@ const {
   expenses,
   balanceInfo,
   loading,
+  activeEventSummaries,
+  eventSummaries,
   addExpense,
   deleteExpense,
   markAllPaid,
+  createEvent,
+  setEventArchived,
 } = useExpenses(coupleId)
+
+const finView = ref<'dashboard' | 'event'>('dashboard')
+const currentEventId = ref<string | null>(null)
+
+const currentEventSummary = computed(() =>
+  eventSummaries.value.find((s) => s.event.id === currentEventId.value) ?? null
+)
+
+function openEvent(eventId: string) {
+  currentEventId.value = eventId
+  finView.value = 'event'
+}
+
+function backToDashboard() {
+  finView.value = 'dashboard'
+  currentEventId.value = null
+}
 
 const showAdd = ref(false)
 const showSettle = ref(false)
+const startInEventMode = ref(false)
+
+function openAddExpense() {
+  startInEventMode.value = false
+  showAdd.value = true
+}
+
+function openNewEvent() {
+  startInEventMode.value = true
+  showAdd.value = true
+}
+
+function openAddForCurrentEvent() {
+  startInEventMode.value = false
+  showAdd.value = true
+}
 
 async function onSubmitExpense(payload: Parameters<typeof addExpense>[0]) {
-  await addExpense(payload)
+  await addExpense({
+    ...payload,
+    eventId: finView.value === 'event' ? currentEventId.value : null,
+  })
   showAdd.value = false
   showToast('Ausgabe gespeichert')
+}
+
+async function onSubmitEvent(payload: { title: string; dateLabel: string }) {
+  await createEvent(payload.title)
+  showAdd.value = false
+  showToast(`„${payload.title}" angelegt ✓`)
 }
 
 async function onDeleteExpense(id: string) {
@@ -45,9 +93,20 @@ async function onSettle() {
   showToast('Saldo ausgeglichen')
 }
 
+async function onSettleEvent() {
+  if (!currentEventSummary.value) return
+  const ids = currentEventSummary.value.expenses
+    .filter((e) => !e.isPaid)
+    .map((e) => e.id)
+  await markAllPaid(ids)
+  await setEventArchived(currentEventSummary.value.event.id, true)
+  showToast('Event ausgeglichen')
+  backToDashboard()
+}
+
 const sortedExpenses = computed(() =>
   [...expenses.value]
-    .filter(e => !e.isPaid)
+    .filter(e => !e.isPaid && !e.eventId)
     .sort((a, b) => {
       const ta = (a.createdAt as any)?.toMillis?.() ?? 0
       const tb = (b.createdAt as any)?.toMillis?.() ?? 0
@@ -58,45 +117,76 @@ const sortedExpenses = computed(() =>
 
 <template>
   <div class="finanzen-page">
-    <!-- Header -->
-    <div class="page-header">
-      <h1 class="page-title">Finanzen</h1>
-    </div>
+    <template v-if="finView === 'dashboard'">
+      <!-- Header -->
+      <div class="page-header">
+        <h1 class="page-title">Finanzen</h1>
+      </div>
 
-    <!-- Balance card -->
-    <BalanceCard
-      :balanceInfo="balanceInfo"
-      :couple="couple"
-      :currentUserId="user?.uid ?? ''"
-      @settle="showSettle = true"
-    />
-
-    <!-- Expense list -->
-    <div v-if="loading" class="loading-row">Laden…</div>
-    <div v-else-if="sortedExpenses.length === 0" class="empty-state">
-      Noch keine Ausgaben. Füge die erste hinzu.
-    </div>
-    <div v-else class="expense-list">
-      <ExpenseRow
-        v-for="exp in sortedExpenses"
-        :key="exp.id"
-        :expense="exp"
+      <!-- Balance card -->
+      <BalanceCard
+        :balanceInfo="balanceInfo"
         :couple="couple"
         :currentUserId="user?.uid ?? ''"
-        @delete="onDeleteExpense"
+        @settle="showSettle = true"
       />
-    </div>
 
-    <!-- FAB -->
-    <button class="fab" @click="showAdd = true">Ausgabe +</button>
+      <!-- Events rail -->
+      <div v-if="!loading" class="events-rail">
+        <EventCard
+          v-for="summary in activeEventSummaries"
+          :key="summary.event.id"
+          :summary="summary"
+          :couple="couple"
+          @click="openEvent(summary.event.id)"
+        />
+        <button class="new-event-card" @click="openNewEvent">
+          <span class="new-event-icon">+</span>
+          <span class="new-event-label">Neues Event</span>
+        </button>
+      </div>
 
-    <!-- Add expense sheet -->
+      <!-- Expense list -->
+      <div v-if="loading" class="loading-row">Laden…</div>
+      <div v-else-if="sortedExpenses.length === 0" class="empty-state">
+        Noch keine Ausgaben. Füge die erste hinzu.
+      </div>
+      <div v-else class="expense-list">
+        <ExpenseRow
+          v-for="exp in sortedExpenses"
+          :key="exp.id"
+          :expense="exp"
+          :couple="couple"
+          :currentUserId="user?.uid ?? ''"
+          @delete="onDeleteExpense"
+        />
+      </div>
+
+      <!-- FAB -->
+      <button class="fab" @click="openAddExpense">Ausgabe +</button>
+    </template>
+
+    <EventDetail
+      v-else-if="currentEventSummary"
+      :summary="currentEventSummary"
+      :couple="couple"
+      :currentUserId="user?.uid ?? ''"
+      @back="backToDashboard"
+      @addExpense="openAddForCurrentEvent"
+      @deleteExpense="onDeleteExpense"
+      @settle="onSettleEvent"
+    />
+
+    <!-- Add expense / new event sheet -->
     <AddExpenseSheet
       :isOpen="showAdd"
       :couple="couple"
       :currentUserId="user?.uid ?? ''"
+      :addContext="finView"
+      :startInEventMode="startInEventMode"
       @close="showAdd = false"
       @submit="onSubmitExpense"
+      @submitEvent="onSubmitEvent"
     />
 
     <!-- Settle confirmation -->
@@ -125,6 +215,48 @@ const sortedExpenses = computed(() =>
   font-weight: 600;
   color: var(--text);
   margin: 0;
+}
+
+.events-rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 0 var(--screen-pad) 4px;
+  margin-bottom: 24px;
+}
+
+.new-event-card {
+  flex: 0 0 168px;
+  text-align: center;
+  cursor: pointer;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  border: 1px dashed #3d362e;
+  background: transparent;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.new-event-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #3d362e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.new-event-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #d8d1c7;
 }
 
 .loading-row,

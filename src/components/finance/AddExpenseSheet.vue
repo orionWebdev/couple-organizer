@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Couple } from '@/types'
 import type { ExpenseCategory } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
@@ -9,6 +9,8 @@ const props = defineProps<{
   isOpen: boolean
   couple: Couple | null
   currentUserId: string
+  addContext?: 'dashboard' | 'event'
+  startInEventMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -20,7 +22,16 @@ const emit = defineEmits<{
     owedBy: Record<string, number>
     category: ExpenseCategory
   }]
+  submitEvent: [payload: { title: string; dateLabel: string }]
 }>()
+
+const addMode = ref<'expense' | 'event'>('expense')
+const newEventTitle = ref('')
+const newEventDate = ref('')
+
+const showModeToggle = computed(() => (props.addContext ?? 'dashboard') === 'dashboard')
+
+const sheetTitle = computed(() => addMode.value === 'event' ? 'Neues Finanzevent' : 'Ausgabe hinzufügen')
 
 const rawAmount = ref('')
 const title = ref('')
@@ -104,10 +115,68 @@ function handleSubmit() {
   splitMode.value = '5050'
   customPct.value = 50
 }
+
+function handleSubmitEvent() {
+  const cleanTitle = newEventTitle.value.trim()
+  if (!cleanTitle) return
+
+  emit('submitEvent', {
+    title: cleanTitle,
+    dateLabel: newEventDate.value.trim()
+  })
+
+  newEventTitle.value = ''
+  newEventDate.value = ''
+}
+
+watch(() => props.isOpen, (open) => {
+  if (!open) return
+  addMode.value = props.startInEventMode ? 'event' : 'expense'
+})
 </script>
 
 <template>
-  <BottomSheet :isOpen="isOpen" @close="$emit('close')">
+  <BottomSheet :isOpen="isOpen" :title="sheetTitle" @close="$emit('close')">
+    <!-- Ausgabe / Neues Event toggle -->
+    <div v-if="showModeToggle" class="mode-toggle">
+      <button
+        class="mode-btn"
+        :class="{ 'mode-btn--active': addMode === 'expense' }"
+        @click="addMode = 'expense'"
+      >Ausgabe</button>
+      <button
+        class="mode-btn"
+        :class="{ 'mode-btn--active': addMode === 'event' }"
+        @click="addMode = 'event'"
+      >Neues Event</button>
+    </div>
+
+    <!-- Event mode form -->
+    <template v-if="addMode === 'event'">
+      <p class="event-hint">
+        Für größere Anschaffungen oder Reisen — sammle mehrere Ausgaben an einem Ort und gleicht am Ende gemeinsam aus.
+      </p>
+      <input
+        v-model="newEventTitle"
+        class="app-field"
+        type="text"
+        placeholder="Name · z. B. Urlaub Portugal"
+        style="margin-bottom: 10px"
+      />
+      <input
+        v-model="newEventDate"
+        class="app-field"
+        type="text"
+        placeholder="Zeitraum · optional, z. B. 12.–18. Juli"
+        style="margin-bottom: 14px"
+      />
+      <button class="btn-primary submit-btn" :disabled="!newEventTitle.trim()" @click="handleSubmitEvent">
+        Event anlegen
+      </button>
+    </template>
+
+    <!-- Expense mode form -->
+    <template v-else>
     <!-- Amount display -->
     <div class="amount-display">
       <span class="amount-value mono">{{ displayAmount }}</span>
@@ -209,10 +278,45 @@ function handleSubmit() {
     >
       Hinzufügen
     </button>
+    </template>
   </BottomSheet>
 </template>
 
 <style scoped>
+.mode-toggle {
+  display: flex;
+  background: var(--surface-deep);
+  border: 1px solid var(--border-softer);
+  border-radius: 13px;
+  padding: 4px;
+  margin-bottom: 18px;
+}
+
+.mode-btn {
+  flex: 1;
+  border: none;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 11px 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-meta);
+  cursor: pointer;
+}
+
+.mode-btn--active {
+  background: var(--accent);
+  color: #15110d;
+}
+
+.event-hint {
+  font-size: 12.5px;
+  color: var(--text-meta);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
 .amount-display {
   display: flex;
   align-items: baseline;

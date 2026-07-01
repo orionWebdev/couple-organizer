@@ -1,11 +1,19 @@
 {
   "indexes": [
     {
-      "collectionGroup": "todos",
+      "collectionGroup": "chores",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "coupleId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "choreHistory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "coupleId", "order": "ASCENDING" },
+        { "fieldPath": "completedAt", "order": "DESCENDING" }
       ]
     },
     {

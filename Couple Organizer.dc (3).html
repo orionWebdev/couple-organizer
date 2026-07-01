@@ -100,6 +100,10 @@
                   <div style="margin-top:9px;font-size:11.5px;color:#8c8379">{{ ev.meta }}</div>
                 </button>
                 </sc-for>
+                <button onClick="{{ openNewEvent }}" style="flex:0 0 168px;text-align:center;cursor:pointer;font-family:inherit;border:1px dashed #3d362e;background:transparent;border-radius:16px;padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+                  <span style="width:34px;height:34px;border-radius:10px;border:1px solid #3d362e;display:flex;align-items:center;justify-content:center;color:#86a596;font-size:20px">+</span>
+                  <span style="font-size:13px;font-weight:500;color:#d8d1c7">Neues Event</span>
+                </button>
               </div>
 
               <!-- Expense list -->
@@ -135,21 +139,32 @@
               <button onClick="{{ backDash }}" style="display:flex;align-items:center;gap:7px;cursor:pointer;background:transparent;border:none;color:#8c8379;font-family:inherit;font-size:13.5px;padding:6px 0;margin-bottom:6px">‹ Finanzen</button>
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
                 <div>
-                  <h2 style="margin:2px 0 4px;font-size:23px;font-weight:600;letter-spacing:-.01em">Wochenende Amsterdam</h2>
-                  <div style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#8c8379"><span style="display:inline-flex;align-items:center;gap:5px"><i style="width:7px;height:7px;border-radius:50%;background:#86a596;display:block"></i>Offen</span><span>· 4 Ausgaben · 12.–14. Juni</span></div>
+                  <h2 style="margin:2px 0 4px;font-size:23px;font-weight:600;letter-spacing:-.01em">{{ eventName }}</h2>
+                  <div style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#8c8379"><span style="display:inline-flex;align-items:center;gap:5px"><i style="width:7px;height:7px;border-radius:50%;display:block;background:{{ eventStatusDot }}"></i>{{ eventStatusLabel }}</span><span>· {{ eventItemCountLabel }} · {{ eventDateLabel }}</span></div>
                 </div>
               </div>
 
               <div style="margin-top:18px;border:1px solid #38423d;background:linear-gradient(150deg,#2c3833,#23201b);border-radius:18px;padding:18px">
                 <div style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#9fb5ac">Gesamt im Topf</div>
-                <div style="margin-top:8px;font-family:'Geist Mono',monospace;font-size:34px;font-weight:500;color:#f4efe9">340,20&nbsp;€</div>
+                <div style="margin-top:8px;font-family:'Geist Mono',monospace;font-size:34px;font-weight:500;color:#f4efe9">{{ eventTotalStr }}</div>
                 <div style="margin-top:14px;display:flex;gap:18px">
-                  <div><div style="font-size:11.5px;color:#9fb5ac">Chris ausgelegt</div><div style="font-family:'Geist Mono',monospace;font-size:15px;color:#efe9e2;margin-top:2px">234,80&nbsp;€</div></div>
-                  <div><div style="font-size:11.5px;color:#9fb5ac">Sarah ausgelegt</div><div style="font-family:'Geist Mono',monospace;font-size:15px;color:#efe9e2;margin-top:2px">105,40&nbsp;€</div></div>
+                  <div><div style="font-size:11.5px;color:#9fb5ac">Chris ausgelegt</div><div style="font-family:'Geist Mono',monospace;font-size:15px;color:#efe9e2;margin-top:2px">{{ eventChrisPaidStr }}</div></div>
+                  <div><div style="font-size:11.5px;color:#9fb5ac">Sarah ausgelegt</div><div style="font-family:'Geist Mono',monospace;font-size:15px;color:#efe9e2;margin-top:2px">{{ eventSarahPaidStr }}</div></div>
                 </div>
               </div>
 
-              <div style="margin:22px 0 4px;font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#6f665d">Ausgaben</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 0 4px">
+                <span style="font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#6f665d">Ausgaben</span>
+                <sc-if value="{{ eventNotEmpty }}">
+                <button onClick="{{ openAddForCurrentEvent }}" style="cursor:pointer;background:transparent;border:none;color:#86a596;font-family:inherit;font-size:12.5px;font-weight:600;padding:2px 0">+ Hinzufügen</button>
+                </sc-if>
+              </div>
+              <sc-if value="{{ eventItemsEmpty }}">
+              <div style="text-align:center;padding:24px 20px 8px;color:#6f665d;font-size:13.5px;line-height:1.5">
+                Noch keine Ausgaben in diesem Event.
+                <button onClick="{{ openAddForCurrentEvent }}" style="display:block;width:100%;margin-top:14px;border:1px dashed #3d362e;cursor:pointer;background:transparent;color:#86a596;font-family:inherit;font-size:14px;font-weight:600;padding:13px;border-radius:13px">+ Erste Ausgabe hinzufügen</button>
+              </div>
+              </sc-if>
               <div>
                 <sc-for list="{{ eventItems }}" as="row" hint-placeholder-count="4">
                 <div style="display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid #251f1a">
@@ -160,104 +175,202 @@
                 </sc-for>
               </div>
 
+              <sc-if value="{{ eventOpen }}">
               <div style="margin-top:22px;border:1px solid #332c25;border-radius:16px;padding:16px;background:#221d18">
-                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:#a89f95">Beim Abschließen:</span><span style="font-size:14px;font-weight:600;color:#efe9e2">Sarah → Chris&nbsp; <span style="font-family:'Geist Mono',monospace;color:#86a596">14,80&nbsp;€</span></span></div>
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;color:#a89f95">Beim Abschließen:</span><span style="font-size:14px;font-weight:600;color:#efe9e2">{{ settleLine }}&nbsp; <span style="font-family:'Geist Mono',monospace;color:#86a596">{{ settleAmtStr }}</span></span></div>
                 <button onClick="{{ settleEvent }}" style="margin-top:14px;width:100%;border:none;cursor:pointer;background:#86a596;color:#14110d;font-family:inherit;font-size:14.5px;font-weight:600;padding:13px;border-radius:13px">Abschließen &amp; Ausgleichen</button>
               </div>
+              </sc-if>
+              <sc-if value="{{ eventClosed }}">
+              <div style="margin-top:22px;border:1px solid #38423d;border-radius:16px;padding:16px;background:linear-gradient(150deg,#2c3833,#23201b);display:flex;align-items:center;gap:10px">
+                <span style="width:8px;height:8px;border-radius:50%;background:#86a596;display:block"></span>
+                <span style="font-size:13.5px;font-weight:600;color:#efe9e2">Abgeschlossen &amp; ausgeglichen</span>
+              </div>
+              </sc-if>
             </div>
             </sc-if>
 
           </div>
           </sc-if>
 
-          <!-- ============ CHORES ============ -->
+<!-- ============ CHORES ============ -->
           <sc-if value="{{ isChores }}">
           <div style="padding:8px 22px 24px">
 
-            <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 14px">
               <h2 style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em">Haushalt</h2>
-              <div style="display:flex;background:#221d18;border:1px solid #332c25;border-radius:11px;padding:3px">
-                <button onClick="{{ showPool }}" style="cursor:pointer;border:none;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;color:#15110d;background:#86a596;background:{{ poolTabBg }};color:{{ poolTabColor }}">Pool</button>
-                <button onClick="{{ showStats }}" style="cursor:pointer;border:none;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;background:transparent;color:#8c8379;background:{{ statsTabBg }};color:{{ statsTabColor }}">Statistik</button>
-                <button onClick="{{ showHist }}" style="cursor:pointer;border:none;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;background:transparent;color:#8c8379;background:{{ histTabBg }};color:{{ histTabColor }}">Verlauf</button>
-              </div>
+              <span style="font-size:12.5px;color:#8c8379">Di., 30. Juni</span>
             </div>
 
-            <!-- Pool -->
-            <sc-if value="{{ choresPool }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;gap:4px;background:#221d18;border:1px solid #332c25;border-radius:12px;padding:4px;margin-bottom:20px">
+              <button onClick="{{ goHeute }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:9px 0;border-radius:9px;background:{{ tabHeuteBg }};color:{{ tabHeuteColor }}">Heute</button>
+              <button onClick="{{ goAlle }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:9px 0;border-radius:9px;background:{{ tabAlleBg }};color:{{ tabAlleColor }}">Alle</button>
+              <button onClick="{{ goUebersicht }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:9px 0;border-radius:9px;background:{{ tabUebersichtBg }};color:{{ tabUebersichtColor }}">Übersicht</button>
+              <button onClick="{{ goVerlauf }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:9px 0;border-radius:9px;background:{{ tabVerlaufBg }};color:{{ tabVerlaufColor }}">Verlauf</button>
+            </div>
+
+            <!-- Heute -->
+            <sc-if value="{{ isHeute }}" hint-placeholder-val="{{ true }}">
             <div>
-              <!-- Schnell erledigt (personal, editable) -->
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                <span style="font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#6f665d">Schnell erledigt</span>
-                <button onClick="{{ toggleQuickEdit }}" style="cursor:pointer;background:transparent;border:none;color:#86a596;font-family:inherit;font-size:12.5px;font-weight:600;padding:2px 0">{{ quickEditLabel }}</button>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#6f665d">Heute</span>
+                <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#8c8379">{{ heuteDoneCount }} / {{ heuteTotalCount }}</span>
               </div>
-              <div style="display:flex;background:#1a1613;border:1px solid #2b251f;border-radius:10px;padding:3px;margin-bottom:11px">
-                <button onClick="{{ quickPickChris }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 0;border-radius:7px;background:{{ qChrisBg }};color:{{ qChrisColor }}">Für dich</button>
-                <button onClick="{{ quickPickSarah }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 0;border-radius:7px;background:{{ qSarahBg }};color:{{ qSarahColor }}">Für Sarah</button>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
-                <sc-for list="{{ quickActions }}" as="q" hint-placeholder-count="4">
-                <sc-if value="{{ quickNotEditing }}">
-                <button onClick="{{ q.onDo }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;font-family:inherit;text-align:left;border:1px solid #332c25;background:#221d18;border-radius:14px;padding:13px 14px">
-                  <span style="font-size:14px;font-weight:500;color:#efe9e2;line-height:1.25">{{ q.name }}</span>
-                  <span style="flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:rgba(134,165,150,.16);color:#86a596;font-size:16px;display:flex;align-items:center;justify-content:center;font-weight:500">+</span>
+              <div style="height:6px;border-radius:4px;background:#2f2823;overflow:hidden;margin-bottom:16px"><div style="height:100%;background:#86a596;width:{{ heutePct }}"></div></div>
+
+              <sc-for list="{{ heuteItems }}" as="t" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #251f1a">
+                <sc-if value="{{ t.notDone }}">
+                <div style="display:flex;gap:4px;flex:0 0 auto">
+                  <button onClick="{{ t.onPickChris }}" title="Chris" style="width:26px;height:26px;border-radius:8px;border:1.5px solid #3a5a78;background:transparent;color:#8aa2c2;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit">C</button>
+                  <button onClick="{{ t.onPickSarah }}" title="Sarah" style="width:26px;height:26px;border-radius:8px;border:1.5px solid #7a5240;background:transparent;color:#c69a86;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit">S</button>
+                  <button onClick="{{ t.onPickBoth }}" title="Beide" style="width:26px;height:26px;border-radius:8px;border:1.5px solid #4a5a52;background:transparent;color:#86a596;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit">B</button>
+                </div>
+                </sc-if>
+                <sc-if value="{{ t.done }}">
+                <button onClick="{{ t.onUndo }}" style="display:flex;cursor:pointer;background:transparent;border:none;padding:0;flex:0 0 auto">
+                  <sc-for list="{{ t.chips }}" as="ch" hint-placeholder-count="2">
+                  <span style="width:26px;height:26px;border-radius:8px;font-size:11px;font-weight:700;color:#15110d;display:flex;align-items:center;justify-content:center;background:{{ ch.bg }};margin-left:-4px;border:1.5px solid #1a1613">{{ ch.ch }}</span>
+                  </sc-for>
                 </button>
                 </sc-if>
-                <sc-if value="{{ quickEditing }}">
-                <div style="display:flex;align-items:center;border:1px solid #4a4138;background:#1a1613;border-radius:14px;padding:0 12px">
-                  <input value="{{ q.name }}" onChange="{{ q.onRename }}" style="flex:1;min-width:0;background:transparent;border:none;outline:none;color:#efe9e2;font-family:inherit;font-size:14px;font-weight:500;padding:13px 0" />
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:15px;font-weight:500;color:{{ t.nameColor }}">{{ t.name }}</div>
+                  <div style="font-size:11.5px;color:#8c8379;margin-top:2px">{{ t.metaLine }}</div>
                 </div>
-                </sc-if>
-                </sc-for>
+                <span style="font-size:10.5px;color:#6f665d;flex:0 0 auto;text-align:right;max-width:70px">{{ t.recurLabel }}</span>
               </div>
-              <sc-if value="{{ quickEditing }}">
-              <div style="font-size:11.5px;color:#6f665d;margin-bottom:22px;line-height:1.5">Deine vier persönlichen Routinen. {{ quickEditWho }} passt die eigenen separat an.</div>
-              </sc-if>
-              <sc-if value="{{ quickNotEditing }}">
-              <div style="height:24px"></div>
+              </sc-for>
+              <sc-if value="{{ heuteEmpty }}">
+              <div style="text-align:center;padding:30px 20px;color:#6f665d;font-size:13.5px;line-height:1.5">Nichts für heute geplant. ✓</div>
               </sc-if>
 
-              <!-- Aufgaben-Pool with assignee filter -->
-              <div style="font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#6f665d;margin-bottom:10px">Aufgaben</div>
-              <div style="display:flex;gap:7px;margin-bottom:6px">
-                <button onClick="{{ filterMe }}" style="cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:9px;border:1px solid {{ fMeBorder }};background:{{ fMeBg }};color:{{ fMeColor }}">Mir zugewiesen</button>
-                <button onClick="{{ filterSarah }}" style="cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:9px;border:1px solid {{ fSarahBorder }};background:{{ fSarahBg }};color:{{ fSarahColor }}">Sarah</button>
-                <button onClick="{{ filterAll }}" style="cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:9px;border:1px solid {{ fAllBorder }};background:{{ fAllBg }};color:{{ fAllColor }}">Alle</button>
-                <span style="flex:0 0 auto;width:1px;align-self:stretch;background:#2b251f;margin:2px 1px"></span>
-                <button onClick="{{ filterOpen }}" style="cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:9px;border:1px dashed {{ fOpenBorder }};background:{{ fOpenBg }};color:{{ fOpenColor }};display:flex;align-items:center;gap:6px">Offen<span style="font-family:'Geist Mono',monospace;font-size:11px;opacity:.85">{{ openCount }}</span></button>
-              </div>
-              <div>
-                <sc-for list="{{ chores }}" as="c" hint-placeholder-count="4">
-                <div style="display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid #251f1a">
-                  <button onClick="{{ c.onDo }}" style="flex:0 0 auto;width:30px;height:30px;border-radius:9px;cursor:pointer;border:1.5px solid #4a4138;background:transparent;display:flex;align-items:center;justify-content:center;color:#86a596;font-size:15px;border:{{ c.boxBorder }};background:{{ c.boxBg }}">{{ c.check }}</button>
-                  <div style="flex:1;min-width:0">
-                    <div style="font-size:15px;font-weight:500;color:#efe9e2;color:{{ c.nameColor }}">{{ c.name }}</div>
-                    <div style="font-size:11.5px;color:#8c8379;margin-top:2px">{{ c.sub }}</div>
-                  </div>
-                  <span style="flex:0 0 auto;width:24px;height:24px;border-radius:7px;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;background:{{ c.initBg }};border:{{ c.initBorder }};color:{{ c.initColor }}">{{ c.init }}</span>
+              <sc-if value="{{ hasDemnaechst }}">
+              <div style="font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#6f665d;margin:22px 0 4px">Demnächst</div>
+              <sc-for list="{{ demnaechstItems }}" as="t" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #251f1a">
+                <sc-if value="{{ t.notDone }}">
+                <div style="display:flex;gap:4px;flex:0 0 auto">
+                  <button onClick="{{ t.onPickChris }}" title="Chris" style="width:26px;height:26px;border-radius:8px;border:1.5px solid #3a5a78;background:transparent;color:#8aa2c2;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit">C</button>
+                  <button onClick="{{ t.onPickSarah }}" title="Sarah" style="width:26px;height:26px;border-radius:8px;border:1.5px solid #7a5240;background:transparent;color:#c69a86;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit">S</button>
+                  <button onClick="{{ t.onPickBoth }}" title="Beide" style="width:26px;height:26px;border-radius:8px;border:1.5px solid #4a5a52;background:transparent;color:#86a596;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit">B</button>
                 </div>
-                </sc-for>
+                </sc-if>
+                <sc-if value="{{ t.done }}">
+                <button onClick="{{ t.onUndo }}" style="display:flex;cursor:pointer;background:transparent;border:none;padding:0;flex:0 0 auto">
+                  <sc-for list="{{ t.chips }}" as="ch" hint-placeholder-count="2">
+                  <span style="width:26px;height:26px;border-radius:8px;font-size:11px;font-weight:700;color:#15110d;display:flex;align-items:center;justify-content:center;background:{{ ch.bg }};margin-left:-4px;border:1.5px solid #1a1613">{{ ch.ch }}</span>
+                  </sc-for>
+                </button>
+                </sc-if>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:15px;font-weight:500;color:{{ t.nameColor }}">{{ t.name }}</div>
+                  <div style="font-size:11.5px;color:#8c8379;margin-top:2px">{{ t.metaLine }}</div>
+                </div>
+                <span style="font-size:10.5px;color:#6f665d;flex:0 0 auto;text-align:right;max-width:70px">{{ t.recurLabel }}</span>
               </div>
-              <sc-if value="{{ choresEmpty }}">
-              <div style="text-align:center;padding:34px 20px;color:#6f665d;font-size:13.5px;line-height:1.5">Hier ist gerade nichts offen.<br>Schön ruhig. ✓</div>
+              </sc-for>
               </sc-if>
             </div>
             </sc-if>
 
-            <!-- Stats -->
-            <sc-if value="{{ choresStats }}">
+            <!-- Alle -->
+            <sc-if value="{{ isAlle }}">
             <div>
+              <div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px">
+                <button onClick="{{ filterAlle }}" style="cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:9px;border:1px solid {{ fAlleBorder }};background:{{ fAlleBg }};color:{{ fAlleColor }}">Alle</button>
+                <button onClick="{{ filterChris }}" style="cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:9px;border:1px solid {{ fChrisBorder }};background:{{ fChrisBg }};color:{{ fChrisColor }}">Chris</button>
+                <button onClick="{{ filterSarah }}" style="cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:9px;border:1px solid {{ fSarahBorder }};background:{{ fSarahBg }};color:{{ fSarahColor }}">Sarah</button>
+                <button onClick="{{ filterBoth }}" style="cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:9px;border:1px solid {{ fBothBorder }};background:{{ fBothBg }};color:{{ fBothColor }}">Beide</button>
+                <button onClick="{{ filterOffen }}" style="cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:9px;border:1px dashed {{ fOffenBorder }};background:{{ fOffenBg }};color:{{ fOffenColor }}">Offen</button>
+              </div>
+
+              <sc-for list="{{ poolItems }}" as="t" hint-placeholder-count="8">
+              <div>
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #251f1a">
+                  <sc-if value="{{ t.notDone }}">
+                  <div style="display:flex;gap:4px;flex:0 0 auto">
+                    <button onClick="{{ t.onPickChris }}" title="Chris" style="width:26px;height:26px;border-radius:8px;border:1.5px solid #3a5a78;background:transparent;color:#8aa2c2;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit">C</button>
+                    <button onClick="{{ t.onPickSarah }}" title="Sarah" style="width:26px;height:26px;border-radius:8px;border:1.5px solid #7a5240;background:transparent;color:#c69a86;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit">S</button>
+                    <button onClick="{{ t.onPickBoth }}" title="Beide" style="width:26px;height:26px;border-radius:8px;border:1.5px solid #4a5a52;background:transparent;color:#86a596;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit">B</button>
+                  </div>
+                  </sc-if>
+                  <sc-if value="{{ t.done }}">
+                  <button onClick="{{ t.onUndo }}" style="display:flex;cursor:pointer;background:transparent;border:none;padding:0;flex:0 0 auto">
+                    <sc-for list="{{ t.chips }}" as="ch" hint-placeholder-count="2">
+                    <span style="width:26px;height:26px;border-radius:8px;font-size:11px;font-weight:700;color:#15110d;display:flex;align-items:center;justify-content:center;background:{{ ch.bg }};margin-left:-4px;border:1.5px solid #1a1613">{{ ch.ch }}</span>
+                    </sc-for>
+                  </button>
+                  </sc-if>
+                  <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                      <span style="font-size:15px;font-weight:500;color:{{ t.nameColor }}">{{ t.name }}</span>
+                      <span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:6px;background:rgba(134,165,150,.14);color:#86a596">{{ t.recurLabel }}</span>
+                    </div>
+                    <div style="font-size:11.5px;color:#8c8379;margin-top:3px">{{ t.metaLine }}</div>
+                  </div>
+                  <span style="flex:0 0 auto;width:24px;height:24px;border-radius:7px;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;background:{{ t.assigneeBg }};border:{{ t.assigneeBorder }};color:{{ t.assigneeColor }}">{{ t.assigneeInit }}</span>
+                  <button onClick="{{ t.onMenuToggle }}" style="flex:0 0 auto;cursor:pointer;background:transparent;border:none;color:#6f665d;font-size:20px;line-height:1;padding:4px 6px;border-radius:8px;font-family:inherit">⋯</button>
+                </div>
+                <sc-if value="{{ t.menuOpen }}">
+                <div style="margin:0 0 12px;padding:12px 13px;border:1px solid #2b251f;background:#1a1613;border-radius:14px">
+                  <div style="font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6f665d;margin-bottom:8px">Zuweisen an</div>
+                  <div style="display:flex;gap:6px;margin-bottom:10px">
+                    <button onClick="{{ t.onAssignChris }}" style="flex:1;cursor:pointer;border:1px solid #332c25;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:transparent;color:#8aa2c2">Chris</button>
+                    <button onClick="{{ t.onAssignSarah }}" style="flex:1;cursor:pointer;border:1px solid #332c25;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:transparent;color:#c69a86">Sarah</button>
+                    <button onClick="{{ t.onAssignBoth }}" style="flex:1;cursor:pointer;border:1px solid #332c25;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:transparent;color:#86a596">Beide</button>
+                    <button onClick="{{ t.onAssignOpen }}" style="flex:1;cursor:pointer;border:1px solid #332c25;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:transparent;color:#8c8379">Offen</button>
+                  </div>
+                  <div style="display:flex;gap:6px">
+                    <button onClick="{{ t.onEdit }}" style="flex:1;cursor:pointer;border:1px solid #332c25;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 0;border-radius:9px;background:transparent;color:#c9c1b7">Bearbeiten</button>
+                    <button onClick="{{ t.onDelete }}" style="flex:1;cursor:pointer;border:1px solid #5a3d36;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 0;border-radius:9px;background:transparent;color:#c98a7e">Aus Pool löschen</button>
+                  </div>
+                </div>
+                </sc-if>
+              </div>
+              </sc-for>
+            </div>
+            </sc-if>
+
+            <!-- Übersicht -->
+            <sc-if value="{{ isUebersicht }}">
+            <div>
+              <sc-for list="{{ people }}" as="p" hint-placeholder-count="2">
+              <div style="border:1px solid #332c25;border-radius:18px;padding:16px;background:#221d18;margin-bottom:14px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                  <span style="width:32px;height:32px;border-radius:9px;background:{{ p.avatarBg }};color:#15110d;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center">{{ p.init }}</span>
+                  <div style="flex:1">
+                    <div style="font-size:15px;font-weight:600;color:#efe9e2">{{ p.name }}</div>
+                    <div style="font-size:11.5px;color:#8c8379;margin-top:1px">{{ p.doneCount }} von {{ p.totalCount }} heute erledigt</div>
+                  </div>
+                </div>
+                <div style="height:6px;border-radius:4px;background:#2f2823;overflow:hidden;margin-bottom:12px"><div style="height:100%;background:{{ p.avatarBg }};width:{{ p.pct }}"></div></div>
+                <sc-if value="{{ p.hasOpen }}">
+                <div>
+                  <sc-for list="{{ p.openPreview }}" as="o" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;color:#c9c1b7"><span style="width:5px;height:5px;border-radius:50%;background:#5f574e;flex:0 0 auto"></span>{{ o.name }}</div>
+                  </sc-for>
+                  <sc-if value="{{ p.hasMore }}">
+                  <div style="font-size:11.5px;color:#6f665d;margin-top:2px">+{{ p.moreCount }} weitere</div>
+                  </sc-if>
+                </div>
+                </sc-if>
+                <sc-if value="{{ p.allDone }}">
+                <div style="font-size:12.5px;color:#86a596;padding:4px 0">Alles für heute erledigt ✓</div>
+                </sc-if>
+              </div>
+              </sc-for>
+
               <div style="border:1px solid #332c25;border-radius:18px;padding:18px;background:#221d18;margin-bottom:20px">
                 <div style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6f665d">Diesen Monat gemeinsam</div>
-                <div style="margin-top:8px;display:flex;align-items:baseline;gap:8px"><span style="font-family:'Geist Mono',monospace;font-size:34px;font-weight:500;color:#efe9e2">84</span><span style="font-size:13px;color:#8c8379">Aufgaben erledigt</span></div>
+                <div style="margin-top:8px;display:flex;align-items:baseline;gap:8px"><span style="font-family:'Geist Mono',monospace;font-size:34px;font-weight:500;color:#efe9e2">{{ statsTotal }}</span><span style="font-size:13px;color:#8c8379">Aufgaben erledigt</span></div>
                 <div style="margin-top:18px;height:12px;border-radius:7px;overflow:hidden;display:flex">
-                  <div style="width:46%;background:#8aa2c2"></div><div style="width:54%;background:#c69a86"></div>
+                  <div style="width:{{ statsChrisW }};background:#8aa2c2"></div><div style="width:{{ statsSarahW }};background:#c69a86"></div>
                 </div>
                 <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#8c8379">
-                  <span style="display:flex;align-items:center;gap:6px"><i style="width:8px;height:8px;border-radius:2px;background:#8aa2c2;display:block"></i>Chris · 39</span>
-                  <span style="display:flex;align-items:center;gap:6px">Sarah · 45<i style="width:8px;height:8px;border-radius:2px;background:#c69a86;display:block"></i></span>
+                  <span style="display:flex;align-items:center;gap:6px"><i style="width:8px;height:8px;border-radius:2px;background:#8aa2c2;display:block"></i>Chris · {{ statsChrisTotal }}</span>
+                  <span style="display:flex;align-items:center;gap:6px">Sarah · {{ statsSarahTotal }}<i style="width:8px;height:8px;border-radius:2px;background:#c69a86;display:block"></i></span>
                 </div>
-                <div style="margin-top:14px;font-size:12px;color:#6f665d;line-height:1.5">Eine ausgewogene Woche — danke euch beiden. Keine Wertung, nur Überblick.</div>
               </div>
 
               <div style="font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#6f665d;margin-bottom:8px">Nach Aufgabe</div>
@@ -275,13 +388,13 @@
             </div>
             </sc-if>
 
-            <!-- Verlauf (timeline) -->
-            <sc-if value="{{ choresHist }}">
+            <!-- Verlauf -->
+            <sc-if value="{{ isVerlauf }}">
             <div>
               <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
                 <div>
-                  <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#6f665d">Heute</div>
-                  <div style="font-size:18px;font-weight:600;color:#efe9e2;margin-top:2px">{{ todayStr }}</div>
+                  <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#6f665d">Verlauf</div>
+                  <div style="font-size:18px;font-weight:600;color:#efe9e2;margin-top:2px">30. Juni 2026</div>
                 </div>
                 <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#8c8379">{{ histCount }} Einträge</span>
               </div>
@@ -419,7 +532,7 @@
             </button>
             <button onClick="{{ goChores }}" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;background:transparent;border:none;font-family:inherit;padding:4px 14px">
               <span style="width:5px;height:5px;border-radius:50%;background:transparent;background:{{ navChoresDot }}"></span>
-              <span style="font-size:12.5px;font-weight:600;color:#6f665d;color:{{ navChoresColor }}">Chores</span>
+              <span style="font-size:12.5px;font-weight:600;color:#6f665d;color:{{ navChoresColor }}">Haushalt</span>
             </button>
             <button onClick="{{ goShop }}" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;background:transparent;border:none;font-family:inherit;padding:4px 14px">
               <span style="width:5px;height:5px;border-radius:50%;background:transparent;background:{{ navShopDot }}"></span>
@@ -431,6 +544,11 @@
         <!-- FAB (add expense) only on finanzen -->
         <sc-if value="{{ showFab }}" hint-placeholder-val="{{ true }}">
         <button onClick="{{ openAdd }}" style="position:absolute;right:20px;bottom:92px;z-index:7;width:54px;height:54px;border-radius:17px;cursor:pointer;border:none;background:#86a596;color:#14110d;font-size:28px;font-weight:400;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px -10px rgba(134,165,150,.7)">+</button>
+        </sc-if>
+
+        <!-- FAB (new task) only on chores/alle -->
+        <sc-if value="{{ showTaskFab }}">
+        <button onClick="{{ openNewTask }}" style="position:absolute;right:20px;bottom:92px;z-index:7;width:54px;height:54px;border-radius:17px;cursor:pointer;border:none;background:#86a596;color:#14110d;font-size:28px;font-weight:400;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px -10px rgba(134,165,150,.7)">+</button>
         </sc-if>
 
         <!-- ============ EINKAUFSMODUS (fullscreen) ============ -->
@@ -454,12 +572,20 @@
         </div>
         </sc-if>
 
-        <!-- ============ ADD EXPENSE SHEET ============ -->
+        <!-- ============ ADD EXPENSE / NEW EVENT SHEET ============ -->
         <sc-if value="{{ sheetAdd }}">
         <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:25;background:rgba(8,6,5,.6)"></div>
         <div style="position:absolute;left:0;right:0;bottom:0;z-index:26;background:#211c17;border-top:1px solid #38322b;border-radius:26px 26px 0 0;padding:10px 22px 28px;max-height:90%;overflow-y:auto">
           <div style="width:40px;height:4px;border-radius:3px;background:#3d362e;margin:4px auto 16px"></div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px"><h3 style="margin:0;font-size:19px;font-weight:600">Ausgabe hinzufügen</h3><button onClick="{{ closeSheet }}" style="cursor:pointer;background:transparent;border:none;color:#8c8379;font-size:22px">×</button></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><h3 style="margin:0;font-size:19px;font-weight:600">{{ sheetTitle }}</h3><button onClick="{{ closeSheet }}" style="cursor:pointer;background:transparent;border:none;color:#8c8379;font-size:22px">×</button></div>
+
+          <div style="display:flex;background:#1a1613;border:1px solid #2b251f;border-radius:13px;padding:4px;margin-bottom:18px">
+            <button onClick="{{ modeExpense }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:13.5px;font-weight:600;padding:11px 0;border-radius:10px;background:{{ modeExpenseBg }};color:{{ modeExpenseColor }}">Ausgabe</button>
+            <button onClick="{{ modeEvent }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:13.5px;font-weight:600;padding:11px 0;border-radius:10px;background:{{ modeEventBg }};color:{{ modeEventColor }}">Neues Event</button>
+          </div>
+
+          <sc-if value="{{ addModeExpense }}">
+          <div>
           <div style="text-align:center;padding:4px 0 10px"><div style="display:inline-flex;align-items:baseline"><span style="font-family:'Geist Mono',monospace;font-size:40px;font-weight:500;color:#efe9e2">{{ addAmount }}</span><span style="font-family:'Geist Mono',monospace;font-size:26px;color:#8c8379;margin-left:6px">€</span></div></div>
 
           <input value="{{ addTitle }}" onChange="{{ onTitle }}" placeholder="Titel · z. B. REWE Wocheneinkauf" style="width:100%;box-sizing:border-box;background:#1a1613;border:1px solid #2f2823;border-radius:13px;padding:13px 15px;color:#efe9e2;font-family:inherit;font-size:14px;outline:none;margin-bottom:10px" />
@@ -502,8 +628,18 @@
             <button onClick="{{ k.onPress }}" style="cursor:pointer;border:1px solid #2f2823;background:#1a1613;color:#efe9e2;font-family:'Geist Mono',monospace;font-size:18px;font-weight:500;padding:10px 0;border-radius:11px">{{ k.label }}</button>
             </sc-for>
           </div>
+          </div>
+          </sc-if>
 
-          <button onClick="{{ confirmAdd }}" style="width:100%;border:none;cursor:pointer;background:#86a596;color:#14110d;font-family:inherit;font-size:15px;font-weight:600;padding:14px;border-radius:14px">Hinzufügen</button>
+          <sc-if value="{{ addModeEvent }}">
+          <div>
+          <div style="font-size:12.5px;color:#8c8379;line-height:1.5;margin-bottom:16px">Für größere Anschaffungen oder Reisen — sammle mehrere Ausgaben an einem Ort und gleicht am Ende gemeinsam aus.</div>
+          <input value="{{ newEventText }}" onChange="{{ onNewEventText }}" placeholder="Name · z. B. Urlaub Portugal" style="width:100%;box-sizing:border-box;background:#1a1613;border:1px solid #2f2823;border-radius:13px;padding:13px 15px;color:#efe9e2;font-family:inherit;font-size:14px;outline:none;margin-bottom:10px" />
+          <input value="{{ newEventDate }}" onChange="{{ onNewEventDate }}" placeholder="Zeitraum · optional, z. B. 12.–18. Juli" style="width:100%;box-sizing:border-box;background:#1a1613;border:1px solid #2f2823;border-radius:13px;padding:13px 15px;color:#efe9e2;font-family:inherit;font-size:14px;outline:none;margin-bottom:14px" />
+          </div>
+          </sc-if>
+
+          <button onClick="{{ confirmSheet }}" style="width:100%;border:none;cursor:pointer;background:#86a596;color:#14110d;font-family:inherit;font-size:15px;font-weight:600;padding:14px;border-radius:14px">{{ confirmLabel }}</button>
         </div>
         </sc-if>
 
@@ -515,6 +651,54 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><h3 style="margin:0;font-size:19px;font-weight:600">Neue Liste</h3><button onClick="{{ closeSheet }}" style="cursor:pointer;background:transparent;border:none;color:#8c8379;font-size:22px">×</button></div>
           <input value="{{ newListText }}" onChange="{{ onNewListText }}" placeholder="Listenname · z. B. Wochenende" style="width:100%;box-sizing:border-box;background:#1a1613;border:1px solid #2f2823;border-radius:13px;padding:13px 15px;color:#efe9e2;font-family:inherit;font-size:14px;outline:none;margin-bottom:14px" />
           <button onClick="{{ confirmNewList }}" style="width:100%;border:none;cursor:pointer;background:#86a596;color:#14110d;font-family:inherit;font-size:15px;font-weight:600;padding:14px;border-radius:14px">Liste anlegen</button>
+        </div>
+        </sc-if>
+
+        <!-- ============ TASK SHEET (Haushalt) ============ -->
+        <sc-if value="{{ sheetTask }}">
+        <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:25;background:rgba(8,6,5,.6)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:26;background:#211c17;border-top:1px solid #38322b;border-radius:26px 26px 0 0;padding:10px 22px 28px;max-height:92%;overflow-y:auto">
+          <div style="width:40px;height:4px;border-radius:3px;background:#3d362e;margin:4px auto 16px"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><h3 style="margin:0;font-size:19px;font-weight:600">{{ sheetTaskTitle }}</h3><button onClick="{{ closeSheet }}" style="cursor:pointer;background:transparent;border:none;color:#8c8379;font-size:22px">×</button></div>
+
+          <input value="{{ formName }}" onChange="{{ onFormName }}" placeholder="Name · z. B. Bad putzen" style="width:100%;box-sizing:border-box;background:#1a1613;border:1px solid #2f2823;border-radius:13px;padding:13px 15px;color:#efe9e2;font-family:inherit;font-size:14px;outline:none;margin-bottom:12px" />
+
+          <div style="display:flex;background:#1a1613;border:1px solid #2b251f;border-radius:12px;padding:3px;margin-bottom:12px">
+            <button onClick="{{ pickRecurring }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 0;border-radius:9px;background:{{ typeRecurBg }};color:{{ typeRecurColor }}">Wiederkehrend</button>
+            <button onClick="{{ pickOnce }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 0;border-radius:9px;background:{{ typeOnceBg }};color:{{ typeOnceColor }}">Einmalig</button>
+          </div>
+
+          <sc-if value="{{ formIsRecurring }}">
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:#6f665d;margin-bottom:7px">Intervall</div>
+            <div style="display:flex;gap:6px">
+              <button onClick="{{ pickDaily }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:{{ intDailyBg }};color:{{ intDailyColor }}">Täglich</button>
+              <button onClick="{{ pickWeekly }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:{{ intWeeklyBg }};color:{{ intWeeklyColor }}">Wöchentlich</button>
+              <button onClick="{{ pickMonthly }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:{{ intMonthlyBg }};color:{{ intMonthlyColor }}">Monatlich</button>
+            </div>
+          </div>
+          </sc-if>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:#6f665d;margin-bottom:7px">Termin</div>
+            <div style="display:flex;gap:6px">
+              <button onClick="{{ pickDueNone }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:{{ dueNoneBg }};color:{{ dueNoneColor }}">Kein fester Tag</button>
+              <button onClick="{{ pickDueToday }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:{{ dueTodayBg }};color:{{ dueTodayColor }}">Heute</button>
+              <button onClick="{{ pickDueSoon }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:{{ dueSoonBg }};color:{{ dueSoonColor }}">Bald</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom:18px">
+            <div style="font-size:11px;color:#6f665d;margin-bottom:7px">Zuweisen an</div>
+            <div style="display:flex;gap:6px">
+              <button onClick="{{ pickAssChris }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:{{ assChrisBg }};color:{{ assChrisColor }}">Chris</button>
+              <button onClick="{{ pickAssSarah }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:{{ assSarahBg }};color:{{ assSarahColor }}">Sarah</button>
+              <button onClick="{{ pickAssBoth }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:{{ assBothBg }};color:{{ assBothColor }}">Beide</button>
+              <button onClick="{{ pickAssOpen }}" style="flex:1;cursor:pointer;border:none;font-family:inherit;font-size:12px;font-weight:600;padding:8px 0;border-radius:9px;background:{{ assOpenBg }};color:{{ assOpenColor }}">Offen</button>
+            </div>
+          </div>
+
+          <button onClick="{{ confirmTask }}" style="width:100%;border:none;cursor:pointer;background:#86a596;color:#14110d;font-family:inherit;font-size:15px;font-weight:600;padding:14px;border-radius:14px">{{ sheetTaskConfirmLabel }}</button>
         </div>
         </sc-if>
 
@@ -592,19 +776,30 @@ class Component extends DCLogic {
   state = {
     tab: 'finanzen',
     finView: 'dashboard',
-    choresView: 'pool',
-    choreFilter: 'me',
-    quickPerson: 'chris',
-    quickEdit: false,
-    quickData: {
-      chris: ['Geschirrspüler ausräumen','Müll runterbringen','Katze füttern','Kurz durchlüften'],
-      sarah: ['Pflanzen gießen','Bett machen','Post holen','Spülmaschine anstellen'],
-    },
+    choresTab: 'heute',
+    poolFilter: 'alle',
+    doneToday: {},
+    onceDone: {},
+    poolDeleted: {},
+    taskEdits: {},
+    menuOpenId: null,
+    taskEditingId: null,
+    formName: '', formType: 'recurring', formInterval: 'wöchentlich', formDue: 'none', formAssignee: 'open',
+    extraTasks: [],
+    historyExtra: [],
     shopView: 'overview',
     shoppingMode: false,
     sheet: null,
     header: 'b',
     net: 23.40,
+    currentEventId: 'ams',
+    extraEvents: [],
+    eventItemsExtra: {},
+    eventSettled: {},
+    addContext: 'dashboard',
+    addEventId: null,
+    addMode: 'expense',
+    newEventText: '', newEventDate: '',
     checked: { milch:true, butter:true, kaffee:true },
     checkoutVal: '',
     transfer: true,
@@ -644,34 +839,40 @@ class Component extends DCLogic {
     { id:5, title:'Wein & Käse Abend', who:'chris', amt:31.20, tag:'Essen', tc:'#c98a7e', when:'Mo' },
   ];
   _events = [
-    { id:'ams', name:'Amsterdam', total:340.20, bar:60, meta:'4 Ausgaben · läuft' },
-    { id:'couch', name:'Neue Couch', total:612.00, bar:35, meta:'3 Ausgaben · läuft' },
+    { id:'ams', name:'Amsterdam', dateLabel:'12.–14. Juni', items:[
+      { title:'Hotel Pulitzer', who:'chris', amt:180.00, when:'Fr' },
+      { title:'Zugtickets', who:'sarah', amt:78.40, when:'Fr' },
+      { title:'Restaurant De Kas', who:'chris', amt:54.80, when:'Sa' },
+      { title:'Rijksmuseum', who:'sarah', amt:27.00, when:'Sa' },
+    ] },
+    { id:'couch', name:'Neue Couch', dateLabel:'Mai – Juni', items:[
+      { title:'Sofa (IKEA)', who:'chris', amt:499.00, when:'Mi' },
+      { title:'Lieferung', who:'sarah', amt:49.00, when:'Mi' },
+      { title:'Kissen-Set', who:'sarah', amt:64.00, when:'Sa' },
+    ] },
   ];
-  _eventItems = [
-    { title:'Hotel Pulitzer', who:'chris', amt:180.00, when:'Fr' },
-    { title:'Zugtickets', who:'sarah', amt:78.40, when:'Fr' },
-    { title:'Restaurant De Kas', who:'chris', amt:54.80, when:'Sa' },
-    { title:'Rijksmuseum', who:'sarah', amt:27.00, when:'Sa' },
-  ];
-  _quick = [ {id:'q1',name:'Geschirrspüler'}, {id:'q2',name:'Müll raus'}, {id:'q3',name:'Katze füttern'}, {id:'q4',name:'Lüften'} ];
-  _chores = [
-    { id:'c1', name:'Bad putzen', who:'chris', when:'heute', freq:'≈ wöchentlich' },
-    { id:'c2', name:'Staubsaugen', who:'chris', when:'morgen', freq:'≈ alle 3 Tage' },
-    { id:'c3', name:'Wäsche waschen', who:'sarah', when:'Sa', freq:'flexibel' },
-    { id:'c4', name:'Bett beziehen', who:'chris', when:'So', freq:'≈ wöchentlich' },
-    { id:'c5', name:'Pflanzen gießen', who:'sarah', when:'heute', freq:'≈ alle 2 Tage' },
-    { id:'c6', name:'Kühlschrank checken', who:'chris', when:'Fr', freq:'flexibel' },
-    { id:'c7', name:'Müll rausbringen', who:'sarah', when:'morgen', freq:'≈ 2× / Woche' },
-    { id:'c8', name:'Fenster putzen', who:null, when:'diese Woche', freq:'flexibel' },
-    { id:'c9', name:'Keller aufräumen', who:null, when:'bald', freq:'einmalig' },
-    { id:'c10', name:'Rechnungen ablegen', who:null, when:'diese Woche', freq:'monatlich' },
+  _tasks = [
+    { id:'bad', name:'Bad putzen', type:'recurring', interval:'wöchentlich', due:'today', assignee:'chris' },
+    { id:'staub', name:'Staubsaugen', type:'recurring', interval:'wöchentlich', due:2, assignee:'chris' },
+    { id:'waesche', name:'Wäsche waschen', type:'recurring', interval:'wöchentlich', due:'none', assignee:'sarah' },
+    { id:'bett', name:'Bett beziehen', type:'recurring', interval:'wöchentlich', due:'today', assignee:'chris' },
+    { id:'pflanzen', name:'Pflanzen gießen', type:'recurring', interval:'täglich', due:'today', assignee:'sarah' },
+    { id:'kuehl', name:'Kühlschrank checken', type:'recurring', interval:'monatlich', due:5, assignee:'chris' },
+    { id:'muell', name:'Müll rausbringen', type:'recurring', interval:'wöchentlich', due:'today', assignee:'sarah' },
+    { id:'fenster', name:'Fenster putzen', type:'recurring', interval:'monatlich', due:'none', assignee:'open' },
+    { id:'keller', name:'Keller aufräumen', type:'once', interval:null, due:'none', assignee:'open' },
+    { id:'rechnungen', name:'Rechnungen ablegen', type:'recurring', interval:'monatlich', due:3, assignee:'open' },
+    { id:'geschirr', name:'Geschirrspüler ausräumen', type:'recurring', interval:'täglich', due:'today', assignee:'chris' },
+    { id:'reifen', name:'Reifen wechseln', type:'once', interval:null, due:10, assignee:'chris' },
+    { id:'spuelen', name:'Spülen', type:'recurring', interval:'täglich', due:'today', assignee:'both' },
+    { id:'kraeuter', name:'Kräuter gießen', type:'recurring', interval:'wöchentlich', due:'none', assignee:'chris' },
   ];
   _stats = [
     { name:'Geschirrspüler', c:12, s:9 },
     { name:'Müll rausbringen', c:7, s:5 },
     { name:'Kochen', c:9, s:11 },
     { name:'Putzen', c:6, s:12 },
-    { name:'Katze füttern', c:5, s:8 },
+    { name:'Pflanzen gießen', c:5, s:8 },
   ];
   _lists = [
     { id:'week', name:'Wocheneinkauf', count:12, meta:'12 Artikel · 3 erledigt' },
@@ -700,11 +901,11 @@ class Component extends DCLogic {
   ];
   _history = {
     jun: [
-      { id:'h1', name:'Spülen', who:'both', day:'Heute', time:'19:40' },
-      { id:'h2', name:'Bad putzen', who:'chris', day:'Heute', time:'08:15' },
-      { id:'h3', name:'Müll rausbringen', who:'sarah', day:'Gestern · 29.', time:'21:05' },
-      { id:'h4', name:'Pflanzen gießen', who:'sarah', day:'Gestern · 29.', time:'09:30' },
-      { id:'h5', name:'Wocheneinkauf', who:'both', day:'Sa · 27.', time:'11:20' },
+      { id:'h1', name:'Spülen', who:'both', day:'Gestern', time:'19:40' },
+      { id:'h2', name:'Bad putzen', who:'chris', day:'Gestern', time:'08:15' },
+      { id:'h3', name:'Müll rausbringen', who:'sarah', day:'Vorgestern · 28.', time:'21:05' },
+      { id:'h4', name:'Pflanzen gießen', who:'sarah', day:'Vorgestern · 28.', time:'09:30' },
+      { id:'h5', name:'Kühlschrank checken', who:'chris', day:'Sa · 27.', time:'11:20' },
       { id:'h6', name:'Staubsaugen', who:'chris', day:'Sa · 27.', time:'10:00' },
       { id:'h7', name:'Wäsche waschen', who:'sarah', day:'Do · 25.', time:'18:45' },
     ],
@@ -720,11 +921,49 @@ class Component extends DCLogic {
   };
 
   initBg(who){ return who==='chris' ? '#8aa2c2' : who==='sarah' ? '#c69a86' : 'transparent'; }  initCh(who){ return who==='chris' ? 'C' : who==='sarah' ? 'S' : '?'; }
-  nameOf(who){ return who==='chris' ? 'Chris' : 'Sarah'; }
+  nameOf(who){ return who==='chris' ? 'Chris' : who==='sarah' ? 'Sarah' : 'Chris & Sarah'; }
 
   assignHist(id, who){
     this.setState(s=>({ histAssign:{...s.histAssign,[id]:who}, histMenu:null }));
     this.flash(who==='both' ? 'Beiden zugewiesen' : (who==='chris'?'Chris':'Sarah')+' zugewiesen');
+  }
+
+  whoChips(who){ return who==='both' ? [{ch:'C',bg:'#8aa2c2'},{ch:'S',bg:'#c69a86'}] : [{ch: who==='chris'?'C':'S', bg: who==='chris'?'#8aa2c2':'#c69a86'}]; }
+  dueLabel(due){ return due==='today' ? 'Heute fällig' : due==='none' ? 'Kein fester Tag' : ('In '+due+' Tagen fällig'); }
+  assigneeVisual(a){
+    if (a==='chris') return { init:'C', bg:'#8aa2c2', border:'none', color:'#15110d' };
+    if (a==='sarah') return { init:'S', bg:'#c69a86', border:'none', color:'#15110d' };
+    if (a==='both') return { init:'CS', bg:'linear-gradient(90deg,#8aa2c2 50%,#c69a86 50%)', border:'none', color:'#15110d' };
+    return { init:'–', bg:'transparent', border:'1px dashed #5a5048', color:'#86a596' };
+  }
+  effTask(t){ return { ...t, ...(this.state.taskEdits[t.id]||{}) }; }
+  completeTask(id, who){
+    const all = this._tasks.concat(this.state.extraTasks);
+    const base = all.find(t=>t.id===id);
+    const eff = base ? this.effTask(base) : null;
+    this.setState(s=>{
+      const doneToday = { ...s.doneToday, [id]: who };
+      const onceDone = (eff && eff.type==='once') ? { ...s.onceDone, [id]:true } : s.onceDone;
+      const entry = { id:'nh'+Date.now()+'-'+Math.random().toString(36).slice(2,6), name: eff?eff.name:'Aufgabe', who, day:'Heute', time:'jetzt' };
+      return { doneToday, onceDone, menuOpenId:null, historyExtra:[entry, ...s.historyExtra] };
+    });
+    this.flash((eff?eff.name:'Aufgabe')+' erledigt ✓');
+  }
+  uncompleteTask(id){
+    this.setState(s=>{ const d={...s.doneToday}; delete d[id]; return { doneToday:d }; });
+    this.flash('Rückgängig gemacht');
+  }
+  reassignTask(id, who){
+    this.setState(s=>({ taskEdits:{...s.taskEdits,[id]:{...(s.taskEdits[id]||{}),assignee:who}}, menuOpenId:null }));
+    this.flash('Zugewiesen an '+(who==='open'?'Offen':this.nameOf(who)));
+  }
+  deleteTask(id){
+    this.setState(s=>({ poolDeleted:{...s.poolDeleted,[id]:true}, menuOpenId:null }));
+    this.flash('Aufgabe aus Pool gelöscht');
+  }
+  openEditTask(t){
+    const formDue = t.due==='today' ? 'today' : t.due==='none' ? 'none' : 'soon';
+    this.setState({ sheet:'task', taskEditingId:t.id, menuOpenId:null, formName:t.name, formType:t.type, formInterval:t.interval||'wöchentlich', formDue, formAssignee:t.assignee });
   }
 
   toggleItem(id){
@@ -747,60 +986,120 @@ class Component extends DCLogic {
     }));
 
     // events
-    const events = this._events.map(e=>({
-      name:e.name, total:this.euro(e.total), meta:e.meta, barW:e.bar+'%',
-      onOpen: ()=> this.setState({ finView:'event' }),
+    const combinedEventDefs = this._events.concat(st.extraEvents);
+    const eventSummaries = combinedEventDefs.map(def=>{
+      const allItems = def.items.concat(st.eventItemsExtra[def.id]||[]);
+      const total = allItems.reduce((a,i)=>a+i.amt,0);
+      const chrisPaid = allItems.filter(i=>i.who==='chris').reduce((a,i)=>a+i.amt,0);
+      const sarahPaid = allItems.filter(i=>i.who==='sarah').reduce((a,i)=>a+i.amt,0);
+      const settled = !!st.eventSettled[def.id];
+      return { def, allItems, total, chrisPaid, sarahPaid, settled };
+    });
+    const events = eventSummaries.map(sum=>({
+      name:sum.def.name,
+      total:this.euro(sum.total),
+      meta: sum.allItems.length===0 ? 'Noch keine Ausgaben' : (sum.allItems.length+' Ausgaben · '+(sum.settled?'abgeschlossen':'läuft')),
+      barW: Math.min(100, Math.round(sum.total/5))+'%',
+      onOpen: ()=> this.setState({ finView:'event', currentEventId:sum.def.id }),
     }));
-    const eventItems = this._eventItems.map(e=>({
+    const curSum = eventSummaries.find(s=>s.def.id===st.currentEventId) || eventSummaries[0];
+    const eventItems = (curSum ? curSum.allItems : []).map(e=>({
       title:e.title, amount:this.euro(e.amt), init:this.initCh(e.who), initBg:this.initBg(e.who),
       sub:'Bezahlt von '+this.nameOf(e.who)+' · '+e.when,
     }));
+    const evTotal = curSum ? curSum.total : 0;
+    const evChrisPaid = curSum ? curSum.chrisPaid : 0;
+    const evSarahPaid = curSum ? curSum.sarahPaid : 0;
+    const evDiff = evChrisPaid - evSarahPaid;
+    const evSettled = curSum ? curSum.settled : false;
+    let settleLine = 'Ausgeglichen', settleAmt = 0;
+    if (Math.abs(evDiff) > 0.001) {
+      if (evDiff > 0) { settleLine = 'Sarah → Chris'; settleAmt = evDiff/2; }
+      else { settleLine = 'Chris → Sarah'; settleAmt = -evDiff/2; }
+    }
 
-    // chores
-    const me = 'chris';
-    const qp = st.quickPerson;
-    const quickActions = st.quickData[qp].map((name, i)=>({
-      name,
-      onDo: ()=>this.flash((qp==='chris'?'Du':'Sarah')+': „'+name+'" erledigt ✓'),
-      onRename: (e)=>{ const v=e.target.value; this.setState(s=>{ const arr=[...s.quickData[qp]]; arr[i]=v; return { quickData:{...s.quickData, [qp]:arr} }; }); },
-    }));
+    // chores (Heute / Alle / Übersicht)
+    const allTaskDefs = this._tasks.concat(st.extraTasks).filter(t=>!st.poolDeleted[t.id] && !st.onceDone[t.id]);
+    const taskList = allTaskDefs.map(t=>this.effTask(t));
+    const isDoneToday = (id)=>!!st.doneToday[id];
+    const doneByWhom = (id)=>st.doneToday[id];
 
-    const filter = st.choreFilter;
-    const visibleChores = this._chores.filter(c=> filter==='all' ? true : (filter==='open' ? !c.who : (filter==='me' ? c.who===me : c.who==='sarah')));
-    const chores = visibleChores.map(c=>{
-      const done = !!st.checked['chore_'+c.id];
-      const unassigned = !c.who;
-      return {
-        name:c.name, freq:c.freq,
-        sub: done ? 'Gerade erledigt' : (unassigned ? ('Offen · '+c.when+' · '+c.freq.replace('≈ ','')) : ('Fällig · '+c.when+' · '+c.freq.replace('≈ ',''))),
-        init:this.initCh(c.who), initBg:this.initBg(c.who),
-        initBorder: unassigned ? '1px dashed #5a5048' : 'none', initColor: unassigned ? '#86a596' : '#15110d',
-        check: done ? '✓' : '',
-        boxBorder: done ? '1.5px solid #86a596' : '1.5px solid #4a4138',
-        boxBg: done ? '#86a596' : 'transparent',
+    const mkTaskRow = (t, withMenu)=>{
+      const done = isDoneToday(t.id);
+      const who = doneByWhom(t.id);
+      const av = this.assigneeVisual(t.assignee);
+      const row = {
+        id:t.id, name:t.name,
         nameColor: done ? '#8c8379' : '#efe9e2',
-        onDo: ()=>{ this.toggleItem('chore_'+c.id); if(!done) this.flash('„'+c.name+'" erledigt ✓'); },
+        recurLabel: t.type==='once' ? 'Einmalig' : (t.interval==='täglich'?'Täglich':t.interval==='monatlich'?'Monatlich':'Wöchentlich'),
+        metaLine: done ? ('Heute erledigt · '+this.nameOf(who)) : this.dueLabel(t.due),
+        done, notDone: !done,
+        chips: done ? this.whoChips(who) : [],
+        onPickChris: ()=>this.completeTask(t.id,'chris'),
+        onPickSarah: ()=>this.completeTask(t.id,'sarah'),
+        onPickBoth: ()=>this.completeTask(t.id,'both'),
+        onUndo: ()=>this.uncompleteTask(t.id),
+        assigneeInit: av.init, assigneeBg: av.bg, assigneeBorder: av.border, assigneeColor: av.color,
       };
-    });
-    const choresEmpty = chores.length===0;
+      if (withMenu){
+        row.menuOpen = st.menuOpenId===t.id;
+        row.onMenuToggle = ()=>this.setState(s=>({ menuOpenId: s.menuOpenId===t.id?null:t.id }));
+        row.onAssignChris = ()=>this.reassignTask(t.id,'chris');
+        row.onAssignSarah = ()=>this.reassignTask(t.id,'sarah');
+        row.onAssignBoth = ()=>this.reassignTask(t.id,'both');
+        row.onAssignOpen = ()=>this.reassignTask(t.id,'open');
+        row.onEdit = ()=>this.openEditTask(t);
+        row.onDelete = ()=>this.deleteTask(t.id);
+      }
+      return row;
+    };
+
+    const myTasks = taskList.filter(t=> t.assignee==='chris' || t.assignee==='both');
+    const heuteDefs = myTasks.filter(t=> t.due==='today' || t.due==='none');
+    const demnaechstDefs = myTasks.filter(t=> typeof t.due==='number').sort((a,b)=>a.due-b.due);
+    const heuteItems = heuteDefs.map(t=>mkTaskRow(t,false));
+    const demnaechstItems = demnaechstDefs.map(t=>mkTaskRow(t,false));
+    const heuteDoneCount = heuteItems.filter(r=>r.done).length;
+    const heuteTotalCount = heuteItems.length;
+
+    const poolFilt = st.poolFilter;
+    const poolDefs = taskList.filter(t=> poolFilt==='alle' ? true : poolFilt==='offen' ? t.assignee==='open' : t.assignee===poolFilt);
+    const poolSortKey = (t)=> (t.due==='today' || t.due==='none') ? -1 : t.due;
+    poolDefs.sort((a,b)=>poolSortKey(a)-poolSortKey(b));
+    const poolItems = poolDefs.map(t=>mkTaskRow(t,true));
+
+    const buildPersonSummary = (person, pname, bg)=>{
+      const theirs = taskList.filter(t=> t.assignee===person || t.assignee==='both');
+      const todays = theirs.filter(t=> t.due==='today' || t.due==='none');
+      const doneCount = todays.filter(t=>isDoneToday(t.id)).length;
+      const totalCount = todays.length;
+      const openList = todays.filter(t=>!isDoneToday(t.id));
+      const openPreview = openList.slice(0,3).map(t=>({name:t.name}));
+      return {
+        name:pname, init:pname[0], avatarBg:bg,
+        doneCount, totalCount, pct: totalCount ? Math.round(doneCount/totalCount*100)+'%' : '0%',
+        hasOpen: openList.length>0, allDone: totalCount>0 && openList.length===0,
+        openPreview, hasMore: openList.length>3, moreCount: Math.max(0, openList.length-3),
+      };
+    };
+    const people = [ buildPersonSummary('chris','Chris','#8aa2c2'), buildPersonSummary('sarah','Sarah','#c69a86') ];
+
     const stats = this._stats.map(s=>{ const tot=s.c+s.s; return {
       name:s.name, totalStr:tot+'×', chrisW:Math.round(s.c/tot*100)+'%', sarahW:Math.round(s.s/tot*100)+'%',
     };});
+    const statsTotal = this._stats.reduce((a,s)=>a+s.c+s.s,0);
+    const statsChrisTotal = this._stats.reduce((a,s)=>a+s.c,0);
+    const statsSarahTotal = this._stats.reduce((a,s)=>a+s.s,0);
 
     // history (timeline)
-    const whoChips = (who)=> who==='both'
-      ? [{ch:'C',bg:'#8aa2c2'},{ch:'S',bg:'#c69a86'}]
-      : [{ch:this.initCh(who),bg:this.initBg(who)}];
-    const whoLabel = (who)=> who==='both' ? 'Chris & Sarah' : this.nameOf(who);
     const monthTabs = this._months.map(m=>({
-      label:m.label.split(' ')[0], full:m.label, current:!!m.current,
+      full:m.label,
       onPick:()=>this.setState({ histMonth:m.id, histMenu:null }),
       bg: st.histMonth===m.id ? 'rgba(134,165,150,.16)' : 'transparent',
       color: st.histMonth===m.id ? '#efe9e2' : '#8c8379',
       border: st.histMonth===m.id ? '#86a596' : '#2b251f',
     }));
-    const curMonthObj = this._months.find(m=>m.id===st.histMonth);
-    const histRaw = (this._history[st.histMonth]||[]).filter(h=>!st.histDeleted[h.id]);
+    const histRaw = (st.histMonth==='jun' ? st.historyExtra.concat(this._history.jun) : (this._history[st.histMonth]||[])).filter(h=>!st.histDeleted[h.id]);
     let lastDay = null;
     const histItems = histRaw.map(h=>{
       const who = st.histAssign[h.id] || h.who;
@@ -808,7 +1107,7 @@ class Component extends DCLogic {
       const menuOpen = st.histMenu===h.id;
       return {
         id:h.id, name:h.name, time:h.time, day:h.day, dayShown:newDay,
-        chips: whoChips(who), whoLabel: whoLabel(who),
+        chips: this.whoChips(who), whoLabel: this.nameOf(who),
         dotBg: who==='both' ? '#86a596' : this.initBg(who),
         menuOpen, menuNot:!menuOpen,
         onToggle: ()=>this.setState(s=>({ histMenu: s.histMenu===h.id ? null : h.id })),
@@ -888,10 +1187,11 @@ class Component extends DCLogic {
 
     const jumps = [
       { name:'Finanzen', go:{tab:'finanzen',finView:'dashboard'} },
-      { name:'Event-Detail', go:{tab:'finanzen',finView:'event'} },
+      { name:'Event-Detail', go:{tab:'finanzen',finView:'event',currentEventId:'ams'} },
       { name:'Ausgabe +', go:{tab:'finanzen',finView:'dashboard',sheet:'add'} },
-      { name:'Chores-Pool', go:{tab:'chores',choresView:'pool'} },
-      { name:'Statistik', go:{tab:'chores',choresView:'stats'} },
+      { name:'Haushalt Heute', go:{tab:'chores',choresTab:'heute'} },
+      { name:'Aufgaben-Pool', go:{tab:'chores',choresTab:'alle'} },
+      { name:'Haushalt Übersicht', go:{tab:'chores',choresTab:'uebersicht'} },
       { name:'Einkaufslisten', go:{tab:'einkaufen',shopView:'overview'} },
       { name:'Listen-Detail', go:{tab:'einkaufen',shopView:'detail'} },
       { name:'Einkaufsmodus', go:{tab:'einkaufen',shopView:'detail',_mode:true} },
@@ -904,13 +1204,12 @@ class Component extends DCLogic {
       isEinkaufen: st.tab==='einkaufen',
       finDashboard: st.finView==='dashboard',
       finEvent: st.finView==='event',
-      choresPool: st.choresView==='pool',
-      choresStats: st.choresView==='stats',
-      choresHist: st.choresView==='hist',
+      isHeute: st.choresTab==='heute', isAlle: st.choresTab==='alle', isUebersicht: st.choresTab==='uebersicht', isVerlauf: st.choresTab==='verlauf',
+      tabHeuteBg: st.choresTab==='heute'?'#86a596':'transparent', tabHeuteColor: st.choresTab==='heute'?'#15110d':'#8c8379',
+      tabAlleBg: st.choresTab==='alle'?'#86a596':'transparent', tabAlleColor: st.choresTab==='alle'?'#15110d':'#8c8379',
+      tabUebersichtBg: st.choresTab==='uebersicht'?'#86a596':'transparent', tabUebersichtColor: st.choresTab==='uebersicht'?'#15110d':'#8c8379',
+      tabVerlaufBg: st.choresTab==='verlauf'?'#86a596':'transparent', tabVerlaufColor: st.choresTab==='verlauf'?'#15110d':'#8c8379',
       monthTabs, histItems, histEmpty, histCount,
-      histMonthLabel: curMonthObj ? curMonthObj.label : '',
-      histIsCurrent: curMonthObj ? !!curMonthObj.current : false,
-      todayStr: '30. Juni 2026',
       shopOverview: st.shopView==='overview',
       shopDetail: st.shopView==='detail',
       shoppingMode: st.shoppingMode,
@@ -918,6 +1217,29 @@ class Component extends DCLogic {
       sheetNewList: st.sheet==='newlist',
       sheetCheckout: st.sheet==='checkout',
       showFab: st.tab==='finanzen' && st.finView==='dashboard',
+      showTaskFab: st.tab==='chores' && st.choresTab==='alle',
+      addModeExpense: st.addMode==='expense',
+      addModeEvent: st.addMode==='event',
+      sheetTitle: st.addMode==='event' ? 'Neues Finanzevent' : 'Ausgabe hinzufügen',
+      confirmLabel: st.addMode==='event' ? 'Event anlegen' : 'Hinzufügen',
+      modeExpenseBg: st.addMode==='expense' ? '#86a596' : 'transparent',
+      modeExpenseColor: st.addMode==='expense' ? '#15110d' : '#8c8379',
+      modeEventBg: st.addMode==='event' ? '#86a596' : 'transparent',
+      modeEventColor: st.addMode==='event' ? '#15110d' : '#8c8379',
+      eventName: curSum ? curSum.def.name : '',
+      eventDateLabel: curSum ? curSum.def.dateLabel : '',
+      eventStatusLabel: evSettled ? 'Abgeschlossen' : 'Offen',
+      eventStatusDot: evSettled ? '#8c8379' : '#86a596',
+      eventItemCountLabel: eventItems.length+' Ausgaben',
+      eventTotalStr: this.euro(evTotal),
+      eventChrisPaidStr: this.euro(evChrisPaid),
+      eventSarahPaidStr: this.euro(evSarahPaid),
+      eventItemsEmpty: eventItems.length===0,
+      eventNotEmpty: eventItems.length>0,
+      eventOpen: !evSettled && eventItems.length>0,
+      eventClosed: evSettled,
+      settleLine, settleAmtStr: this.euro(settleAmt),
+      newEventText: st.newEventText, newEventDate: st.newEventDate,
 
       // add-expense form
       addAmount: st.addAmount==='' ? '0,00' : st.addAmount,
@@ -934,18 +1256,35 @@ class Component extends DCLogic {
 
       // data
       netStr, netSubject, expenses, events, eventItems,
-      quickActions, chores, statRows:stats,
-      choresEmpty,
-      quickEditing: st.quickEdit, quickNotEditing: !st.quickEdit,
-      quickEditLabel: st.quickEdit ? 'Fertig' : 'Bearbeiten',
-      quickEditWho: st.quickPerson==='chris' ? 'Sarah' : 'Du',
-      qChrisBg: st.quickPerson==='chris'?'#86a596':'transparent', qChrisColor: st.quickPerson==='chris'?'#15110d':'#8c8379',
-      qSarahBg: st.quickPerson==='sarah'?'#86a596':'transparent', qSarahColor: st.quickPerson==='sarah'?'#15110d':'#8c8379',
-      fMeBg: filter==='me'?'rgba(134,165,150,.16)':'transparent', fMeColor: filter==='me'?'#efe9e2':'#8c8379', fMeBorder: filter==='me'?'#86a596':'#2b251f',
-      fSarahBg: filter==='sarah'?'rgba(134,165,150,.16)':'transparent', fSarahColor: filter==='sarah'?'#efe9e2':'#8c8379', fSarahBorder: filter==='sarah'?'#86a596':'#2b251f',
-      fAllBg: filter==='all'?'rgba(134,165,150,.16)':'transparent', fAllColor: filter==='all'?'#efe9e2':'#8c8379', fAllBorder: filter==='all'?'#86a596':'#2b251f',
-      fOpenBg: filter==='open'?'rgba(201,138,126,.18)':'transparent', fOpenColor: filter==='open'?'#efe9e2':'#c98a7e', fOpenBorder: filter==='open'?'#c98a7e':'#5a3d36',
-      openCount: this._chores.filter(c=>!c.who).length,
+      heuteItems, heuteEmpty: heuteItems.length===0,
+      hasDemnaechst: demnaechstItems.length>0, demnaechstItems,
+      heuteDoneCount, heuteTotalCount, heutePct: heuteTotalCount ? Math.round(heuteDoneCount/heuteTotalCount*100)+'%' : '0%',
+      poolItems,
+      fAlleBg: poolFilt==='alle'?'rgba(134,165,150,.16)':'transparent', fAlleColor: poolFilt==='alle'?'#efe9e2':'#8c8379', fAlleBorder: poolFilt==='alle'?'#86a596':'#2b251f',
+      fChrisBg: poolFilt==='chris'?'rgba(134,165,150,.16)':'transparent', fChrisColor: poolFilt==='chris'?'#efe9e2':'#8c8379', fChrisBorder: poolFilt==='chris'?'#86a596':'#2b251f',
+      fSarahBg: poolFilt==='sarah'?'rgba(134,165,150,.16)':'transparent', fSarahColor: poolFilt==='sarah'?'#efe9e2':'#8c8379', fSarahBorder: poolFilt==='sarah'?'#86a596':'#2b251f',
+      fBothBg: poolFilt==='both'?'rgba(134,165,150,.16)':'transparent', fBothColor: poolFilt==='both'?'#efe9e2':'#8c8379', fBothBorder: poolFilt==='both'?'#86a596':'#2b251f',
+      fOffenBg: poolFilt==='offen'?'rgba(201,138,126,.18)':'transparent', fOffenColor: poolFilt==='offen'?'#efe9e2':'#c98a7e', fOffenBorder: poolFilt==='offen'?'#c98a7e':'#5a3d36',
+      people, statRows: stats, statsTotal, statsChrisTotal, statsSarahTotal,
+      statsChrisW: statsTotal ? Math.round(statsChrisTotal/statsTotal*100)+'%' : '50%',
+      statsSarahW: statsTotal ? Math.round(statsSarahTotal/statsTotal*100)+'%' : '50%',
+      sheetTask: st.sheet==='task',
+      sheetTaskTitle: st.taskEditingId ? 'Aufgabe bearbeiten' : 'Neue Aufgabe',
+      sheetTaskConfirmLabel: st.taskEditingId ? 'Änderungen speichern' : 'Aufgabe anlegen',
+      formName: st.formName,
+      formIsRecurring: st.formType==='recurring',
+      typeRecurBg: st.formType==='recurring'?'#86a596':'transparent', typeRecurColor: st.formType==='recurring'?'#15110d':'#8c8379',
+      typeOnceBg: st.formType==='once'?'#86a596':'transparent', typeOnceColor: st.formType==='once'?'#15110d':'#8c8379',
+      intDailyBg: st.formInterval==='täglich'?'#86a596':'transparent', intDailyColor: st.formInterval==='täglich'?'#15110d':'#8c8379',
+      intWeeklyBg: st.formInterval==='wöchentlich'?'#86a596':'transparent', intWeeklyColor: st.formInterval==='wöchentlich'?'#15110d':'#8c8379',
+      intMonthlyBg: st.formInterval==='monatlich'?'#86a596':'transparent', intMonthlyColor: st.formInterval==='monatlich'?'#15110d':'#8c8379',
+      dueNoneBg: st.formDue==='none'?'#86a596':'transparent', dueNoneColor: st.formDue==='none'?'#15110d':'#8c8379',
+      dueTodayBg: st.formDue==='today'?'#86a596':'transparent', dueTodayColor: st.formDue==='today'?'#15110d':'#8c8379',
+      dueSoonBg: st.formDue==='soon'?'#86a596':'transparent', dueSoonColor: st.formDue==='soon'?'#15110d':'#8c8379',
+      assChrisBg: st.formAssignee==='chris'?'#86a596':'transparent', assChrisColor: st.formAssignee==='chris'?'#15110d':'#8c8379',
+      assSarahBg: st.formAssignee==='sarah'?'#86a596':'transparent', assSarahColor: st.formAssignee==='sarah'?'#15110d':'#8c8379',
+      assBothBg: st.formAssignee==='both'?'#86a596':'transparent', assBothColor: st.formAssignee==='both'?'#15110d':'#8c8379',
+      assOpenBg: st.formAssignee==='open'?'#86a596':'transparent', assOpenColor: st.formAssignee==='open'?'#15110d':'#8c8379',
       lists, listGroups, modeItems, doneMeta, modeDoneMeta, pad,
       checkoutAmount: st.checkoutVal===''? '0,00' : st.checkoutVal,
 
@@ -955,14 +1294,6 @@ class Component extends DCLogic {
       // nav styling
       navFinColor: navColor('finanzen'), navChoresColor: navColor('chores'), navShopColor: navColor('einkaufen'),
       navFinDot: navDot('finanzen'), navChoresDot: navDot('chores'), navShopDot: navDot('einkaufen'),
-
-      // chores tab toggle styling
-      poolTabBg: st.choresView==='pool'?'#86a596':'transparent',
-      poolTabColor: st.choresView==='pool'?'#15110d':'#8c8379',
-      statsTabBg: st.choresView==='stats'?'#86a596':'transparent',
-      statsTabColor: st.choresView==='stats'?'#15110d':'#8c8379',
-      histTabBg: st.choresView==='hist'?'#86a596':'transparent',
-      histTabColor: st.choresView==='hist'?'#15110d':'#8c8379',
 
       // transfer toggle
       transferTrackBg: st.transfer ? '#86a596' : '#3d362e',
@@ -977,8 +1308,16 @@ class Component extends DCLogic {
       backDash: ()=>this.setState({ finView:'dashboard' }),
       backShop: ()=>this.setState({ shopView:'overview' }),
       settle: ()=>{ if(!cleared){ this.setState({ net:0 }); this.flash('Saldo ausgeglichen ✓'); } },
-      settleEvent: ()=>{ this.setState({ finView:'dashboard' }); this.flash('Amsterdam abgeschlossen & ausgeglichen ✓'); },
-      openAdd: ()=>this.setState({ sheet:'add', addAmount:'', addTitle:'', addPayer:'chris', addTag:'Lebensmittel', addSplit:'50', addChrisPct:50 }),
+      settleEvent: ()=>{
+        const id = st.currentEventId;
+        const name = curSum ? curSum.def.name : '';
+        this.setState(s=>({ eventSettled:{...s.eventSettled,[id]:true}, finView:'dashboard' }));
+        this.flash(name+' abgeschlossen & ausgeglichen ✓');
+      },
+      openAdd: ()=>this.setState({ sheet:'add', addMode:'expense', addContext:'dashboard', addEventId:null, addAmount:'', addTitle:'', addPayer:'chris', addTag:'Lebensmittel', addSplit:'50', addChrisPct:50 }),
+      openAddForCurrentEvent: ()=>this.setState({ sheet:'add', addMode:'expense', addContext:'event', addEventId:st.currentEventId, addAmount:'', addTitle:'', addPayer:'chris', addTag:'Lebensmittel', addSplit:'50', addChrisPct:50 }),
+      modeExpense: ()=>this.setState({ addMode:'expense' }),
+      modeEvent: ()=>this.setState({ addMode:'event' }),
       closeSheet: ()=>this.setState({ sheet:null }),
       onTitle: (e)=>this.setState({ addTitle:e.target.value }),
       payChris: ()=>this.setState({ addPayer:'chris' }),
@@ -986,13 +1325,32 @@ class Component extends DCLogic {
       split50: ()=>this.setState({ addSplit:'50' }),
       splitCustom: ()=>this.setState({ addSplit:'custom' }),
       onSlide: (e)=>this.setState({ addChrisPct:parseInt(e.target.value,10) }),
-      confirmAdd: ()=>{
+      confirmSheet: ()=>{
+        if (st.addMode==='event'){
+          const name=st.newEventText.trim(); if(!name) return;
+          const id='ue'+Date.now();
+          const dateLabel = st.newEventDate.trim() || 'Läuft unbegrenzt';
+          this.setState(s=>({ sheet:null, addMode:'expense', newEventText:'', newEventDate:'', extraEvents:[...s.extraEvents,{id,name,dateLabel,items:[]}], tab:'finanzen', finView:'event', currentEventId:id }));
+          this.flash('„'+name+'" angelegt ✓');
+          return;
+        }
         const v=st.addAmount||'0,00';
         const t=st.addTitle.trim()||'Ausgabe';
-        this.setState({ sheet:null });
-        this.flash(t+' · '+v+' € hinzugefügt ✓');
+        const amtNum = parseFloat(v.replace(',','.'))||0;
+        if (st.addContext==='event' && st.addEventId){
+          const evId = st.addEventId;
+          const item = { title:t, who:st.addPayer, amt:amtNum, when:'Heute' };
+          this.setState(s=>({ sheet:null, eventItemsExtra:{...s.eventItemsExtra, [evId]:[...(s.eventItemsExtra[evId]||[]), item]} }));
+          this.flash(t+' · '+v+' € zum Event hinzugefügt ✓');
+        } else {
+          this.setState({ sheet:null });
+          this.flash(t+' · '+v+' € hinzugefügt ✓');
+        }
       },
       // create list
+      openNewEvent: ()=>this.setState({ sheet:'add', addMode:'event', newEventText:'', newEventDate:'' }),
+      onNewEventText: (e)=>this.setState({ newEventText:e.target.value }),
+      onNewEventDate: (e)=>this.setState({ newEventDate:e.target.value }),
       openNewList: ()=>this.setState({ sheet:'newlist', newListText:'' }),
       onNewListText: (e)=>this.setState({ newListText:e.target.value }),
       confirmNewList: ()=>{
@@ -1013,16 +1371,42 @@ class Component extends DCLogic {
       endMode: ()=>this.setState({ shoppingMode:false, sheet:'checkout' }),
       confirmCheckout: ()=>{ const v=st.checkoutVal||'0,00'; this.setState({ sheet:null, shopView:'overview' }); this.flash(st.transfer ? ('Übernommen: '+v+' € → #Lebensmittel ✓') : 'Einkauf abgeschlossen ✓'); },
       toggleTransfer: ()=>this.setState(s=>({ transfer:!s.transfer })),
-      showPool: ()=>this.setState({ choresView:'pool' }),
-      showStats: ()=>this.setState({ choresView:'stats' }),
-      showHist: ()=>this.setState({ choresView:'hist', histMenu:null }),
-      toggleQuickEdit: ()=>this.setState(s=>({ quickEdit:!s.quickEdit })),
-      quickPickChris: ()=>this.setState({ quickPerson:'chris' }),
-      quickPickSarah: ()=>this.setState({ quickPerson:'sarah' }),
-      filterMe: ()=>this.setState({ choreFilter:'me' }),
-      filterSarah: ()=>this.setState({ choreFilter:'sarah' }),
-      filterAll: ()=>this.setState({ choreFilter:'all' }),
-      filterOpen: ()=>this.setState({ choreFilter:'open' }),
+      goHeute: ()=>this.setState({ choresTab:'heute' }),
+      goAlle: ()=>this.setState({ choresTab:'alle' }),
+      goUebersicht: ()=>this.setState({ choresTab:'uebersicht' }),
+      goVerlauf: ()=>this.setState({ choresTab:'verlauf', histMenu:null }),
+      filterAlle: ()=>this.setState({ poolFilter:'alle' }),
+      filterChris: ()=>this.setState({ poolFilter:'chris' }),
+      filterSarah: ()=>this.setState({ poolFilter:'sarah' }),
+      filterBoth: ()=>this.setState({ poolFilter:'both' }),
+      filterOffen: ()=>this.setState({ poolFilter:'offen' }),
+      openNewTask: ()=>this.setState({ sheet:'task', taskEditingId:null, formName:'', formType:'recurring', formInterval:'wöchentlich', formDue:'none', formAssignee:'open' }),
+      onFormName: (e)=>this.setState({ formName:e.target.value }),
+      pickRecurring: ()=>this.setState({ formType:'recurring' }),
+      pickOnce: ()=>this.setState({ formType:'once' }),
+      pickDaily: ()=>this.setState({ formInterval:'täglich' }),
+      pickWeekly: ()=>this.setState({ formInterval:'wöchentlich' }),
+      pickMonthly: ()=>this.setState({ formInterval:'monatlich' }),
+      pickDueNone: ()=>this.setState({ formDue:'none' }),
+      pickDueToday: ()=>this.setState({ formDue:'today' }),
+      pickDueSoon: ()=>this.setState({ formDue:'soon' }),
+      pickAssChris: ()=>this.setState({ formAssignee:'chris' }),
+      pickAssSarah: ()=>this.setState({ formAssignee:'sarah' }),
+      pickAssBoth: ()=>this.setState({ formAssignee:'both' }),
+      pickAssOpen: ()=>this.setState({ formAssignee:'open' }),
+      confirmTask: ()=>{
+        const name = st.formName.trim(); if (!name) return;
+        const due = st.formDue==='today' ? 'today' : st.formDue==='none' ? 'none' : 3;
+        const payload = { name, type:st.formType, interval: st.formType==='recurring' ? st.formInterval : null, due, assignee: st.formAssignee };
+        if (st.taskEditingId){
+          this.setState(s=>({ sheet:null, taskEdits:{...s.taskEdits,[st.taskEditingId]:payload} }));
+          this.flash('Aufgabe aktualisiert ✓');
+        } else {
+          const id = 'ut'+Date.now();
+          this.setState(s=>({ sheet:null, extraTasks:[...s.extraTasks,{id,...payload}] }));
+          this.flash('„'+name+'" angelegt ✓');
+        }
+      },
     };
   }
 }

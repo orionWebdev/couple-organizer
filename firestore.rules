@@ -37,10 +37,17 @@ service cloud.firestore {
         && request.auth.uid in request.resource.data.memberIds;
     }
 
-    match /todos/{todoId} {
+    match /chores/{choreId} {
       allow read: if isCoupleMember(resource.data.coupleId);
       allow create: if signedIn()
         && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
+    match /choreHistory/{entryId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
         && isCoupleMember(request.resource.data.coupleId);
       allow update, delete: if isCoupleMember(resource.data.coupleId);
     }

@@ -3,26 +3,54 @@ import { computed } from 'vue'
 import type { Chore, ChoreAssignee, Couple } from '@/types'
 import { assigneeChips, isDoneToday } from '@/utils/chores'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   chore: Chore
   couple: Couple | null
-}>()
+  todayCount?: number
+}>(), { todayCount: 0 })
 
 const emit = defineEmits<{
   pick: [assignee: ChoreAssignee]
   undo: []
 }>()
 
+// Recurring chores can be logged several times a day: the pick buttons stay
+// available and a tappable count badge tracks today's completions. One-off
+// chores keep the simple done/undo toggle.
+const repeatable = computed(() => props.chore.type === 'recurring')
 const done = computed(() => isDoneToday(props.chore))
 const chips = computed(() => assigneeChips(props.chore.completedBy, props.couple))
+const nameA = computed(() => props.couple?.memberNames[props.couple?.memberIds[0] ?? ''] ?? 'Person A')
+const nameB = computed(() => props.couple?.memberNames[props.couple?.memberIds[1] ?? ''] ?? 'Person B')
 </script>
 
 <template>
-  <div class="switch">
+  <!-- Recurring: buttons always available + count badge for repeat logging -->
+  <div v-if="repeatable" class="switch switch--repeat">
+    <div class="cluster actions actions--static">
+      <button class="pick pick--chris" :title="nameA" @click="emit('pick', couple?.memberIds[0] ?? null)">C</button>
+      <button class="pick pick--sarah" :title="nameB" @click="emit('pick', couple?.memberIds[1] ?? null)">S</button>
+      <button class="pick pick--both" title="Beide" @click="emit('pick', 'both')">B</button>
+    </div>
+    <Transition name="count-pop">
+      <button
+        v-if="todayCount > 0"
+        class="count-badge"
+        title="Letzte Erledigung zurücknehmen"
+        @click="emit('undo')"
+      >
+        <span v-for="(chip, i) in chips" :key="i" class="chip-ini" :style="{ background: chip.bg }">{{ chip.ch }}</span>
+        <span class="count-num">{{ todayCount }}×</span>
+      </button>
+    </Transition>
+  </div>
+
+  <!-- One-off: simple done / undo toggle -->
+  <div v-else class="switch">
     <Transition name="task-switch">
       <div v-if="!done" class="cluster actions" key="actions">
-        <button class="pick pick--chris" title="Chris" @click="emit('pick', couple?.memberIds[0] ?? null)">C</button>
-        <button class="pick pick--sarah" title="Sarah" @click="emit('pick', couple?.memberIds[1] ?? null)">S</button>
+        <button class="pick pick--chris" :title="nameA" @click="emit('pick', couple?.memberIds[0] ?? null)">C</button>
+        <button class="pick pick--sarah" :title="nameB" @click="emit('pick', couple?.memberIds[1] ?? null)">S</button>
         <button class="pick pick--both" title="Beide" @click="emit('pick', 'both')">B</button>
       </div>
       <button v-else class="chips chip" key="chip" @click="emit('undo')">
@@ -47,6 +75,63 @@ const chips = computed(() => assigneeChips(props.chore.completedBy, props.couple
   left: 0;
   display: flex;
   gap: 4px;
+}
+
+/* Recurring layout: buttons + count badge sit side by side, no overlap */
+.switch--repeat {
+  width: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actions--static {
+  position: static;
+}
+
+.count-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 7px 0 3px;
+  border: none;
+  border-radius: 999px;
+  background: var(--surface-deep);
+  box-shadow: inset 0 0 0 1px var(--border-softer);
+  cursor: pointer;
+}
+
+.count-badge .chip-ini {
+  position: static;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  font-size: 9px;
+  border: none;
+}
+
+.count-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-family: 'Mali', system-ui, sans-serif;
+}
+
+.count-pop-enter-active {
+  transition: transform var(--dur-pop) var(--ease-overshoot),
+              opacity var(--dur-base) var(--ease-standard);
+}
+
+.count-pop-leave-active {
+  transition: transform var(--dur-fast) var(--ease-standard),
+              opacity var(--dur-fast) var(--ease-standard);
+}
+
+.count-pop-enter-from,
+.count-pop-leave-to {
+  opacity: 0;
+  transform: scale(0.4);
 }
 
 .pick {

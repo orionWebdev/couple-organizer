@@ -7,6 +7,7 @@ import { useJustAdded } from '@/composables/useJustAdded'
 const props = defineProps<{
   chores: readonly Chore[]
   couple: Couple | null
+  todayCounts: ReadonlyMap<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -59,6 +60,7 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
         :chore="c"
         :couple="couple"
         :menuOpen="menuOpenId === c.id"
+        :todayCount="todayCounts.get(c.id) ?? 0"
         :class="{ 'just-added': justAdded.has(c.id) }"
         @pick="emit('pick', c, $event)"
         @undo="emit('undo', c)"

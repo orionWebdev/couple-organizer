@@ -189,16 +189,21 @@ export function useChores(coupleId: Ref<string | null>) {
 
   async function undoChore(chore: Chore): Promise<boolean> {
     try {
+      // Ordered newest-first: [0] is the completion we're undoing,
+      // [1] (if any) becomes the new "last completed" state.
+      const entries = history.value
+        .filter((h) => h.choreId === chore.id)
+        .sort((a, b) => toMillis(b.completedAt) - toMillis(a.completedAt))
+
+      const latestEntry = entries[0]
+      const previousEntry = entries[1] ?? null
+
       await updateDoc(doc(db, 'chores', chore.id), {
-        done: false,
-        completedAt: null,
-        completedBy: null,
+        done: chore.type === 'once' ? false : chore.done,
+        completedAt: previousEntry ? previousEntry.completedAt : null,
+        completedBy: previousEntry ? previousEntry.completedBy : null,
         updatedAt: serverTimestamp()
       })
-
-      const latestEntry = history.value
-        .filter((h) => h.choreId === chore.id)
-        .sort((a, b) => toMillis(b.completedAt) - toMillis(a.completedAt))[0]
 
       if (latestEntry) {
         await deleteDoc(doc(db, 'choreHistory', latestEntry.id))

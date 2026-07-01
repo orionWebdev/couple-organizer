@@ -1,14 +1,16 @@
 import { ref, computed, onScopeDispose, readonly, type Ref, watch } from 'vue'
 import {
   collection, query, where, orderBy, onSnapshot,
-  addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp
+  addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp, writeBatch
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { Chore, ChoreAssignee, ChoreHistoryEntry, ChoreInterval, ChoreType } from '@/types'
+import type { Chore, ChoreAssignee, ChoreHistoryEntry, ChoreInterval, ChoreRoom, ChoreType } from '@/types'
+import { POOL_SEED } from '@/utils/poolSeed'
 
 interface AddChoreInput {
   name: string
+  room: ChoreRoom
   type: ChoreType
   interval: ChoreInterval | null
   dueDate: Date | null
@@ -95,6 +97,7 @@ export function useChores(coupleId: Ref<string | null>) {
       await addDoc(collection(db, 'chores'), {
         coupleId: coupleId.value,
         name: cleanName,
+        room: input.room,
         type: input.type,
         interval: input.type === 'recurring' ? input.interval : null,
         dueDate: input.dueDate ? Timestamp.fromDate(input.dueDate) : null,
@@ -115,6 +118,47 @@ export function useChores(coupleId: Ref<string | null>) {
     }
   }
 
+  // Legt den Standard-Aufgabenpool an. Bereits vorhandene Aufgaben (gleicher
+  // Name, unabhängig von Groß-/Kleinschreibung) werden übersprungen, damit
+  // mehrfaches Auslösen keine Duplikate erzeugt. Gibt die Anzahl neu
+  // angelegter Aufgaben zurück (-1 bei Fehler).
+  async function seedPool(): Promise<number> {
+    if (!coupleId.value || !user.value) return -1
+
+    const existing = new Set(chores.value.map((c) => c.name.trim().toLowerCase()))
+    const toAdd = POOL_SEED.filter((t) => !existing.has(t.name.trim().toLowerCase()))
+    if (toAdd.length === 0) return 0
+
+    try {
+      const batch = writeBatch(db)
+      for (const task of toAdd) {
+        const ref = doc(collection(db, 'chores'))
+        batch.set(ref, {
+          coupleId: coupleId.value,
+          name: task.name,
+          room: task.room,
+          type: 'recurring',
+          interval: 'wöchentlich',
+          dueDate: null,
+          assignee: null,
+          done: false,
+          completedAt: null,
+          completedBy: null,
+          createdBy: user.value.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        })
+      }
+      await batch.commit()
+      error.value = null
+      return toAdd.length
+    } catch (err: any) {
+      console.error('Failed to seed chore pool:', err)
+      error.value = err.message
+      return -1
+    }
+  }
+
   async function updateChore(id: string, input: UpdateChoreInput): Promise<boolean> {
     const cleanName = input.name.trim()
     if (!cleanName) return false
@@ -122,6 +166,7 @@ export function useChores(coupleId: Ref<string | null>) {
     try {
       await updateDoc(doc(db, 'chores', id), {
         name: cleanName,
+        room: input.room,
         type: input.type,
         interval: input.type === 'recurring' ? input.interval : null,
         dueDate: input.dueDate ? Timestamp.fromDate(input.dueDate) : null,
@@ -259,6 +304,7 @@ export function useChores(coupleId: Ref<string | null>) {
     loading,
     error: readonly(error),
     addChore,
+    seedPool,
     updateChore,
     deleteChore,
     reassignChore,

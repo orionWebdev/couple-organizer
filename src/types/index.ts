@@ -20,10 +20,25 @@ export type ChoreType = 'recurring' | 'once'
 export type ChoreInterval = 'täglich' | 'wöchentlich' | 'monatlich'
 export type ChoreAssignee = string | 'both' | null // uid | Beide | Offen
 
+// Feste Aufgabenbereiche/Räume für Pool-Filter und Zuordnung.
+export type ChoreRoom =
+  | 'allgemein'
+  | 'kueche'
+  | 'wohnzimmer'
+  | 'schlafzimmer'
+  | 'badezimmer'
+  | 'waesche'
+  | 'muell'
+  | 'einkaufen'
+  | 'pflanzen'
+  | 'haustiere'
+  | 'auto'
+
 export interface Chore {
   id: string
   coupleId: string
   name: string
+  room: ChoreRoom // Raum/Bereich für Filter (Altbestand ohne Feld = 'allgemein')
   type: ChoreType
   interval: ChoreInterval | null // only set when type === 'recurring'
   dueDate: Timestamp | null // null = kein fester Tag; same day = heute; future = demnächst

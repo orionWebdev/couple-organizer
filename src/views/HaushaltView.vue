@@ -22,6 +22,7 @@ const {
   history,
   loading,
   addChore,
+  seedPool,
   updateChore,
   deleteChore,
   reassignChore,
@@ -101,6 +102,13 @@ async function onDelete(chore: Chore) {
   showToast(ok ? 'Aufgabe gelöscht' : FAILURE_MESSAGE)
 }
 
+async function onSeed() {
+  const added = await seedPool()
+  if (added < 0) showToast(FAILURE_MESSAGE)
+  else if (added === 0) showToast('Alle Standardaufgaben sind bereits im Pool')
+  else showToast(`${added} Aufgabe${added === 1 ? '' : 'n'} hinzugefügt`)
+}
+
 async function onHistoryAssign(entry: ChoreHistoryEntry, assignee: ChoreAssignee) {
   const ok = await reassignHistoryEntry(entry.id, assignee)
   showToast(ok ? 'Eintrag übertragen' : FAILURE_MESSAGE)
@@ -142,6 +150,7 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
         @assign="onAssign"
         @edit="openEditChore"
         @delete="onDelete"
+        @seed="onSeed"
       />
       <HaushaltUebersicht
         v-else-if="tab === 'uebersicht'"

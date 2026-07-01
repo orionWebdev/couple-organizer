@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { Chore, ChoreAssignee, ChoreInterval, ChoreType, Couple } from '@/types'
+import type { Chore, ChoreAssignee, ChoreInterval, ChoreRoom, ChoreType, Couple } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import { ROOMS, DEFAULT_ROOM, roomOf } from '@/utils/rooms'
 
 const props = defineProps<{
   isOpen: boolean
@@ -13,6 +14,7 @@ const emit = defineEmits<{
   close: []
   submit: [payload: {
     name: string
+    room: ChoreRoom
     type: ChoreType
     interval: ChoreInterval | null
     dueDate: Date | null
@@ -21,6 +23,7 @@ const emit = defineEmits<{
 }>()
 
 const name = ref('')
+const room = ref<ChoreRoom>(DEFAULT_ROOM)
 const type = ref<ChoreType>('recurring')
 const interval = ref<ChoreInterval>('wöchentlich')
 const due = ref<'none' | 'today' | 'soon'>('none')
@@ -29,6 +32,7 @@ const assignee = ref<ChoreAssignee>(null)
 function resetForm(chore: Chore | null) {
   if (!chore) {
     name.value = ''
+    room.value = DEFAULT_ROOM
     type.value = 'recurring'
     interval.value = 'wöchentlich'
     due.value = 'none'
@@ -36,6 +40,7 @@ function resetForm(chore: Chore | null) {
     return
   }
   name.value = chore.name
+  room.value = roomOf(chore)
   type.value = chore.type
   interval.value = chore.interval ?? 'wöchentlich'
   due.value = dueFromChore(chore)
@@ -75,6 +80,7 @@ function handleSubmit() {
   if (!name.value.trim()) return
   emit('submit', {
     name: name.value.trim(),
+    room: room.value,
     type: type.value,
     interval: type.value === 'recurring' ? interval.value : null,
     dueDate: dueToDate(),
@@ -92,6 +98,22 @@ function handleSubmit() {
       placeholder="Name · z. B. Bad putzen"
       style="margin-bottom: 12px"
     />
+
+    <div class="field-block">
+      <div class="field-label">Raum</div>
+      <div class="room-grid">
+        <button
+          v-for="r in ROOMS"
+          :key="r.id"
+          type="button"
+          class="room-pill"
+          :class="{ 'room-pill--active': room === r.id }"
+          @click="room = r.id"
+        >
+          <span class="room-pill__icon">{{ r.icon }}</span>{{ r.label }}
+        </button>
+      </div>
+    </div>
 
     <div class="toggle-row">
       <button class="toggle-btn" :class="{ 'toggle-btn--active': type === 'recurring' }" @click="type = 'recurring'">
@@ -199,5 +221,37 @@ function handleSubmit() {
 .pill--active {
   background: var(--accent);
   color: var(--on-accent);
+}
+
+.room-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.room-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border-softer);
+  font-family: 'Mali', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 11px;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-meta);
+  cursor: pointer;
+}
+
+.room-pill__icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.room-pill--active {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--text);
 }
 </style>

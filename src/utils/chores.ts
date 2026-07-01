@@ -108,12 +108,12 @@ export function assigneeAvatarVisual(assignee: ChoreAssignee, couple: Couple | n
       init: 'CS',
       bg: 'linear-gradient(90deg, var(--chris) 50%, var(--sarah) 50%)',
       border: 'none',
-      color: '#15110d'
+      color: 'var(--on-accent)'
     }
   }
   if (!assignee) {
-    return { init: '–', bg: 'transparent', border: '1px dashed #5a5048', color: 'var(--accent)' }
+    return { init: '–', bg: 'transparent', border: '1px dashed var(--text-faint)', color: 'var(--accent)' }
   }
   const v = personVisual(assignee, couple)
-  return { init: v.init, bg: v.color, border: 'none', color: '#15110d' }
+  return { init: v.init, bg: v.color, border: 'none', color: 'var(--on-accent)' }
 }

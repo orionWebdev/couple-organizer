@@ -186,8 +186,9 @@ function listItemsFor(listId: string) {
 }
 
 .page-title {
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--font-headline);
+  font-size: 28px;
+  font-weight: 700;
   color: var(--text);
   margin: 0;
 }
@@ -221,7 +222,7 @@ function listItemsFor(listId: string) {
   border: 1.5px dashed var(--border);
   border-radius: var(--radius-card);
   color: var(--text-faint);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;

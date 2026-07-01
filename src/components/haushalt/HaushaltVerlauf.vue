@@ -121,7 +121,7 @@ function toggleMenu(id: string) {
   border: 1px solid var(--border-softer);
   border-radius: 9px;
   color: var(--text-meta);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;

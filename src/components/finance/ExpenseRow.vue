@@ -147,7 +147,7 @@ function toggleExpand() {
   border: 1px solid var(--danger-border);
   border-radius: 8px;
   color: var(--danger);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;

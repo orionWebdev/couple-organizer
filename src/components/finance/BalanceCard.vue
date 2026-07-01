@@ -67,8 +67,8 @@ const displayAmount = computed(() => {
 
 <style scoped>
 .balance-card {
-  background: linear-gradient(150deg, #2c3833 0%, #23201b 58%);
-  border: 1px solid #38423d;
+  background: linear-gradient(150deg, #e7efe7 0%, #f7f1de 58%);
+  border: 1px solid #cfe0d2;
   border-radius: 22px;
   padding: 22px;
   margin: 0 var(--screen-pad) 24px;
@@ -118,10 +118,10 @@ const displayAmount = computed(() => {
   width: 100%;
   padding: 13px;
   background: var(--accent);
-  color: #14110d;
+  color: var(--on-accent);
   border: none;
   border-radius: 13px;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14.5px;
   font-weight: 600;
   cursor: pointer;

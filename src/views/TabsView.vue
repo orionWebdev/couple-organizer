@@ -96,7 +96,7 @@ const activeId = computed(() => {
   border: none;
   border-bottom: 1px solid var(--accent);
   color: var(--accent);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
@@ -115,7 +115,7 @@ const activeId = computed(() => {
   right: 0;
   display: flex;
   align-items: stretch;
-  background: rgba(18, 15, 12, 0.88);
+  background: rgba(246, 240, 226, 0.88);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-softer);
@@ -135,7 +135,7 @@ const activeId = computed(() => {
   border: none;
   background: transparent;
   color: var(--text-faint);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;

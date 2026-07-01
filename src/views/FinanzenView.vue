@@ -211,8 +211,9 @@ const sortedExpenses = computed(() =>
 }
 
 .page-title {
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--font-headline);
+  font-size: 28px;
+  font-weight: 700;
   color: var(--text);
   margin: 0;
 }
@@ -229,8 +230,8 @@ const sortedExpenses = computed(() =>
   flex: 0 0 168px;
   text-align: center;
   cursor: pointer;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
-  border: 1px dashed #3d362e;
+  font-family: 'Mali', system-ui, sans-serif;
+  border: 1px dashed var(--border);
   background: transparent;
   border-radius: 16px;
   padding: 14px;
@@ -245,7 +246,7 @@ const sortedExpenses = computed(() =>
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  border: 1px solid #3d362e;
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -256,7 +257,7 @@ const sortedExpenses = computed(() =>
 .new-event-label {
   font-size: 13px;
   font-weight: 500;
-  color: #d8d1c7;
+  color: var(--text-secondary);
 }
 
 .loading-row,
@@ -277,10 +278,10 @@ const sortedExpenses = computed(() =>
   right: 22px;
   padding: 13px 20px;
   background: var(--accent);
-  color: #14110d;
+  color: var(--on-accent);
   border: none;
   border-radius: 100px;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -308,7 +309,7 @@ const sortedExpenses = computed(() =>
   background: none;
   border: none;
   color: var(--text-faint);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   cursor: pointer;
   margin-top: 10px;

@@ -209,7 +209,7 @@ function handleFinish() {
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--text);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -246,7 +246,7 @@ function handleFinish() {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #14110d;
+  color: var(--on-accent);
   transition: all 0.15s ease;
 }
 
@@ -348,7 +348,7 @@ function handleFinish() {
   border: 1px solid var(--border-soft);
   border-radius: 10px;
   color: var(--text-meta);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

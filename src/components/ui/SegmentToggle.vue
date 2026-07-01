@@ -40,7 +40,7 @@ defineEmits<{
   border-radius: 8px;
   background: transparent;
   color: var(--text-faint);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -50,6 +50,6 @@ defineEmits<{
 
 .seg-btn--active {
   background: var(--accent);
-  color: #14110d;
+  color: var(--on-accent);
 }
 </style>

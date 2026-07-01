@@ -1,32 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --bg:             #120f0c;
-  --surface:        #221d18;
-  --surface-deep:   #1a1613;
-  --border:         #332c25;
-  --border-soft:    #2b251f;
-  --border-softer:  #251f1a;
-  --text:           #efe9e2;
-  --text-secondary: #a89f95;
-  --text-meta:      #8c8379;
-  --text-faint:     #6f665d;
-  --accent:         #86a596;
-  --accent-hover:   #738f81;
-  --accent-tint:    rgba(134, 165, 150, 0.16);
-  --chris:          #8aa2c2;
-  --chris-tint:     rgba(138, 162, 194, 0.18);
-  --sarah:          #c69a86;
-  --sarah-tint:     rgba(198, 154, 134, 0.18);
-  --danger:         #c98a7e;
-  --danger-border:  #5a3d36;
-  --danger-tint:    rgba(201, 138, 126, 0.18);
+  --bg:             #f6f0e2;
+  --surface:        #fffdf6;
+  --surface-deep:   #efe6d1;
+  --border:         #ddd0b0;
+  --border-soft:    #e6dabc;
+  --border-softer:  #ece2c8;
+  --text:           #1c1810;
+  --text-secondary: #4f4a3d;
+  --text-meta:      #756c5a;
+  --text-faint:     #948c78;
+  --accent:         #5f8271;
+  --accent-hover:   #4d6c5d;
+  --accent-tint:    rgba(95, 130, 113, 0.16);
+  --chris:          #3f6389;
+  --chris-tint:     rgba(63, 99, 137, 0.14);
+  --sarah:          #9c5c3f;
+  --sarah-tint:     rgba(156, 92, 63, 0.16);
+  --danger:         #a14632;
+  --danger-border:  #c98a7e;
+  --danger-tint:    rgba(161, 70, 50, 0.12);
   --radius-card:    16px;
   --radius-sheet:   26px;
   --radius-chip:    10px;
   --screen-pad:     22px;
   --safe-bottom:    env(safe-area-inset-bottom, 0px);
   --safe-top:       env(safe-area-inset-top, 0px);
+  --font-body:      'Mali', system-ui, sans-serif;
+  --font-headline:  'Lobster', cursive;
+  --on-accent:      #fbf7ee;
 }
 
 @layer base {
@@ -35,7 +38,7 @@
     min-height: 100dvh;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    font-family: 'Mali', system-ui, sans-serif;
     font-weight: 500;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -75,7 +78,7 @@
   border: 1px solid var(--border-soft);
   border-radius: 12px;
   color: var(--text);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 500;
   line-height: 1.5;
@@ -102,10 +105,10 @@
   width: 100%;
   padding: 14px 20px;
   background: var(--accent);
-  color: var(--bg);
+  color: var(--on-accent);
   border: none;
   border-radius: 14px;
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;

@@ -74,7 +74,7 @@ function onTouchEnd() {
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
-  color: #14110d;
+  color: var(--on-accent);
   transition: all 0.15s ease;
 }
 

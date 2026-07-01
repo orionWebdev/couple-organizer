@@ -57,9 +57,9 @@ defineEmits<{
 }
 
 .sheet-title {
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
-  font-size: 17px;
-  font-weight: 600;
+  font-family: var(--font-headline);
+  font-size: 22px;
+  font-weight: 700;
   color: var(--text);
   margin-bottom: 20px;
 }

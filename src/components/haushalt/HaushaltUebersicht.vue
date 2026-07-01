@@ -170,7 +170,7 @@ const statRows = computed(() => {
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  color: #15110d;
+  color: var(--on-accent);
   font-size: 13px;
   font-weight: 600;
   display: flex;
@@ -215,7 +215,7 @@ const statRows = computed(() => {
   gap: 8px;
   padding: 5px 0;
   font-size: 13px;
-  color: #c9c1b7;
+  color: var(--text-secondary);
 }
 
 .preview-dot {

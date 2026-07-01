@@ -107,8 +107,9 @@ async function submit() {
 }
 
 .app-name {
-  font-size: 28px;
-  font-weight: 600;
+  font-family: var(--font-headline);
+  font-size: 38px;
+  font-weight: 700;
   color: var(--text);
   margin: 0 0 6px;
 }
@@ -135,7 +136,7 @@ async function submit() {
   background: none;
   border: none;
   color: var(--accent);
-  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-family: 'Mali', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;

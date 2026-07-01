@@ -14,7 +14,7 @@ defineEmits<{
     <Transition name="sheet-backdrop">
       <div v-if="isOpen" class="backdrop" @click="$emit('close')" />
     </Transition>
-    <Transition name="sheet">
+    <Transition name="sheet-grow">
       <div v-if="isOpen" class="sheet" role="dialog" @click.stop>
         <div class="sheet-handle" />
         <div v-if="title" class="sheet-title">{{ title }}</div>
@@ -46,6 +46,8 @@ defineEmits<{
   padding-bottom: calc(24px + var(--safe-bottom));
   max-height: 92dvh;
   overflow-y: auto;
+  /* grows out of the FAB, which lives in the bottom-right corner */
+  transform-origin: bottom right;
 }
 
 .sheet-handle {
@@ -64,19 +66,35 @@ defineEmits<{
   margin-bottom: 20px;
 }
 
-.sheet-enter-active,
-.sheet-leave-active {
-  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+/* Grow from FAB: playful overshoot on open, crisp (no bounce) on close */
+.sheet-grow-enter-active {
+  transition: transform var(--dur-sheet-open) var(--ease-overshoot),
+              opacity 240ms var(--ease-standard);
 }
 
-.sheet-enter-from,
-.sheet-leave-to {
-  transform: translateY(100%);
+.sheet-grow-leave-active {
+  transition: transform var(--dur-sheet-close) var(--ease-in),
+              opacity 200ms var(--ease-in);
 }
 
-.sheet-backdrop-enter-active,
+.sheet-grow-enter-from,
+.sheet-grow-leave-to {
+  opacity: 0;
+  transform: scale(0.3) translateY(20%);
+}
+
+.sheet-grow-enter-to,
+.sheet-grow-leave-from {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.sheet-backdrop-enter-active {
+  transition: opacity 300ms var(--ease-standard);
+}
+
 .sheet-backdrop-leave-active {
-  transition: opacity 0.28s ease;
+  transition: opacity 240ms var(--ease-in);
 }
 
 .sheet-backdrop-enter-from,

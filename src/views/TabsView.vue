@@ -6,6 +6,7 @@ import { useCouple } from '@/composables/useCouple'
 import Toast from '@/components/ui/Toast.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
+import NavIcon from '@/components/ui/NavIcon.vue'
 
 const { user } = useAuth()
 const { couple, watchCouple } = useCouple()
@@ -27,12 +28,16 @@ const tabs = [
   { id: 'finanzen',  label: 'Finanzen',  href: '/finanzen' },
   { id: 'haushalt',  label: 'Haushalt',  href: '/haushalt' },
   { id: 'einkaufen', label: 'Einkaufen', href: '/einkaufen' },
-]
+] as const
 
 const activeId = computed(() => {
   const seg = route.path.split('/')[1] || 'finanzen'
   return tabs.find(t => t.id === seg)?.id ?? 'finanzen'
 })
+
+const activeIndex = computed(() =>
+  Math.max(0, tabs.findIndex(t => t.id === activeId.value))
+)
 </script>
 
 <template>
@@ -54,7 +59,10 @@ const activeId = computed(() => {
       <InviteCodeBox v-if="couple" :code="couple.inviteCode" />
     </BottomSheet>
 
-    <nav class="tab-bar">
+    <nav class="tab-bar" :style="{ '--tab-count': tabs.length }">
+      <span class="nav-indicator" :style="{ transform: `translateX(${activeIndex * 100}%)` }">
+        <span class="nav-dot" />
+      </span>
       <button
         v-for="tab in tabs"
         :key="tab.id"
@@ -62,8 +70,8 @@ const activeId = computed(() => {
         :class="{ 'tab-btn--active': activeId === tab.id }"
         @click="router.push(tab.href)"
       >
-        <span v-if="activeId === tab.id" class="tab-dot" />
-        {{ tab.label }}
+        <NavIcon :name="tab.id" class="tab-icon" />
+        <span class="tab-label">{{ tab.label }}</span>
       </button>
     </nav>
 
@@ -123,34 +131,62 @@ const activeId = computed(() => {
   z-index: 100;
 }
 
+/* Sliding dot: one tab-slot wide, dot centred; only transform changes */
+.nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% / var(--tab-count));
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transition: transform 380ms var(--ease-overshoot);
+}
+
+.nav-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 8px;
+}
+
 .tab-btn {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   min-height: 60px;
-  padding: 10px 4px 8px;
+  padding: 8px 4px 8px;
   border: none;
   background: transparent;
   color: var(--text-faint);
   font-family: 'Mali', system-ui, sans-serif;
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   transition: color 0.18s ease;
 }
 
-.tab-btn--active {
-  color: var(--text);
+.tab-icon {
+  flex-shrink: 0;
+  transition: color 0.18s ease;
 }
 
-.tab-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex-shrink: 0;
+.tab-btn--active {
+  color: var(--accent);
+}
+
+.tab-label {
+  display: flex;
+  align-items: center;
+  color: var(--text-faint);
+  transition: color 220ms var(--ease-standard);
+}
+
+.tab-btn--active .tab-label {
+  color: var(--text);
 }
 </style>

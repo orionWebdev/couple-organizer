@@ -141,7 +141,7 @@ function listItemsFor(listId: string) {
 
       <div v-if="loading" class="loading-msg">Laden…</div>
       <div v-else class="lists-wrap">
-        <div class="lists-grid">
+        <TransitionGroup tag="div" name="list-add" class="lists-grid">
           <ShoppingListCard
             v-for="list in lists"
             :key="list.id"
@@ -151,10 +151,10 @@ function listItemsFor(listId: string) {
           />
 
           <!-- New list card -->
-          <button class="new-list-card" @click="showNewList = true">
+          <button key="new-list" class="new-list-card" @click="showNewList = true">
             + Neue Liste
           </button>
-        </div>
+        </TransitionGroup>
       </div>
     </template>
 

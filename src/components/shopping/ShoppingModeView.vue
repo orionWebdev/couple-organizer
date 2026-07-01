@@ -93,7 +93,11 @@ function handleFinish() {
         @click="emit('toggle', item.id, !item.checked)"
       >
         <div class="mode-cb" :class="{ 'mode-cb--checked': item.checked }">
-          <svg v-if="item.checked" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <svg
+            class="shopping-check"
+            :class="{ 'is-hidden': !item.checked }"
+            width="20" height="20" viewBox="0 0 20 20" fill="none"
+          >
             <path d="M3 10l5 5 9-9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
@@ -229,11 +233,12 @@ function handleFinish() {
   min-height: 64px;
   border-bottom: 1px solid var(--border-softer);
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  /* row stays visible when done, just dims (Stamp choreography 3–4) */
+  transition: opacity var(--dur-base) var(--ease-standard);
 }
 
 .mode-row--checked {
-  opacity: 0.4;
+  opacity: 0.55;
 }
 
 .mode-cb {
@@ -247,7 +252,9 @@ function handleFinish() {
   justify-content: center;
   flex-shrink: 0;
   color: var(--on-accent);
-  transition: all 0.15s ease;
+  /* fill snaps in fast; the check does the playful part */
+  transition: background-color 150ms var(--ease-standard),
+              border-color 150ms var(--ease-standard);
 }
 
 .mode-cb--checked {
@@ -255,11 +262,28 @@ function handleFinish() {
   border-color: var(--accent);
 }
 
+/* the check "stamps" onto the box */
+.shopping-check {
+  transform: scale(1) rotate(0deg);
+  opacity: 1;
+  transition: transform var(--dur-pop) var(--ease-overshoot),
+              opacity var(--dur-fast) var(--ease-standard);
+}
+
+.shopping-check.is-hidden {
+  transform: scale(1.8) rotate(-14deg);
+  opacity: 0;
+}
+
 .mode-name {
   flex: 1;
   font-size: 18px;
   font-weight: 500;
   color: var(--text);
+}
+
+.mode-row--checked .mode-name {
+  text-decoration: line-through;
 }
 
 .mode-amount {

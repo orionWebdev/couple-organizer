@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Chore, ChoreAssignee, Couple } from '@/types'
 import TaskRowToday from './TaskRowToday.vue'
 import { dueBucket, isDoneToday } from '@/utils/chores'
+import { useJustAdded } from '@/composables/useJustAdded'
 
 const props = defineProps<{
   chores: readonly Chore[]
@@ -35,6 +36,8 @@ const demnaechstItems = computed(() =>
 const heuteDoneCount = computed(() => heuteItems.value.filter(isDoneToday).length)
 const heuteTotalCount = computed(() => heuteItems.value.length)
 const heutePct = computed(() => heuteTotalCount.value === 0 ? 0 : Math.round(heuteDoneCount.value / heuteTotalCount.value * 100))
+
+const { justAdded } = useJustAdded(() => myChores.value, c => c.id)
 </script>
 
 <template>
@@ -48,29 +51,31 @@ const heutePct = computed(() => heuteTotalCount.value === 0 ? 0 : Math.round(heu
     </div>
 
     <div v-if="heuteItems.length === 0" class="empty">Nichts für heute geplant. ✓</div>
-    <div v-else class="list">
+    <TransitionGroup v-else tag="div" name="list-add" class="list">
       <TaskRowToday
         v-for="c in heuteItems"
         :key="c.id"
         :chore="c"
         :couple="couple"
+        :class="{ 'just-added': justAdded.has(c.id) }"
         @pick="emit('pick', c, $event)"
         @undo="emit('undo', c)"
       />
-    </div>
+    </TransitionGroup>
 
     <template v-if="demnaechstItems.length > 0">
       <div class="section-label demnaechst-label">Demnächst</div>
-      <div class="list">
+      <TransitionGroup tag="div" name="list-add" class="list">
         <TaskRowToday
           v-for="c in demnaechstItems"
           :key="c.id"
           :chore="c"
           :couple="couple"
+          :class="{ 'just-added': justAdded.has(c.id) }"
           @pick="emit('pick', c, $event)"
           @undo="emit('undo', c)"
         />
-      </div>
+      </TransitionGroup>
     </template>
   </div>
 </template>

@@ -26,7 +26,7 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 </script>
 
 <template>
-  <div>
+  <div class="list-row">
     <div class="row">
       <TaskAbhakControl :chore="chore" :couple="couple" @pick="emit('pick', $event)" @undo="emit('undo')" />
       <div class="row-text">
@@ -91,10 +91,12 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
+  transition: color var(--dur-base) var(--ease-standard);
 }
 
 .row-name--done {
-  color: var(--text-meta);
+  color: #6f665d;
+  text-decoration: line-through;
 }
 
 .recur-badge {

@@ -30,6 +30,25 @@
   --font-body:      'Mali', system-ui, sans-serif;
   --font-headline:  'Lobster', cursive;
   --on-accent:      #fbf7ee;
+
+  /* ── Motion tokens (see Animations-Spec) ──────────────────── */
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1); /* the "bounce" — for anything entering */
+  --ease-standard:  cubic-bezier(0.4, 0, 0.2, 1);      /* neutral colour/opacity moves */
+  --ease-in:        cubic-bezier(0.4, 0, 1, 1);        /* for leaving/closing, no bounce */
+
+  --dur-fast:       200ms;
+  --dur-base:       280ms;
+  --dur-pop:        450ms;
+  --dur-sheet-open: 420ms;
+  --dur-sheet-close:260ms;
+  --dur-highlight:  650ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 @layer base {
@@ -131,4 +150,31 @@
   letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--text-faint);
+}
+
+/* ── Animation 5 · New list/item entry ("Slide + Highlight") ──
+   Shared globally so the same <TransitionGroup name="list-add"> and the
+   .list-row highlight fade behave identically across every list. */
+
+.list-add-enter-active {
+  transition: transform var(--dur-pop) var(--ease-overshoot),
+              opacity var(--dur-base) var(--ease-standard);
+}
+
+.list-add-enter-from {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.list-add-move {
+  transition: transform 300ms var(--ease-standard);
+}
+
+.list-row {
+  background-color: transparent;
+  transition: background-color var(--dur-highlight) var(--ease-standard);
+}
+
+.list-row.just-added {
+  background-color: rgba(134, 165, 150, 0.22);
 }

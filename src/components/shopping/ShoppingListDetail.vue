@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import type { ShoppingList, ShoppingItem } from '@/types'
 import ShoppingItemRow from './ShoppingItem.vue'
+import { useJustAdded } from '@/composables/useJustAdded'
 
 const props = defineProps<{
   list: ShoppingList
@@ -43,6 +44,8 @@ const grouped = computed<CategoryGroup[]>(() => {
 })
 
 const uncheckedCount = computed(() => props.items.filter(i => !i.checked).length)
+
+const { justAdded } = useJustAdded(() => props.items, i => i.id)
 </script>
 
 <template>
@@ -61,13 +64,16 @@ const uncheckedCount = computed(() => props.items.filter(i => !i.checked).length
     <div v-else class="item-list">
       <div v-for="group in grouped" :key="group.cat">
         <div class="cat-header section-label">{{ group.cat }}</div>
-        <ShoppingItemRow
-          v-for="item in group.items"
-          :key="item.id"
-          :item="item"
-          @toggle="emit('toggle', item.id, !item.checked)"
-          @delete="emit('delete', item.id)"
-        />
+        <TransitionGroup tag="div" name="list-add">
+          <ShoppingItemRow
+            v-for="item in group.items"
+            :key="item.id"
+            :item="item"
+            :class="{ 'just-added': justAdded.has(item.id) }"
+            @toggle="emit('toggle', item.id, !item.checked)"
+            @delete="emit('delete', item.id)"
+          />
+        </TransitionGroup>
       </div>
     </div>
 

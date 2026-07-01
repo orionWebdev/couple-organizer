@@ -18,7 +18,7 @@ const done = computed(() => isDoneToday(props.chore))
 </script>
 
 <template>
-  <div class="row">
+  <div class="row list-row">
     <TaskAbhakControl :chore="chore" :couple="couple" @pick="emit('pick', $event)" @undo="emit('undo')" />
     <div class="row-text">
       <span class="row-name" :class="{ 'row-name--done': done }">{{ chore.name }}</span>
@@ -49,10 +49,12 @@ const done = computed(() => isDoneToday(props.chore))
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
+  transition: color var(--dur-base) var(--ease-standard);
 }
 
 .row-name--done {
-  color: var(--text-meta);
+  color: #6f665d;
+  text-decoration: line-through;
 }
 
 .row-meta {

@@ -20,7 +20,7 @@ function onTouchEnd() {
 
 <template>
   <div
-    class="item-row"
+    class="item-row list-row"
     :class="{ 'item-row--checked': item.checked }"
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"
@@ -56,7 +56,8 @@ function onTouchEnd() {
   gap: 12px;
   padding: 12px var(--screen-pad);
   min-height: 50px;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease,
+              background-color var(--dur-highlight) var(--ease-standard);
 }
 
 .item-row--checked {

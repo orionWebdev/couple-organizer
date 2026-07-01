@@ -112,6 +112,18 @@ export function useCouple() {
     }
   }
 
+  // Markiert, dass der Standard-Aufgabenpool einmalig angelegt wurde, damit
+  // er beim nächsten Öffnen nicht erneut befüllt wird (auch nach dem Löschen
+  // einzelner Aufgaben).
+  async function markChoresSeeded() {
+    if (!couple.value || couple.value.choresSeeded) return
+    try {
+      await updateDoc(doc(db, 'couples', couple.value.id), { choresSeeded: true })
+    } catch (e: any) {
+      error.value = e.message
+    }
+  }
+
   onScopeDispose(() => {
     if (unsubscribe) unsubscribe()
   })
@@ -122,6 +134,7 @@ export function useCouple() {
     error: readonly(error),
     createCouple,
     joinCouple,
-    watchCouple
+    watchCouple,
+    markChoresSeeded
   }
 }

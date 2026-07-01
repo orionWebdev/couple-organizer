@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useChores } from '@/composables/useChores'
@@ -14,7 +14,7 @@ import { isSameDay } from '@/utils/chores'
 import type { Chore, ChoreAssignee, ChoreHistoryEntry } from '@/types'
 
 const { user } = useAuth()
-const { couple } = useCouple()
+const { couple, markChoresSeeded } = useCouple()
 
 const coupleId = computed(() => user.value?.coupleId ?? null)
 const {
@@ -107,7 +107,35 @@ async function onSeed() {
   if (added < 0) showToast(FAILURE_MESSAGE)
   else if (added === 0) showToast('Alle Standardaufgaben sind bereits im Pool')
   else showToast(`${added} Aufgabe${added === 1 ? '' : 'n'} hinzugefügt`)
+  if (added > 0) await markChoresSeeded()
 }
+
+// Einmaliges automatisches Befüllen des Pools: sobald Aufgaben und Couple
+// geladen sind und der Pool noch nie befüllt wurde, die Standardliste anlegen.
+let autoSeedDone = false
+watch(
+  [loading, () => chores.value.length, couple],
+  async () => {
+    if (autoSeedDone || loading.value || !couple.value) return
+    if (couple.value.choresSeeded) { autoSeedDone = true; return }
+
+    autoSeedDone = true
+    // Altbestand (bereits Aufgaben vorhanden): nur als befüllt markieren,
+    // nichts duplizieren.
+    if (chores.value.length > 0) {
+      await markChoresSeeded()
+      return
+    }
+    const added = await seedPool()
+    if (added > 0) {
+      await markChoresSeeded()
+      showToast('Aufgaben-Pool eingerichtet')
+    } else if (added < 0) {
+      autoSeedDone = false // Fehler: beim nächsten Trigger erneut versuchen
+    }
+  },
+  { immediate: true }
+)
 
 async function onHistoryAssign(entry: ChoreHistoryEntry, assignee: ChoreAssignee) {
   const ok = await reassignHistoryEntry(entry.id, assignee)

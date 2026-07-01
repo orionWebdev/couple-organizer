@@ -2,103 +2,149 @@
 import { ref, computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
-import { useTodos } from '@/composables/useTodos'
+import { useChores } from '@/composables/useChores'
 import { showToast } from '@/composables/useToast'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
-import BottomSheet from '@/components/ui/BottomSheet.vue'
-import HaushaltPool from '@/components/haushalt/HaushaltPool.vue'
-import HaushaltStatistik from '@/components/haushalt/HaushaltStatistik.vue'
+import TaskSheet from '@/components/haushalt/TaskSheet.vue'
+import HaushaltHeute from '@/components/haushalt/HaushaltHeute.vue'
+import HaushaltAlle from '@/components/haushalt/HaushaltAlle.vue'
+import HaushaltUebersicht from '@/components/haushalt/HaushaltUebersicht.vue'
 import HaushaltVerlauf from '@/components/haushalt/HaushaltVerlauf.vue'
+import type { Chore, ChoreAssignee, ChoreHistoryEntry } from '@/types'
 
 const { user } = useAuth()
 const { couple } = useCouple()
 
 const coupleId = computed(() => user.value?.coupleId ?? null)
-const { todos, loading, addTodo, toggleTodo, deleteTodo } = useTodos(coupleId)
+const {
+  chores,
+  history,
+  loading,
+  addChore,
+  updateChore,
+  deleteChore,
+  reassignChore,
+  completeChore,
+  undoChore,
+  reassignHistoryEntry,
+  deleteHistoryEntry
+} = useChores(coupleId)
 
-const view = ref<'pool' | 'statistik' | 'verlauf'>('pool')
-const viewOptions = [
-  { label: 'Pool', value: 'pool' },
-  { label: 'Statistik', value: 'statistik' },
+const tab = ref<'heute' | 'alle' | 'uebersicht' | 'verlauf'>('heute')
+const tabOptions = [
+  { label: 'Heute', value: 'heute' },
+  { label: 'Alle', value: 'alle' },
+  { label: 'Übersicht', value: 'uebersicht' },
   { label: 'Verlauf', value: 'verlauf' },
 ]
 
-const showAdd = ref(false)
-const newChoreTitle = ref('')
+const showSheet = ref(false)
+const editingChore = ref<Chore | null>(null)
 
-async function handleAdd(title: string) {
-  await addTodo(title, { assignedTo: user.value?.uid ?? null })
-  showToast(`"${title}" hinzugefügt`)
+function openNewChore() {
+  editingChore.value = null
+  showSheet.value = true
 }
 
-async function handleAddCustom() {
-  if (!newChoreTitle.value.trim()) return
-  await addTodo(newChoreTitle.value.trim(), { assignedTo: user.value?.uid ?? null })
-  showToast('Aufgabe hinzugefügt')
-  newChoreTitle.value = ''
-  showAdd.value = false
+function openEditChore(chore: Chore) {
+  editingChore.value = chore
+  showSheet.value = true
 }
 
-async function onToggle(id: string, done: boolean) {
-  await toggleTodo(id, done)
-  if (done) showToast('Erledigt!')
+async function onSheetSubmit(payload: Parameters<typeof addChore>[0]) {
+  if (editingChore.value) {
+    await updateChore(editingChore.value.id, payload)
+    showToast('Änderungen gespeichert')
+  } else {
+    await addChore(payload)
+    showToast('Aufgabe angelegt')
+  }
+  showSheet.value = false
 }
 
-async function onDelete(id: string) {
-  await deleteTodo(id)
+async function onPick(chore: Chore, assignee: ChoreAssignee) {
+  await completeChore(chore, assignee)
+  showToast('Erledigt!')
+}
+
+async function onUndo(chore: Chore) {
+  await undoChore(chore)
+}
+
+async function onAssign(chore: Chore, assignee: ChoreAssignee) {
+  await reassignChore(chore.id, assignee)
+  showToast('Aufgabe übertragen')
+}
+
+async function onDelete(chore: Chore) {
+  await deleteChore(chore.id)
   showToast('Aufgabe gelöscht')
+}
+
+async function onHistoryAssign(entry: ChoreHistoryEntry, assignee: ChoreAssignee) {
+  await reassignHistoryEntry(entry.id, assignee)
+  showToast('Eintrag übertragen')
+}
+
+async function onHistoryDelete(entry: ChoreHistoryEntry) {
+  await deleteHistoryEntry(entry.id)
+  showToast('Eintrag gelöscht')
 }
 </script>
 
 <template>
   <div class="haushalt-page">
-    <!-- Header -->
     <div class="page-header">
       <h1 class="page-title">Haushalt</h1>
-      <SegmentToggle v-model="view" :options="viewOptions" />
+    </div>
+    <div class="tab-bar-wrap">
+      <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
     </div>
 
     <div v-if="loading" class="loading-msg">Laden…</div>
     <template v-else>
-      <HaushaltPool
-        v-if="view === 'pool'"
-        :todos="todos"
+      <HaushaltHeute
+        v-if="tab === 'heute'"
+        :chores="chores"
         :couple="couple"
         :currentUserId="user?.uid ?? ''"
-        @toggle="onToggle"
-        @delete="onDelete"
-        @add="handleAdd"
+        @pick="onPick"
+        @undo="onUndo"
       />
-      <HaushaltStatistik
-        v-else-if="view === 'statistik'"
-        :todos="todos"
+      <HaushaltAlle
+        v-else-if="tab === 'alle'"
+        :chores="chores"
         :couple="couple"
-        :currentUserId="user?.uid ?? ''"
+        @pick="onPick"
+        @undo="onUndo"
+        @assign="onAssign"
+        @edit="openEditChore"
+        @delete="onDelete"
+      />
+      <HaushaltUebersicht
+        v-else-if="tab === 'uebersicht'"
+        :chores="chores"
+        :history="history"
+        :couple="couple"
       />
       <HaushaltVerlauf
-        v-else-if="view === 'verlauf'"
-        :todos="todos"
+        v-else
+        :history="history"
         :couple="couple"
-        @delete="onDelete"
+        @assign="onHistoryAssign"
+        @delete="onHistoryDelete"
       />
     </template>
 
-    <!-- FAB for custom chore -->
-    <button v-if="view === 'pool'" class="fab" @click="showAdd = true">Aufgabe +</button>
+    <button v-if="tab === 'alle'" class="fab" @click="openNewChore">Aufgabe +</button>
 
-    <!-- Add custom chore sheet -->
-    <BottomSheet :isOpen="showAdd" title="Neue Aufgabe" @close="showAdd = false">
-      <input
-        v-model="newChoreTitle"
-        class="app-field"
-        type="text"
-        placeholder="Titel der Aufgabe"
-        @keyup.enter="handleAddCustom"
-      />
-      <button class="btn-primary" :disabled="!newChoreTitle.trim()" @click="handleAddCustom">
-        Hinzufügen
-      </button>
-    </BottomSheet>
+    <TaskSheet
+      :isOpen="showSheet"
+      :couple="couple"
+      :editingChore="editingChore"
+      @close="showSheet = false"
+      @submit="onSheetSubmit"
+    />
   </div>
 </template>
 
@@ -109,10 +155,7 @@ async function onDelete(id: string) {
 }
 
 .page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: calc(var(--safe-top) + 20px) var(--screen-pad) 20px;
+  padding: calc(var(--safe-top) + 20px) var(--screen-pad) 16px;
 }
 
 .page-title {
@@ -120,6 +163,25 @@ async function onDelete(id: string) {
   font-weight: 600;
   color: var(--text);
   margin: 0;
+}
+
+.tab-bar-wrap {
+  padding: 0 var(--screen-pad);
+  margin-bottom: 20px;
+}
+
+.tab-bar {
+  display: flex;
+  width: 100%;
+  gap: 4px;
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.tab-bar :deep(.seg-btn) {
+  flex: 1;
+  padding: 9px 0;
+  font-size: 12px;
 }
 
 .loading-msg {

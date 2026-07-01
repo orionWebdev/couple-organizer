@@ -1,0 +1,120 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { Chore, ChoreAssignee, Couple } from '@/types'
+import TaskRowToday from './TaskRowToday.vue'
+import { dueBucket, isDoneToday } from '@/utils/chores'
+
+const props = defineProps<{
+  chores: readonly Chore[]
+  couple: Couple | null
+  currentUserId: string
+}>()
+
+const emit = defineEmits<{
+  pick: [chore: Chore, assignee: ChoreAssignee]
+  undo: [chore: Chore]
+}>()
+
+const myChores = computed(() =>
+  props.chores.filter((c) => !(c.type === 'once' && c.done) && (c.assignee === props.currentUserId || c.assignee === 'both'))
+)
+
+const heuteItems = computed(() => myChores.value.filter((c) => {
+  const bucket = dueBucket(c)
+  return bucket === 'today' || bucket === 'none'
+}))
+
+const demnaechstItems = computed(() =>
+  myChores.value
+    .map((c) => ({ chore: c, bucket: dueBucket(c) }))
+    .filter((entry): entry is { chore: Chore; bucket: { days: number } } => typeof entry.bucket === 'object')
+    .sort((a, b) => a.bucket.days - b.bucket.days)
+    .map((entry) => entry.chore)
+)
+
+const heuteDoneCount = computed(() => heuteItems.value.filter(isDoneToday).length)
+const heuteTotalCount = computed(() => heuteItems.value.length)
+const heutePct = computed(() => heuteTotalCount.value === 0 ? 0 : Math.round(heuteDoneCount.value / heuteTotalCount.value * 100))
+</script>
+
+<template>
+  <div class="heute">
+    <div class="progress-head">
+      <span class="section-label">Heute</span>
+      <span class="progress-count mono">{{ heuteDoneCount }} / {{ heuteTotalCount }}</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" :style="{ width: heutePct + '%' }" />
+    </div>
+
+    <div v-if="heuteItems.length === 0" class="empty">Nichts für heute geplant. ✓</div>
+    <div v-else class="list">
+      <TaskRowToday
+        v-for="c in heuteItems"
+        :key="c.id"
+        :chore="c"
+        :couple="couple"
+        @pick="emit('pick', c, $event)"
+        @undo="emit('undo', c)"
+      />
+    </div>
+
+    <template v-if="demnaechstItems.length > 0">
+      <div class="section-label demnaechst-label">Demnächst</div>
+      <div class="list">
+        <TaskRowToday
+          v-for="c in demnaechstItems"
+          :key="c.id"
+          :chore="c"
+          :couple="couple"
+          @pick="emit('pick', c, $event)"
+          @undo="emit('undo', c)"
+        />
+      </div>
+    </template>
+  </div>
+</template>
+
+<style scoped>
+.heute {
+  padding: 0 var(--screen-pad);
+}
+
+.progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.progress-count {
+  font-size: 12px;
+  color: var(--text-meta);
+}
+
+.progress-bar {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--border-soft);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.empty {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--text-faint);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.demnaechst-label {
+  margin: 22px 0 4px;
+}
+</style>

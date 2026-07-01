@@ -16,20 +16,34 @@ export interface Couple {
   createdAt: Timestamp
 }
 
-export type TodoCategory = 'haushalt' | 'einkauf' | 'sonstiges'
+export type ChoreType = 'recurring' | 'once'
+export type ChoreInterval = 'täglich' | 'wöchentlich' | 'monatlich'
+export type ChoreAssignee = string | 'both' | null // uid | Beide | Offen
 
-export interface Todo {
+export interface Chore {
   id: string
   coupleId: string
-  title: string
-  done: boolean
-  assignedTo: string | null
+  name: string
+  type: ChoreType
+  interval: ChoreInterval | null // only set when type === 'recurring'
+  dueDate: Timestamp | null // null = kein fester Tag; same day = heute; future = demnächst
+  assignee: ChoreAssignee
+  done: boolean // once-tasks only: permanently done, hides from pool
+  completedAt: Timestamp | null // last completion instant (recurring: today's occurrence)
+  completedBy: ChoreAssignee
   createdBy: string
-  category: TodoCategory | null
-  dueDate: Timestamp | null
-  recurring: boolean
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+export interface ChoreHistoryEntry {
+  id: string
+  coupleId: string
+  choreId: string
+  choreName: string
+  completedBy: ChoreAssignee
+  completedAt: Timestamp
+  createdAt: Timestamp
 }
 
 export interface ShoppingItem {

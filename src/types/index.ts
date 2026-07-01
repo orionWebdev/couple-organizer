@@ -13,6 +13,7 @@ export interface Couple {
   memberIds: string[]
   memberNames: Record<string, string> // { uid: displayName }
   inviteCode: string
+  choresSeeded?: boolean // Standard-Aufgabenpool wurde einmalig angelegt
   createdAt: Timestamp
 }
 

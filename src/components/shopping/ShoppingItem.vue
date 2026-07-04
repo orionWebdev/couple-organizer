@@ -49,33 +49,39 @@ function onTouchEnd() {
 </template>
 
 <style scoped>
+/* Nido: weiße Karte mit farbiger Checkbox */
 .item-row {
   position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px var(--screen-pad);
+  padding: 11px 13px;
+  margin: 0 var(--screen-pad) 9px;
   min-height: 50px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   transition: opacity 0.2s ease,
               background-color var(--dur-highlight) var(--ease-standard);
 }
 
-.item-row--checked {
-  opacity: 0.45;
+.item-row--checked .item-name {
+  color: var(--text-faint);
 }
 
 .cb {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  border: 1.5px solid var(--border);
-  background: transparent;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  border: 2px solid var(--border);
+  background: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
-  color: var(--on-accent);
+  color: #fff;
   transition: all 0.15s ease;
 }
 
@@ -93,8 +99,8 @@ function onTouchEnd() {
 }
 
 .item-name {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text);
   text-decoration: v-bind("item.checked ? 'line-through' : 'none'");
 }
@@ -118,11 +124,6 @@ function onTouchEnd() {
 }
 
 .row-divider {
-  position: absolute;
-  bottom: 0;
-  left: var(--screen-pad);
-  right: var(--screen-pad);
-  height: 1px;
-  background: var(--border-softer);
+  display: none;
 }
 </style>

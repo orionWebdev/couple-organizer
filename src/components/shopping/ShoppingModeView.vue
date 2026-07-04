@@ -192,8 +192,9 @@ function handleFinish() {
 }
 
 .mode-title {
-  font-size: 18px;
-  font-weight: 600;
+  font-family: var(--font-headline);
+  font-size: 19px;
+  font-weight: 700;
   color: var(--text);
   margin: 0;
   white-space: nowrap;
@@ -209,15 +210,16 @@ function handleFinish() {
 
 .end-btn {
   padding: 9px 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-family: 'Mali', system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 600;
+  background: var(--accent);
+  border: none;
+  border-radius: 12px;
+  color: var(--on-accent);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
+  box-shadow: var(--shadow-accent);
 }
 
 .mode-items {
@@ -251,7 +253,7 @@ function handleFinish() {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--on-accent);
+  color: #fff;
   /* fill snaps in fast; the check does the playful part */
   transition: background-color 150ms var(--ease-standard),
               border-color 150ms var(--ease-standard);
@@ -277,8 +279,8 @@ function handleFinish() {
 
 .mode-name {
   flex: 1;
-  font-size: 18px;
-  font-weight: 500;
+  font-size: 17px;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -308,7 +310,8 @@ function handleFinish() {
 }
 
 .co-currency {
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--font-headline);
+  font-weight: 700;
   font-size: 20px;
   color: var(--text-meta);
 }
@@ -372,7 +375,7 @@ function handleFinish() {
   border: 1px solid var(--border-soft);
   border-radius: 10px;
   color: var(--text-meta);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

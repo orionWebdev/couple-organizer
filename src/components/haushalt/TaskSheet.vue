@@ -171,9 +171,9 @@ function handleSubmit() {
 .toggle-btn {
   flex: 1;
   border: none;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 9px 0;
   border-radius: 9px;
   background: transparent;
@@ -196,7 +196,10 @@ function handleSubmit() {
 
 .field-label {
   font-size: 11px;
-  color: var(--text-faint);
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-meta);
   margin-bottom: 7px;
 }
 
@@ -208,12 +211,12 @@ function handleSubmit() {
 .pill {
   flex: 1;
   border: none;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 8px 0;
-  border-radius: 9px;
-  background: transparent;
+  border-radius: 10px;
+  background: var(--surface-deep);
   color: var(--text-meta);
   cursor: pointer;
 }
@@ -234,9 +237,9 @@ function handleSubmit() {
   align-items: center;
   gap: 5px;
   border: 1px solid var(--border-softer);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 7px 11px;
   border-radius: 9px;
   background: transparent;

@@ -68,10 +68,11 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 <style scoped>
 .card {
   border: 1px solid var(--border-softer);
-  background: var(--surface-deep);
+  background: var(--surface);
   border-radius: 14px;
   padding: 12px 13px;
   margin-bottom: 8px;
+  box-shadow: var(--shadow-card);
 }
 
 .row {
@@ -87,7 +88,7 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 
 .name {
   font-size: 14.5px;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -105,15 +106,16 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 .chip {
   width: 20px;
   height: 20px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--on-accent);
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-left: -4px;
-  border: 1.5px solid var(--surface-deep);
+  border: 1.5px solid #fff;
+  box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 
 .chip:first-child {
@@ -145,10 +147,10 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 
 .menu-label {
   font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-weight: 700;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-meta);
   margin-bottom: 8px;
 }
 
@@ -160,12 +162,12 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 
 .menu-pill {
   flex: 1;
-  border: 1px solid var(--border);
-  font-family: 'Mali', system-ui, sans-serif;
+  border: 1.5px solid var(--border);
+  font-family: var(--font-body);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 8px 0;
-  border-radius: 9px;
+  border-radius: 10px;
   background: transparent;
   color: var(--text-meta);
   cursor: pointer;
@@ -177,12 +179,12 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 
 .delete-btn {
   width: 100%;
-  border: 1px solid var(--danger-border);
-  font-family: 'Mali', system-ui, sans-serif;
+  border: 1.5px solid var(--danger-border);
+  font-family: var(--font-body);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 9px 0;
-  border-radius: 9px;
+  border-radius: 10px;
   background: transparent;
   color: var(--danger);
   cursor: pointer;

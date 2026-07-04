@@ -115,7 +115,7 @@ const nameB = computed(() => props.couple?.memberNames[props.couple?.memberIds[1
   font-size: 11px;
   font-weight: 700;
   color: var(--text-secondary);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 
 .count-pop-enter-active {
@@ -134,33 +134,36 @@ const nameB = computed(() => props.couple?.memberNames[props.couple?.memberIds[1
   transform: scale(0.4);
 }
 
+/* Nido-Checkbox-Optik: 26px, Radius 9px, 2px Rand, weißer Grund */
 .pick {
   width: 26px;
   height: 26px;
-  border-radius: 8px;
-  background: transparent;
+  border-radius: 9px;
+  background: var(--surface);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
+  transition: all 0.15s;
 }
 
 .pick--chris {
-  border: 1.5px solid #3a5a78;
+  border: 2px solid var(--chris);
   color: var(--chris);
 }
 
 .pick--sarah {
-  border: 1.5px solid #7a5240;
+  border: 2px solid var(--sarah);
   color: var(--sarah);
 }
 
 .pick--both {
-  border: 1.5px solid #4a5a52;
-  color: var(--accent);
+  border: 2px solid var(--border);
+  background: linear-gradient(90deg, var(--chris-tint) 50%, var(--sarah-tint) 50%);
+  color: var(--text);
 }
 
 .chips {
@@ -177,15 +180,16 @@ const nameB = computed(() => props.couple?.memberNames[props.couple?.memberIds[1
 .chip-ini {
   width: 26px;
   height: 26px;
-  border-radius: 8px;
+  border-radius: 50%;
   font-size: 11px;
   font-weight: 700;
-  color: var(--on-accent);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: -4px;
-  border: 1.5px solid var(--surface-deep);
+  margin-left: -6px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 
 .chip-ini:first-child {

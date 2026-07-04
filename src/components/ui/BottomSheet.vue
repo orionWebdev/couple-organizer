@@ -28,7 +28,7 @@ defineEmits<{
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.56);
+  background: rgba(60, 45, 30, 0.38);
   z-index: 1000;
 }
 

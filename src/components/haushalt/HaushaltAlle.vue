@@ -164,7 +164,7 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
 }
 
 .search-toggle {
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 12px;
   font-weight: 600;
   padding: 6px 12px;
@@ -198,16 +198,17 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 7px 12px;
   border-radius: 100px;
   border: 1px solid var(--border-softer);
-  background: transparent;
+  background: var(--surface);
   color: var(--text-meta);
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--shadow-card);
 }
 
 .room-chip__icon {
@@ -231,16 +232,17 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
 
 .filter-chip {
   flex-shrink: 0;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 7px 13px;
-  border-radius: 9px;
+  border-radius: 10px;
   border: 1px solid var(--border-softer);
-  background: transparent;
+  background: var(--surface);
   color: var(--text-meta);
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--shadow-card);
 }
 
 .filter-chip--active {
@@ -259,6 +261,12 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
   border-color: var(--danger);
   background: var(--danger-tint);
   color: var(--text);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
 }
 
 .empty {
@@ -281,15 +289,16 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
 }
 
 .seed-btn {
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 11px 20px;
   border-radius: 100px;
   border: none;
   background: var(--accent);
   color: var(--on-accent);
   cursor: pointer;
+  box-shadow: var(--shadow-accent);
 }
 
 .seed-btn:active {
@@ -299,7 +308,7 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
 .seed-link {
   display: block;
   margin: 18px auto 4px;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 12.5px;
   font-weight: 600;
   padding: 8px 16px;

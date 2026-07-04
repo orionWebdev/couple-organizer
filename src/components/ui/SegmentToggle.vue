@@ -36,9 +36,10 @@ const activeIndex = computed(() =>
   display: flex;
   align-items: center;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 11px;
+  border: 1px solid var(--border-softer);
+  border-radius: 13px;
   padding: 3px;
+  box-shadow: var(--shadow-card);
 }
 
 /* Sliding Pill: always in the DOM, only its transform changes */
@@ -49,7 +50,7 @@ const activeIndex = computed(() =>
   left: 3px;
   width: calc((100% - 6px) / var(--segment-count));
   background: var(--accent);
-  border-radius: 8px;
+  border-radius: 10px;
   transition: transform 380ms var(--ease-overshoot);
   pointer-events: none;
 }
@@ -60,12 +61,12 @@ const activeIndex = computed(() =>
   flex: 1;
   padding: 6px 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
-  color: var(--text-faint);
-  font-family: 'Mali', system-ui, sans-serif;
+  color: var(--text-meta);
+  font-family: var(--font-body);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: color 220ms var(--ease-standard);
   white-space: nowrap;

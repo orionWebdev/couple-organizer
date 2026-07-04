@@ -109,7 +109,7 @@ function listItemsFor(listId: string) {
 </script>
 
 <template>
-  <div class="einkaufen-page">
+  <div class="einkaufen-page area-einkauf">
     <!-- Shopping mode — fullscreen overlay within the tab -->
     <ShoppingModeView
       v-if="view === 'shopping-mode' && activeList"
@@ -222,9 +222,9 @@ function listItemsFor(listId: string) {
   border: 1.5px dashed var(--border);
   border-radius: var(--radius-card);
   color: var(--text-faint);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 700;
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease;
 }

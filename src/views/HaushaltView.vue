@@ -121,7 +121,7 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
 </script>
 
 <template>
-  <div class="haushalt-page">
+  <div class="haushalt-page area-haushalt">
     <div class="page-header">
       <h1 class="page-title">Haushalt</h1>
     </div>
@@ -167,7 +167,7 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
       />
     </template>
 
-    <button v-if="tab === 'alle'" class="fab" @click="openNewChore">Aufgabe +</button>
+    <button v-if="tab === 'alle'" class="fab" @click="openNewChore"><span class="fab-plus">+</span>Aufgabe hinzufügen</button>
 
     <TaskSheet
       :isOpen="showSheet"
@@ -182,7 +182,7 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
 <style scoped>
 .haushalt-page {
   min-height: 100%;
-  padding-bottom: 24px;
+  padding-bottom: 96px;
 }
 
 .page-header {
@@ -222,20 +222,30 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
 
 .fab {
   position: fixed;
-  bottom: calc(72px + var(--safe-bottom));
-  right: 22px;
-  padding: 13px 20px;
+  left: 18px;
+  right: 18px;
+  bottom: calc(74px + var(--safe-bottom));
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: 100px;
-  font-family: 'Mali', system-ui, sans-serif;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-accent);
   transition: background 0.18s ease, transform 0.12s ease;
   z-index: 50;
+}
+
+.fab-plus {
+  font-size: 18px;
+  font-weight: 300;
 }
 
 .fab:active {

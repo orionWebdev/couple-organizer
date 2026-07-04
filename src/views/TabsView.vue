@@ -38,6 +38,13 @@ const activeId = computed(() => {
 const activeIndex = computed(() =>
   Math.max(0, tabs.findIndex(t => t.id === activeId.value))
 )
+
+// Bereichsfarbe des aktiven Tabs (Nido: jeder Bereich hat eigene Akzentfarbe)
+const areaColor: Record<string, string> = {
+  finanzen: 'var(--finanzen)',
+  haushalt: 'var(--haushalt)',
+  einkaufen: 'var(--einkauf)',
+}
 </script>
 
 <template>
@@ -60,7 +67,10 @@ const activeIndex = computed(() =>
     </BottomSheet>
 
     <nav class="tab-bar" :style="{ '--tab-count': tabs.length }">
-      <span class="nav-indicator" :style="{ transform: `translateX(${activeIndex * 100}%)` }">
+      <span
+        class="nav-indicator"
+        :style="{ transform: `translateX(${activeIndex * 100}%)`, color: areaColor[activeId] }"
+      >
         <span class="nav-dot" />
       </span>
       <button
@@ -68,6 +78,7 @@ const activeIndex = computed(() =>
         :key="tab.id"
         class="tab-btn"
         :class="{ 'tab-btn--active': activeId === tab.id }"
+        :style="activeId === tab.id ? { color: areaColor[tab.id] } : undefined"
         @click="router.push(tab.href)"
       >
         <NavIcon :name="tab.id" class="tab-icon" />
@@ -104,9 +115,9 @@ const activeIndex = computed(() =>
   border: none;
   border-bottom: 1px solid var(--accent);
   color: var(--accent);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   text-align: left;
 }
@@ -123,7 +134,7 @@ const activeIndex = computed(() =>
   right: 0;
   display: flex;
   align-items: stretch;
-  background: rgba(246, 240, 226, 0.88);
+  background: rgba(255, 253, 249, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-softer);
@@ -147,7 +158,7 @@ const activeIndex = computed(() =>
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--accent);
+  background: currentColor;
   margin-top: 8px;
 }
 
@@ -163,9 +174,9 @@ const activeIndex = computed(() =>
   border: none;
   background: transparent;
   color: var(--text-faint);
-  font-family: 'Mali', system-ui, sans-serif;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
   transition: color 0.18s ease;
 }
@@ -177,6 +188,7 @@ const activeIndex = computed(() =>
 
 .tab-btn--active {
   color: var(--accent);
+  /* Bereichsfarbe kommt per Inline-Style aus areaColor */
 }
 
 .tab-label {

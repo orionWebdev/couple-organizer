@@ -49,6 +49,14 @@
       ]
     },
     {
+      "collectionGroup": "mealPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "coupleId", "order": "ASCENDING" },
+        { "fieldPath": "dateKey", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "financeEvents",
       "queryScope": "COLLECTION",
       "fields": [

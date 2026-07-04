@@ -9,6 +9,7 @@ import BottomSheet from '@/components/ui/BottomSheet.vue'
 import ShoppingListCard from '@/components/shopping/ShoppingListCard.vue'
 import ShoppingListDetail from '@/components/shopping/ShoppingListDetail.vue'
 import ShoppingModeView from '@/components/shopping/ShoppingModeView.vue'
+import EssensplanView from '@/components/mealplan/EssensplanView.vue'
 
 const { user } = useAuth()
 const { couple } = useCouple()
@@ -34,7 +35,7 @@ const {
 
 const { addExpense } = useExpenses(coupleId)
 
-type View = 'lists' | 'detail' | 'shopping-mode'
+type View = 'lists' | 'detail' | 'shopping-mode' | 'essensplan'
 const view = ref<View>('lists')
 
 const showNewList = ref(false)
@@ -157,10 +158,19 @@ function listItemsFor(listId: string) {
       @deleteList="handleDeleteList(activeList.id)"
     />
 
+    <!-- Essensplan -->
+    <EssensplanView
+      v-else-if="view === 'essensplan'"
+      :coupleId="coupleId"
+      :couple="couple"
+      @back="view = 'lists'"
+    />
+
     <!-- List overview -->
     <template v-else>
       <div class="page-header">
         <h1 class="page-title">Einkaufen</h1>
+        <button class="essensplan-btn" @click="view = 'essensplan'">🍽️ Essensplan</button>
       </div>
 
       <div v-if="loading" class="loading-msg">Laden…</div>
@@ -210,6 +220,10 @@ function listItemsFor(listId: string) {
 }
 
 .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: calc(var(--safe-top) + 20px) var(--screen-pad) 20px;
 }
 
@@ -219,6 +233,27 @@ function listItemsFor(listId: string) {
   font-weight: 700;
   color: var(--text);
   margin: 0;
+}
+
+.essensplan-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: 100px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+
+.essensplan-btn:active {
+  background: var(--surface-deep);
 }
 
 .loading-msg {

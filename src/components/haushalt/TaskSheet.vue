@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { Chore, ChoreAssignee, ChoreInterval, ChoreRoom, ChoreType, Couple } from '@/types'
+import type { Chore, ChoreAssignee, ChoreInterval, ChorePoints, ChoreRoom, ChoreType, Couple } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { ROOMS, DEFAULT_ROOM, roomOf } from '@/utils/rooms'
+import { POINT_OPTIONS, DEFAULT_POINTS, pointsForChore } from '@/utils/points'
 
 const props = defineProps<{
   isOpen: boolean
@@ -19,6 +20,7 @@ const emit = defineEmits<{
     interval: ChoreInterval | null
     dueDate: Date | null
     assignee: ChoreAssignee
+    points: ChorePoints
   }]
 }>()
 
@@ -28,6 +30,7 @@ const type = ref<ChoreType>('recurring')
 const interval = ref<ChoreInterval>('wöchentlich')
 const due = ref<'none' | 'today' | 'soon'>('none')
 const assignee = ref<ChoreAssignee>(null)
+const points = ref<ChorePoints>(DEFAULT_POINTS)
 
 function resetForm(chore: Chore | null) {
   if (!chore) {
@@ -37,6 +40,7 @@ function resetForm(chore: Chore | null) {
     interval.value = 'wöchentlich'
     due.value = 'none'
     assignee.value = null
+    points.value = DEFAULT_POINTS
     return
   }
   name.value = chore.name
@@ -45,6 +49,7 @@ function resetForm(chore: Chore | null) {
   interval.value = chore.interval ?? 'wöchentlich'
   due.value = dueFromChore(chore)
   assignee.value = chore.assignee
+  points.value = pointsForChore(chore)
 }
 
 function dueFromChore(chore: Chore): 'none' | 'today' | 'soon' {
@@ -84,7 +89,8 @@ function handleSubmit() {
     type: type.value,
     interval: type.value === 'recurring' ? interval.value : null,
     dueDate: dueToDate(),
-    assignee: assignee.value
+    assignee: assignee.value,
+    points: points.value
   })
 }
 </script>
@@ -139,6 +145,23 @@ function handleSubmit() {
         <button class="pill" :class="{ 'pill--active': due === 'none' }" @click="due = 'none'">Kein fester Tag</button>
         <button class="pill" :class="{ 'pill--active': due === 'today' }" @click="due = 'today'">Heute</button>
         <button class="pill" :class="{ 'pill--active': due === 'soon' }" @click="due = 'soon'">Bald</button>
+      </div>
+    </div>
+
+    <div class="field-block">
+      <div class="field-label">Punkte · Aufwand</div>
+      <div class="pill-row">
+        <button
+          v-for="p in POINT_OPTIONS"
+          :key="p.value"
+          type="button"
+          class="pill pill--points"
+          :class="{ 'pill--active': points === p.value }"
+          @click="points = p.value"
+        >
+          <span class="points-num">{{ p.value }}</span>
+          <span class="points-lbl">{{ p.label }}</span>
+        </button>
       </div>
     </div>
 
@@ -224,6 +247,28 @@ function handleSubmit() {
 .pill--active {
   background: var(--accent);
   color: var(--on-accent);
+}
+
+.pill--points {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 0;
+  line-height: 1.1;
+}
+
+.points-num {
+  font-family: var(--font-headline);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.points-lbl {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  opacity: 0.75;
 }
 
 .room-grid {

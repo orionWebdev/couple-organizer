@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import type { Chore, ChoreHistoryEntry, Couple } from '@/types'
-import { dueBucket, isDoneToday, personVisual } from '@/utils/chores'
+import { personVisual } from '@/utils/chores'
+import { pointsForHistory } from '@/utils/points'
 
 const props = defineProps<{
   chores: readonly Chore[]
@@ -15,31 +16,6 @@ function toMillis(timestamp: unknown): number {
   }
   return 0
 }
-
-const people = computed(() => (props.couple?.memberIds ?? []).map((uid) => {
-  const visual = personVisual(uid, props.couple)
-  const relevant = props.chores.filter((c) => {
-    if (!(c.assignee === uid || c.assignee === 'both')) return false
-    if (c.type === 'once' && c.done) return false
-    const bucket = dueBucket(c)
-    return bucket === 'today' || bucket === 'none'
-  })
-  const done = relevant.filter(isDoneToday)
-  const open = relevant.filter((c) => !isDoneToday(c))
-  const total = relevant.length
-  return {
-    uid,
-    name: props.couple?.memberNames[uid] ?? 'Partner',
-    init: visual.init,
-    color: visual.color,
-    doneCount: done.length,
-    totalCount: total,
-    pct: total === 0 ? 0 : Math.round(done.length / total * 100),
-    openPreview: open.slice(0, 3),
-    moreCount: Math.max(0, open.length - 3),
-    allDone: total > 0 && open.length === 0
-  }
-}))
 
 const currentMonth = new Date().getMonth()
 const currentYear = new Date().getFullYear()
@@ -56,6 +32,67 @@ function countFor(entries: readonly ChoreHistoryEntry[], uid: string | null) {
   if (!uid) return 0
   return entries.filter((h) => h.completedBy === uid || h.completedBy === 'both').length
 }
+
+function pointsFor(entries: readonly ChoreHistoryEntry[], uid: string | null) {
+  if (!uid) return 0
+  return entries
+    .filter((h) => h.completedBy === uid || h.completedBy === 'both')
+    .reduce((sum, h) => sum + pointsForHistory(h), 0)
+}
+
+// ── Punkte-Leaderboard (gesamter Verlauf) ────────────────────
+const leaderboard = computed(() => {
+  const ids = props.couple?.memberIds ?? []
+  const rows = ids.map((uid) => {
+    const visual = personVisual(uid, props.couple)
+    return {
+      uid,
+      name: props.couple?.memberNames[uid] ?? 'Partner',
+      init: visual.init,
+      color: visual.color,
+      points: pointsFor(props.history, uid),
+      tasks: countFor(props.history, uid),
+    }
+  })
+  const max = Math.max(1, ...rows.map((r) => r.points))
+  const leaderPoints = Math.max(...rows.map((r) => r.points), 0)
+  return rows
+    .map((r) => ({
+      ...r,
+      pct: Math.round((r.points / max) * 100),
+      isLeader: leaderPoints > 0 && r.points === leaderPoints,
+    }))
+    .sort((a, b) => b.points - a.points)
+})
+
+// Bei Gleichstand keinen alleinigen Anführer glühen lassen.
+const hasSoleLeader = computed(() =>
+  leaderboard.value.filter((r) => r.isLeader).length === 1
+)
+
+// ── Lade-Animation: Balken wachsen + Punkte zählen hoch ───────
+const anim = ref(0)
+let raf = 0
+
+function runAnim() {
+  const start = performance.now()
+  const duration = 900
+  const tick = (now: number) => {
+    const t = Math.min(1, (now - start) / duration)
+    // easeOutCubic
+    anim.value = 1 - Math.pow(1 - t, 3)
+    if (t < 1) raf = requestAnimationFrame(tick)
+  }
+  raf = requestAnimationFrame(tick)
+}
+
+onMounted(() => {
+  requestAnimationFrame(runAnim)
+})
+
+onBeforeUnmount(() => {
+  if (raf) cancelAnimationFrame(raf)
+})
 
 const statsChrisTotal = computed(() => countFor(monthHistory.value, personA.value))
 const statsSarahTotal = computed(() => countFor(monthHistory.value, personB.value))
@@ -90,44 +127,58 @@ const statRows = computed(() => {
 
 <template>
   <div class="uebersicht">
-    <div v-for="p in people" :key="p.uid" class="person-card">
-      <div class="person-head">
-        <span class="person-avatar" :style="{ background: p.color }">{{ p.init }}</span>
-        <div class="person-info">
-          <div class="person-name">{{ p.name }}</div>
-          <div class="person-sub">{{ p.doneCount }} von {{ p.totalCount }} heute erledigt</div>
-        </div>
+    <!-- Punktestand-Leaderboard -->
+    <div class="leaderboard-card">
+      <div class="lead-head">
+        <span class="section-label">Punktestand</span>
+        <span class="lead-total mono">{{ statsTotal }} Aufgaben diesen Monat</span>
       </div>
-      <div class="person-bar">
-        <div class="person-bar-fill" :style="{ background: p.color, width: p.pct + '%' }" />
-      </div>
-      <div v-if="p.openPreview.length > 0">
-        <div v-for="o in p.openPreview" :key="o.id" class="preview-row">
-          <span class="preview-dot" />
-          {{ o.name }}
-        </div>
-        <div v-if="p.moreCount > 0" class="preview-more">+{{ p.moreCount }} weitere</div>
-      </div>
-      <div v-else-if="p.allDone" class="all-done">Alles für heute erledigt ✓</div>
-    </div>
 
-    <div class="stats-card">
-      <div class="section-label">Diesen Monat gemeinsam</div>
-      <div class="stats-total-row">
-        <span class="stats-total mono">{{ statsTotal }}</span>
-        <span class="stats-total-label">Aufgaben erledigt</span>
+      <div class="lead-rows">
+        <div
+          v-for="(row, i) in leaderboard"
+          :key="row.uid"
+          class="lead-row"
+        >
+          <span class="lead-avatar" :style="{ background: row.color }">{{ row.init }}</span>
+          <div class="lead-body">
+            <div class="lead-name-line">
+              <span class="lead-name">
+                {{ row.name }}
+                <span v-if="i === 0 && row.isLeader && hasSoleLeader" class="lead-crown" aria-label="Führung">👑</span>
+              </span>
+              <span class="lead-points mono">{{ Math.round(row.points * anim) }} P</span>
+            </div>
+            <div class="lead-bar">
+              <div
+                class="lead-bar-fill"
+                :class="{ 'lead-bar-fill--leader': row.isLeader && hasSoleLeader }"
+                :style="{ width: (row.pct * anim) + '%', background: row.color }"
+              />
+            </div>
+            <div class="lead-sub">{{ row.tasks }} erledigt</div>
+          </div>
+        </div>
       </div>
-      <div class="stats-bar">
-        <div class="stats-bar-chris" :style="{ width: statsChrisW + '%' }" />
-        <div class="stats-bar-sarah" :style="{ width: statsSarahW + '%' }" />
-      </div>
-      <div class="stats-legend">
-        <span class="legend-item"><i class="legend-dot legend-dot--chris" />{{ couple?.memberNames[personA ?? ''] ?? 'Person A' }} · {{ statsChrisTotal }}</span>
-        <span class="legend-item">{{ couple?.memberNames[personB ?? ''] ?? 'Person B' }} · {{ statsSarahTotal }}<i class="legend-dot legend-dot--sarah" /></span>
+
+      <div v-if="leaderboard.every((r) => r.points === 0)" class="lead-empty">
+        Noch keine Punkte gesammelt — erledigt die erste Aufgabe! ✨
       </div>
     </div>
 
     <template v-if="statRows.length > 0">
+      <div class="stats-card">
+        <div class="section-label">Diesen Monat gemeinsam</div>
+        <div class="stats-bar">
+          <div class="stats-bar-chris" :style="{ width: statsChrisW + '%' }" />
+          <div class="stats-bar-sarah" :style="{ width: statsSarahW + '%' }" />
+        </div>
+        <div class="stats-legend">
+          <span class="legend-item"><i class="legend-dot legend-dot--chris" />{{ couple?.memberNames[personA ?? ''] ?? 'Person A' }} · {{ statsChrisTotal }}</span>
+          <span class="legend-item">{{ couple?.memberNames[personB ?? ''] ?? 'Person B' }} · {{ statsSarahTotal }}<i class="legend-dot legend-dot--sarah" /></span>
+        </div>
+      </div>
+
       <div class="section-label rows-label">Nach Aufgabe</div>
       <div class="stat-rows">
         <div v-for="row in statRows" :key="row.name" class="stat-row">
@@ -151,28 +202,47 @@ const statRows = computed(() => {
   padding: 0 var(--screen-pad);
 }
 
-.person-card {
+/* ── Leaderboard ─────────────────────────────────────────── */
+.leaderboard-card {
   border: 1px solid var(--border-softer);
-  border-radius: 18px;
-  padding: 16px;
+  border-radius: var(--radius-card-lg);
+  padding: 18px 16px;
   background: var(--surface);
   box-shadow: var(--shadow-card);
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
-.person-head {
+.lead-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.lead-total {
+  font-size: 12px;
+  color: var(--text-meta);
+}
+
+.lead-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lead-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 12px;
 }
 
-.person-avatar {
-  width: 34px;
-  height: 34px;
+.lead-avatar {
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   color: #fff;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -182,66 +252,90 @@ const statRows = computed(() => {
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 
-.person-info {
+.lead-body {
   flex: 1;
   min-width: 0;
 }
 
-.person-name {
-  font-size: 15px;
+.lead-name-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.lead-name {
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
-}
-
-.person-sub {
-  font-size: 11.5px;
-  color: var(--text-meta);
-  margin-top: 1px;
-}
-
-.person-bar {
-  height: 10px;
-  border-radius: 6px;
-  background: var(--surface-deep);
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.person-bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 0.3s ease;
-}
-
-.preview-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 0;
-  font-size: 13px;
-  color: var(--text-secondary);
+  gap: 5px;
 }
 
-.preview-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--text-faint);
+.lead-crown {
+  font-size: 13px;
+}
+
+.lead-points {
+  font-size: 15px;
+  color: var(--text);
   flex-shrink: 0;
 }
 
-.preview-more {
-  font-size: 11.5px;
-  color: var(--text-faint);
-  margin-top: 2px;
+.lead-bar {
+  height: 12px;
+  border-radius: 7px;
+  background: var(--surface-deep);
+  overflow: hidden;
 }
 
-.all-done {
+.lead-bar-fill {
+  height: 100%;
+  border-radius: 7px;
+  /* Balkenbreite wird per JS animiert; leichte CSS-Transition für Datenupdates */
+  transition: width 0.35s var(--ease-standard);
+}
+
+/* Sanftes Glühen für die aktuelle Führung */
+.lead-bar-fill--leader {
+  animation: leader-glow 2s ease-in-out infinite;
+}
+
+@keyframes leader-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+    filter: saturate(1);
+  }
+  50% {
+    box-shadow: 0 0 10px 2px color-mix(in srgb, var(--accent) 55%, transparent);
+    filter: saturate(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lead-bar-fill--leader {
+    animation: none;
+    box-shadow: 0 0 8px 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+}
+
+.lead-sub {
+  font-size: 11px;
+  color: var(--text-meta);
+  margin-top: 4px;
+}
+
+.lead-empty {
+  margin-top: 14px;
   font-size: 12.5px;
-  color: var(--accent);
-  padding: 4px 0;
+  color: var(--text-meta);
+  text-align: center;
+  line-height: 1.5;
 }
 
+/* ── Monatsverteilung ────────────────────────────────────── */
 .stats-card {
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: var(--radius-card-lg);
@@ -250,26 +344,8 @@ const statRows = computed(() => {
   margin-bottom: 20px;
 }
 
-.stats-total-row {
-  margin-top: 8px;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.stats-total {
-  font-size: 34px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.stats-total-label {
-  font-size: 13px;
-  color: var(--text-meta);
-}
-
 .stats-bar {
-  margin-top: 18px;
+  margin-top: 14px;
   height: 12px;
   border-radius: 7px;
   overflow: hidden;
@@ -279,10 +355,12 @@ const statRows = computed(() => {
 
 .stats-bar-chris {
   background: var(--chris);
+  transition: width 0.4s var(--ease-standard);
 }
 
 .stats-bar-sarah {
   background: var(--sarah);
+  transition: width 0.4s var(--ease-standard);
 }
 
 .stats-legend {
@@ -317,9 +395,6 @@ const statRows = computed(() => {
 .stat-rows {
   display: flex;
   flex-direction: column;
-}
-
-.stat-rows {
   gap: 9px;
 }
 

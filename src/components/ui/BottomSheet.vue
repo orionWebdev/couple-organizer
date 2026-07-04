@@ -1,21 +1,82 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 defineProps<{
   isOpen: boolean
   title?: string
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
 }>()
+
+// ── Downward-swipe-to-close ──────────────────────────────────
+// Ein nach unten gezogenes Sheet folgt dem Finger und schließt beim Loslassen,
+// sobald ein Schwellwert überschritten ist. Greift nur, wenn der Sheet-Inhalt
+// bereits oben steht (scrollTop <= 0), damit normales Scrollen unberührt bleibt.
+const sheetEl = ref<HTMLElement | null>(null)
+const dragY = ref(0)
+const dragging = ref(false)
+let startY = 0
+let tracking = false
+const CLOSE_THRESHOLD = 110
+
+function onTouchStart(e: TouchEvent) {
+  if ((sheetEl.value?.scrollTop ?? 0) > 0) { tracking = false; return }
+  startY = e.touches[0].clientY
+  tracking = true
+  dragging.value = false
+}
+
+function onTouchMove(e: TouchEvent) {
+  if (!tracking) return
+  const dy = e.touches[0].clientY - startY
+  // Nur nach unten ziehen; solange oben gescrollt.
+  if (dy > 0 && (sheetEl.value?.scrollTop ?? 0) <= 0) {
+    dragging.value = true
+    // leichter Widerstand für ein natürlicheres Gefühl
+    dragY.value = dy < 0 ? 0 : dy * 0.85
+    e.preventDefault()
+  } else if (dy <= 0 && dragging.value) {
+    dragY.value = 0
+  }
+}
+
+function onTouchEnd() {
+  if (!tracking) return
+  tracking = false
+  if (dragY.value > CLOSE_THRESHOLD) {
+    emit('close')
+  }
+  dragging.value = false
+  dragY.value = 0
+}
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="sheet-backdrop">
-      <div v-if="isOpen" class="backdrop" @click="$emit('close')" />
+      <div v-if="isOpen" class="backdrop" @click="emit('close')" />
     </Transition>
     <Transition name="sheet-grow">
-      <div v-if="isOpen" class="sheet" role="dialog" @click.stop>
+      <div
+        v-if="isOpen"
+        ref="sheetEl"
+        class="sheet"
+        :class="{ 'sheet--dragging': dragging }"
+        :style="dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined"
+        role="dialog"
+        @click.stop
+        @touchstart.passive="onTouchStart"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
+        @touchcancel="onTouchEnd"
+      >
+        <button class="sheet-close" type="button" aria-label="Schließen" @click="emit('close')">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+          </svg>
+        </button>
         <div class="sheet-handle" />
         <div v-if="title" class="sheet-title">{{ title }}</div>
         <slot />
@@ -50,6 +111,35 @@ defineEmits<{
   transform-origin: bottom right;
 }
 
+/* Während des Ziehens folgt das Sheet direkt dem Finger (keine Transition). */
+.sheet--dragging {
+  transition: none !important;
+}
+
+.sheet-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-deep);
+  color: var(--text-secondary);
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+
+.sheet-close:active {
+  transform: scale(0.9);
+  background: var(--border-softer);
+  color: var(--text);
+}
+
 .sheet-handle {
   width: 36px;
   height: 4px;
@@ -64,6 +154,7 @@ defineEmits<{
   font-weight: 700;
   color: var(--text);
   margin-bottom: 20px;
+  padding-right: 40px;
 }
 
 /* Grow from FAB: playful overshoot on open, crisp (no bounce) on close */

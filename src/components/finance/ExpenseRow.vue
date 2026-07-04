@@ -9,7 +9,7 @@ const props = defineProps<{
   currentUserId: string
 }>()
 
-const emit = defineEmits<{ delete: [id: string] }>()
+const emit = defineEmits<{ delete: [id: string]; edit: [expense: Expense] }>()
 
 const expanded = ref(false)
 
@@ -70,6 +70,9 @@ function toggleExpand() {
 
     <Transition name="expand">
       <div v-if="expanded" class="row-actions">
+        <button class="edit-btn" @click.stop="emit('edit', expense)">
+          Bearbeiten
+        </button>
         <button class="delete-btn" @click.stop="emit('delete', expense.id)">
           Löschen
         </button>
@@ -144,6 +147,19 @@ function toggleExpand() {
   padding-bottom: 10px;
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
+}
+
+.edit-btn {
+  padding: 7px 16px;
+  background: var(--accent-tint);
+  border: 1.5px solid var(--accent);
+  border-radius: 10px;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .delete-btn {

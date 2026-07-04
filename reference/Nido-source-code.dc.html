@@ -101,35 +101,55 @@
   </div>
 </div>
 
-<!-- ============ FRAME 5 · HAUSHALT / PUTZPLAN ============ -->
+<!-- ============ FRAME 5 · HAUSHALT / ZUWEISUNGEN ============ -->
 <div style="position:absolute;left:80px;top:1040px;width:340px">
-  <div data-drags-parent="1" style="position:absolute;top:-26px;left:6px;font:700 12px Nunito,sans-serif;color:rgba(70,58,46,.6)">Detail — Putzplan (abhakbar)</div>
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:6px;font:700 12px Nunito,sans-serif;color:rgba(70,58,46,.6)">Detail — Haushalt · Tab „Zuweisungen" (ersetzt „Heute")</div>
   <div style="width:340px;height:724px;background:#fdfaf5;border-radius:38px;box-shadow:0 14px 40px rgba(60,45,30,.16);border:1px solid #efe7da;overflow:hidden;position:relative;font-family:Nunito,system-ui,sans-serif;color:#2c2823">
     <div style="height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px">
       <div style="font:700 13px Nunito,sans-serif">9:41</div>
       <div style="display:flex;align-items:center;gap:6px"><div style="display:flex;align-items:flex-end;gap:2px;height:11px"><div style="width:3px;height:5px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:7px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:9px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:11px;background:#cdc6ba;border-radius:1px"></div></div><div style="width:21px;height:11px;border:1.5px solid #2c2823;border-radius:3px;padding:1.5px"><div style="width:70%;height:100%;background:#2c2823;border-radius:1px"></div></div></div>
     </div>
-    <div style="position:absolute;left:0;right:0;top:40px;bottom:0;overflow-y:auto;padding-bottom:84px">
-      <div style="padding:8px 18px 0;display:flex;align-items:center;gap:12px">
-        <div style="width:36px;height:36px;border-radius:12px;background:#fff;box-shadow:0 3px 10px rgba(60,45,30,.08);display:flex;align-items:center;justify-content:center;font:400 20px Nunito,sans-serif;color:#2c2823">←</div>
-        <div><div style="font:700 19px Fredoka,sans-serif">Putzplan</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b">Diese Woche · gemeinsam</div></div>
+    <div style="padding:8px 18px 0;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:12px;background:#fff;box-shadow:0 3px 10px rgba(60,45,30,.08);display:flex;align-items:center;justify-content:center;font:400 20px Nunito,sans-serif;color:#2c2823">←</div>
+      <div><div style="font:700 19px Fredoka,sans-serif">Haushalt</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b">Gemeinsam · Lena &amp; Jonas</div></div>
+    </div>
+    <div style="padding:14px 18px 0;display:flex;gap:6px">
+      <div style="flex:1;text-align:center;padding:9px 4px;border-radius:12px;background:oklch(0.70 0.15 38);color:#fff;font:700 12px Nunito,sans-serif">Zuweisungen</div>
+      <div style="flex:1;text-align:center;padding:9px 4px;border-radius:12px;color:#9a9286;font:700 12px Nunito,sans-serif">Alle</div>
+      <div style="flex:1;text-align:center;padding:9px 4px;border-radius:12px;color:#9a9286;font:700 12px Nunito,sans-serif">Übersicht</div>
+      <div style="flex:1;text-align:center;padding:9px 4px;border-radius:12px;color:#9a9286;font:700 12px Nunito,sans-serif">Verlauf</div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:130px;bottom:0;overflow-y:auto;padding-bottom:24px">
+      <div style="padding:14px 18px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:oklch(0.955 0.03 40);border-radius:16px;padding:11px 12px;display:flex;align-items:center;gap:9px;border:1px solid rgba(255,255,255,.6)">
+          <div style="width:28px;height:28px;border-radius:50%;background:oklch(0.70 0.15 38);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px Nunito,sans-serif;flex-shrink:0">L</div>
+          <div><div style="font:700 13px Nunito,sans-serif">Lena</div><div style="font:600 10.5px Nunito,sans-serif;color:#9a8a82">3 Aufgaben</div></div>
+        </div>
+        <div style="background:oklch(0.95 0.03 195);border-radius:16px;padding:11px 12px;display:flex;align-items:center;gap:9px;border:1px solid rgba(255,255,255,.6)">
+          <div style="width:28px;height:28px;border-radius:50%;background:oklch(0.69 0.10 195);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px Nunito,sans-serif;flex-shrink:0">J</div>
+          <div><div style="font:700 13px Nunito,sans-serif">Jonas</div><div style="font:600 10.5px Nunito,sans-serif;color:#9a8a82">3 Aufgaben</div></div>
+        </div>
       </div>
-      <div style="margin:16px 18px 0;background:oklch(0.955 0.03 40);border-radius:20px;padding:15px 16px;border:1px solid rgba(255,255,255,.55)">
-        <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:700 13px Nunito,sans-serif">Fortschritt</div><div style="font:700 12px Nunito,sans-serif;color:oklch(0.70 0.15 38)"><span>{{ choreDone }}</span> von 6</div></div>
-        <div style="height:10px;border-radius:6px;background:#fff;margin-top:11px;overflow:hidden"><div style="height:100%;background:oklch(0.70 0.15 38);border-radius:6px;transition:width .3s;width:{{ choreProg }}"></div></div>
-        <div style="font:600 11px Nunito,sans-serif;color:#9a8a82;margin-top:9px">Aufgaben rotieren jede Woche automatisch zwischen euch.</div>
-      </div>
-      <div style="padding:16px 18px 0;display:flex;flex-direction:column;gap:9px">
-        <sc-for list="{{ chores }}" as="c" hint-placeholder-count="6">
-          <div style="background:#fff;border-radius:16px;padding:11px 13px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;display:flex;align-items:center;gap:12px">
-            <div onClick="{{ c.onToggle }}" style="{{ c.box }}">{{ c.tick }}</div>
-            <div style="flex:1"><div style="{{ c.txt }}">{{ c.name }}</div><div style="font:600 11px Nunito,sans-serif;color:#9a9286;margin-top:1px">{{ c.sub }}</div></div>
-            <div style="{{ c.avatar }}">{{ c.who }}</div>
-          </div>
-        </sc-for>
+      <div style="padding:14px 18px 0">
+        <div style="display:grid;grid-template-columns:1.6fr 1fr;padding:0 4px 7px;font:700 10.5px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px">
+          <div>Aufgabe</div><div>Zuletzt</div>
+        </div>
+        <div style="background:#fff;border-radius:18px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;overflow:hidden">
+          <sc-for list="{{ assignments }}" as="a" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:1.6fr 1fr;align-items:center;padding:11px 12px;border-top:{{ a.divider }}">
+              <div style="display:flex;align-items:center;gap:9px;min-width:0">
+                <div style="{{ a.avatar }}">{{ a.who }}</div>
+                <div style="min-width:0"><div style="font:700 12.5px Nunito,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.name }}</div><div style="font:600 10px Nunito,sans-serif;color:#9a9286;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.freq }}</div></div>
+              </div>
+              <div>
+                <div style="font:700 11.5px Nunito,sans-serif;color:#2c2823">{{ a.lastWhen }}</div>
+                <div style="{{ a.subFlag }}">{{ a.lastFlag }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
       </div>
     </div>
-    <div style="position:absolute;left:18px;right:18px;bottom:18px;height:50px;border-radius:16px;background:oklch(0.70 0.15 38);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font:700 14px Nunito,sans-serif;box-shadow:0 10px 22px oklch(0.70 0.15 38 / .35)"><span style="font-size:18px;font-weight:300">+</span>Aufgabe hinzufügen</div>
   </div>
 </div>
 
@@ -223,6 +243,47 @@
   </div>
 </div>
 
+<!-- ============ FRAME 8 · WOCHEN ESSENSPLAN ============ -->
+<div style="position:absolute;left:940px;top:1040px;width:340px">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:6px;font:700 12px Nunito,sans-serif;color:rgba(70,58,46,.6)">Detail — Wochen Essensplan (neu)</div>
+  <div style="width:340px;height:724px;background:#fdfaf5;border-radius:38px;box-shadow:0 14px 40px rgba(60,45,30,.16);border:1px solid #efe7da;overflow:hidden;position:relative;font-family:Nunito,system-ui,sans-serif;color:#2c2823">
+    <div style="height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px">
+      <div style="font:700 13px Nunito,sans-serif">9:41</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="display:flex;align-items:flex-end;gap:2px;height:11px"><div style="width:3px;height:5px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:7px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:9px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:11px;background:#cdc6ba;border-radius:1px"></div></div><div style="width:21px;height:11px;border:1.5px solid #2c2823;border-radius:3px;padding:1.5px"><div style="width:70%;height:100%;background:#2c2823;border-radius:1px"></div></div></div>
+    </div>
+    <div style="padding:8px 18px 0;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:12px;background:#fff;box-shadow:0 3px 10px rgba(60,45,30,.08);display:flex;align-items:center;justify-content:center;font:400 20px Nunito,sans-serif;color:#2c2823">←</div>
+      <div><div style="font:700 19px Fredoka,sans-serif">Essensplan</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b">Diese Woche · Gemeinsam</div></div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:88px;bottom:0;overflow-y:auto;padding-bottom:84px">
+      <div style="margin:8px 18px 0;background:oklch(0.955 0.05 80);border-radius:18px;padding:13px 15px;display:flex;align-items:center;gap:12px;border:1px solid rgba(255,255,255,.6)">
+        <div style="width:36px;height:36px;border-radius:12px;background:oklch(0.78 0.13 80);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;box-shadow:0 5px 12px oklch(0.78 0.13 80 / .3)">✨</div>
+        <div style="flex:1"><div style="font:700 13.5px Nunito,sans-serif">Rezept vorschlagen lassen</div><div style="font:600 11px Nunito,sans-serif;color:#9a8a72">Idee für einen Tag? Frag einfach</div></div>
+        <div style="font-size:16px;color:#c9a45c">›</div>
+      </div>
+
+      <div style="padding:16px 18px 0;display:flex;flex-direction:column;gap:9px">
+        <sc-for list="{{ mealDays }}" as="d" hint-placeholder-count="7">
+          <sc-if value="{{ d.hasRecipe }}" hint-placeholder-val="{{ true }}">
+            <div style="background:#fff;border-radius:16px;padding:12px 13px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;display:flex;align-items:center;gap:12px">
+              <div style="width:38px;text-align:left"><div style="font:700 12.5px Nunito,sans-serif">{{ d.day }}</div><div style="font:600 10px Nunito,sans-serif;color:#9a9286">{{ d.date }}</div></div>
+              <div style="width:42px;height:42px;border-radius:13px;background:oklch(0.955 0.05 80);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">{{ d.icon }}</div>
+              <div style="flex:1;min-width:0"><div style="font:700 13.5px Nunito,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.recipe }}</div><div style="font:600 11px Nunito,sans-serif;color:#9a9286;margin-top:1px">{{ d.meta }}</div></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ d.hasRecipeNot }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1.5px dashed #e3d9c8;border-radius:16px;padding:12px 13px;display:flex;align-items:center;gap:12px">
+              <div style="width:38px;text-align:left"><div style="font:700 12.5px Nunito,sans-serif;color:#9a9286">{{ d.day }}</div><div style="font:600 10px Nunito,sans-serif;color:#b8b0a4">{{ d.date }}</div></div>
+              <div style="flex:1;text-align:center;font:700 12.5px Nunito,sans-serif;color:oklch(0.60 0.13 80)">+ Rezept hinzufügen</div>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+    </div>
+    <div style="position:absolute;left:18px;right:18px;bottom:18px;height:50px;border-radius:16px;background:oklch(0.78 0.13 80);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font:700 14px Nunito,sans-serif;box-shadow:0 10px 22px oklch(0.78 0.13 80 / .35)">🛒 Einkaufsliste aus Plan erstellen</div>
+  </div>
+</div>
+
 <!-- ============ ANNOTATIONS ============ -->
 <sc-if value="{{ notesOn }}" hint-placeholder-val="{{ true }}">
   <div>
@@ -268,11 +329,36 @@ class Component extends DCLogic {
     };
   }
 
+  assignment(icon, name, freq, who, lastWho, lastWhen, idx) {
+    const bg = who === 'J' ? 'oklch(0.69 0.10 195)' : 'oklch(0.70 0.15 38)';
+    const isSub = lastWho !== (who === 'L' ? 'Lena' : 'Jonas');
+    return {
+      icon, name, freq, who, lastWho, lastWhen,
+      avatar: { width: '24px', height: '24px', borderRadius: '50%', background: bg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: '700', fontSize: '10.5px', flexShrink: 0 },
+      divider: idx === 0 ? 'none' : '1px solid #f3ede1',
+      subFlag: { font: '600 10px Nunito, sans-serif', color: isSub ? 'oklch(0.70 0.15 38)' : '#c4bcae', marginTop: '1px' },
+      lastFlag: isSub ? 'von ' + lastWho + ' · Vertretung' : 'von ' + lastWho
+    };
+  }
+
+  mealDay(day, date, hasRecipe, icon, recipe, meta) {
+    return { day, date, hasRecipe, hasRecipeNot: !hasRecipe, icon, recipe, meta };
+  }
+
   renderVals() {
     const coral = 'oklch(0.70 0.15 38)';
     const green = 'oklch(0.70 0.13 150)';
     const blue = 'oklch(0.66 0.12 255)';
     const amber = 'oklch(0.78 0.13 80)';
+
+    const assignments = [
+      this.assignment('🛁', 'Bad putzen', 'Wöchentlich · Lena', 'L', 'Lena', 'vor 4 Tagen', 0),
+      this.assignment('🧹', 'Staubsaugen', 'Wöchentlich · Jonas', 'J', 'Jonas', 'vor 2 Tagen', 1),
+      this.assignment('🗑️', 'Müll rausbringen', 'Mittwochs · Lena', 'L', 'Jonas', 'letzte Woche', 2),
+      this.assignment('🍽️', 'Küche wischen', 'Täglich · Jonas', 'J', 'Jonas', 'heute', 3),
+      this.assignment('🛏️', 'Bettwäsche wechseln', 'Alle 2 Wochen · Lena', 'L', 'Lena', 'vor 9 Tagen', 4),
+      this.assignment('🪴', 'Pflanzen gießen', 'Wöchentlich · Jonas', 'J', 'Lena', 'vor 6 Tagen', 5)
+    ];
 
     const chores = [
       this.item('ch1', coral, 'Bad putzen', 'Lena · Montag', 'L'),
@@ -298,7 +384,18 @@ class Component extends DCLogic {
     ];
     const shopDone = [...shopObst, ...shopKuehl, ...shopVorrat].filter(s => s.tick).length;
 
+    const mealDays = [
+      this.mealDay('Mo', '13. Jul', true, '🍝', 'Pasta al limone', '25 Min · vegetarisch'),
+      this.mealDay('Di', '14. Jul', true, '🥗', 'Bowl mit Halloumi', '20 Min · vegetarisch'),
+      this.mealDay('Mi', '15. Jul', false),
+      this.mealDay('Do', '16. Jul', true, '🍛', 'Curry mit Kichererbsen', '35 Min · vegan'),
+      this.mealDay('Fr', '17. Jul', false),
+      this.mealDay('Sa', '18. Jul', true, '🍕', 'Ofenpizza selbstgemacht', '40 Min · gemeinsam kochen'),
+      this.mealDay('So', '19. Jul', false)
+    ];
+
     return {
+      assignments, mealDays,
       chores, choreDone, choreProg: Math.round(choreDone / 6 * 100) + '%',
       shopObst, shopKuehl, shopVorrat, shopDone,
       notesOn: this.props.showNotes !== false

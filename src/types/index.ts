@@ -91,6 +91,37 @@ export interface ShoppingList {
   updatedAt: Timestamp
 }
 
+export interface RecipeIngredient {
+  name: string
+  amount?: number
+  unit?: string
+}
+
+export interface Recipe {
+  id: string
+  coupleId: string
+  title: string
+  description: string
+  minutes: number | null
+  servings: number | null
+  tags: string[]
+  ingredients: RecipeIngredient[]
+  source: 'manual' | 'ai'
+  createdBy: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export interface MealPlanEntry {
+  id: string
+  coupleId: string
+  dateKey: string // YYYY-MM-DD, der geplante Kalendertag
+  recipeId: string
+  createdBy: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
 export type ExpenseCategory = 'food' | 'transport' | 'home' | 'leisure' | 'other'
 export type FinanceEventKind = 'event' | 'monthly'
 

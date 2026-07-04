@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { Chore, ChoreAssignee, ChoreInterval, ChorePoints, ChoreRoom, ChoreType, Couple } from '@/types'
+import type { Chore, ChoreAssignee, ChorePoints, ChoreRoom, ChoreType, Couple } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { ROOMS, DEFAULT_ROOM, roomOf } from '@/utils/rooms'
 import { POINT_OPTIONS, DEFAULT_POINTS, pointsForChore } from '@/utils/points'
@@ -17,8 +17,6 @@ const emit = defineEmits<{
     name: string
     room: ChoreRoom
     type: ChoreType
-    interval: ChoreInterval | null
-    dueDate: Date | null
     assignee: ChoreAssignee
     points: ChorePoints
   }]
@@ -27,8 +25,6 @@ const emit = defineEmits<{
 const name = ref('')
 const room = ref<ChoreRoom>(DEFAULT_ROOM)
 const type = ref<ChoreType>('recurring')
-const interval = ref<ChoreInterval>('wöchentlich')
-const due = ref<'none' | 'today' | 'soon'>('none')
 const assignee = ref<ChoreAssignee>(null)
 const points = ref<ChorePoints>(DEFAULT_POINTS)
 
@@ -37,8 +33,6 @@ function resetForm(chore: Chore | null) {
     name.value = ''
     room.value = DEFAULT_ROOM
     type.value = 'recurring'
-    interval.value = 'wöchentlich'
-    due.value = 'none'
     assignee.value = null
     points.value = DEFAULT_POINTS
     return
@@ -46,18 +40,8 @@ function resetForm(chore: Chore | null) {
   name.value = chore.name
   room.value = roomOf(chore)
   type.value = chore.type
-  interval.value = chore.interval ?? 'wöchentlich'
-  due.value = dueFromChore(chore)
   assignee.value = chore.assignee
   points.value = pointsForChore(chore)
-}
-
-function dueFromChore(chore: Chore): 'none' | 'today' | 'soon' {
-  const date = (chore.dueDate as any)?.toDate?.() ?? null
-  if (!date) return 'none'
-  const now = new Date()
-  const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
-  return isToday ? 'today' : 'soon'
 }
 
 watch(() => props.isOpen, (open) => {
@@ -72,23 +56,12 @@ const personBName = computed(() => props.couple?.memberNames[personB.value ?? ''
 const title = computed(() => (props.editingChore ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'))
 const confirmLabel = computed(() => (props.editingChore ? 'Änderungen speichern' : 'Aufgabe anlegen'))
 
-function dueToDate(): Date | null {
-  if (due.value === 'none') return null
-  const now = new Date()
-  if (due.value === 'today') return now
-  const soon = new Date(now)
-  soon.setDate(soon.getDate() + 3)
-  return soon
-}
-
 function handleSubmit() {
   if (!name.value.trim()) return
   emit('submit', {
     name: name.value.trim(),
     room: room.value,
     type: type.value,
-    interval: type.value === 'recurring' ? interval.value : null,
-    dueDate: dueToDate(),
     assignee: assignee.value,
     points: points.value
   })
@@ -128,24 +101,6 @@ function handleSubmit() {
       <button class="toggle-btn" :class="{ 'toggle-btn--active': type === 'once' }" @click="type = 'once'">
         Einmalig
       </button>
-    </div>
-
-    <div v-if="type === 'recurring'" class="field-block">
-      <div class="field-label">Intervall</div>
-      <div class="pill-row">
-        <button class="pill" :class="{ 'pill--active': interval === 'täglich' }" @click="interval = 'täglich'">Täglich</button>
-        <button class="pill" :class="{ 'pill--active': interval === 'wöchentlich' }" @click="interval = 'wöchentlich'">Wöchentlich</button>
-        <button class="pill" :class="{ 'pill--active': interval === 'monatlich' }" @click="interval = 'monatlich'">Monatlich</button>
-      </div>
-    </div>
-
-    <div class="field-block">
-      <div class="field-label">Termin</div>
-      <div class="pill-row">
-        <button class="pill" :class="{ 'pill--active': due === 'none' }" @click="due = 'none'">Kein fester Tag</button>
-        <button class="pill" :class="{ 'pill--active': due === 'today' }" @click="due = 'today'">Heute</button>
-        <button class="pill" :class="{ 'pill--active': due === 'soon' }" @click="due = 'soon'">Bald</button>
-      </div>
     </div>
 
     <div class="field-block">

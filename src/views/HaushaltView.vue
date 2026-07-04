@@ -6,7 +6,7 @@ import { useChores } from '@/composables/useChores'
 import { showToast } from '@/composables/useToast'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import TaskSheet from '@/components/haushalt/TaskSheet.vue'
-import HaushaltHeute from '@/components/haushalt/HaushaltHeute.vue'
+import HaushaltZuweisungen from '@/components/haushalt/HaushaltZuweisungen.vue'
 import HaushaltAlle from '@/components/haushalt/HaushaltAlle.vue'
 import HaushaltUebersicht from '@/components/haushalt/HaushaltUebersicht.vue'
 import HaushaltVerlauf from '@/components/haushalt/HaushaltVerlauf.vue'
@@ -46,18 +46,19 @@ const todayCounts = computed(() => {
   return counts
 })
 
-type Tab = 'heute' | 'alle' | 'uebersicht' | 'verlauf'
-// Standard-Landing im Haushalt ist „Verlauf".
-const tab = ref<Tab>('verlauf')
+type Tab = 'zuweisungen' | 'alle' | 'uebersicht' | 'verlauf'
+// Standard-Landing im Haushalt ist „Zuweisungen" — direkter Blick auf die
+// eigenen offenen Aufgaben.
+const tab = ref<Tab>('zuweisungen')
 const tabOptions = [
-  { label: 'Heute', value: 'heute' },
+  { label: 'Zuweisungen', value: 'zuweisungen' },
   { label: 'Alle', value: 'alle' },
   { label: 'Übersicht', value: 'uebersicht' },
   { label: 'Verlauf', value: 'verlauf' },
 ]
 
 // ── Horizontaler Swipe zwischen den Tabs ─────────────────────
-const order: Tab[] = ['heute', 'alle', 'uebersicht', 'verlauf']
+const order: Tab[] = ['zuweisungen', 'alle', 'uebersicht', 'verlauf']
 let swipeStartX = 0
 let swipeStartY = 0
 let swipeIgnore = false
@@ -172,10 +173,11 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
       @touchend.passive="onTouchEnd"
     >
       <Transition :name="'tab-fade'" mode="out-in">
-        <HaushaltHeute
-          v-if="tab === 'heute'"
-          key="heute"
+        <HaushaltZuweisungen
+          v-if="tab === 'zuweisungen'"
+          key="zuweisungen"
           :chores="chores"
+          :history="history"
           :couple="couple"
           :currentUserId="user?.uid ?? ''"
           :todayCounts="todayCounts"

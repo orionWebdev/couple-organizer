@@ -23,6 +23,8 @@ const {
   loading,
   setActiveList,
   createList,
+  renameList,
+  deleteList,
   addItem,
   toggleChecked,
   deleteItem,
@@ -49,6 +51,26 @@ async function handleCreateList() {
 function selectList(id: string) {
   setActiveList(id)
   view.value = 'detail'
+}
+
+const menuOpenId = ref<string | null>(null)
+
+function toggleListMenu(id: string) {
+  menuOpenId.value = menuOpenId.value === id ? null : id
+}
+
+async function handleRenameList(id: string, title: string) {
+  await renameList(id, title)
+  showToast('Liste umbenannt')
+  menuOpenId.value = null
+}
+
+async function handleDeleteList(id: string) {
+  const wasActive = activeListId.value === id
+  await deleteList(id)
+  showToast('Liste gelöscht')
+  menuOpenId.value = null
+  if (wasActive) view.value = 'lists'
 }
 
 function goBack() {
@@ -131,6 +153,8 @@ function listItemsFor(listId: string) {
       @add="handleAddItem"
       @startShopping="startShopping"
       @back="goBack"
+      @renameList="handleRenameList(activeList.id, $event)"
+      @deleteList="handleDeleteList(activeList.id)"
     />
 
     <!-- List overview -->
@@ -147,7 +171,11 @@ function listItemsFor(listId: string) {
             :key="list.id"
             :list="list"
             :items="listItemsFor(list.id)"
+            :menuOpen="menuOpenId === list.id"
             @select="selectList(list.id)"
+            @toggleMenu="toggleListMenu(list.id)"
+            @rename="handleRenameList(list.id, $event)"
+            @delete="handleDeleteList(list.id)"
           />
 
           <!-- New list card -->

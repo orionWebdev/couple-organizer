@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import type { ShoppingList, ShoppingItem } from '@/types'
 import ShoppingItemRow from './ShoppingItem.vue'
 import { useJustAdded } from '@/composables/useJustAdded'
@@ -15,14 +15,42 @@ const emit = defineEmits<{
   add: [name: string]
   startShopping: []
   back: []
+  renameList: [title: string]
+  deleteList: []
 }>()
 
 const newName = ref('')
+const inputRef = ref<HTMLInputElement | null>(null)
 
 function handleAdd() {
   if (!newName.value.trim()) return
   emit('add', newName.value.trim())
   newName.value = ''
+  nextTick(() => inputRef.value?.focus())
+}
+
+const menuOpen = ref(false)
+const renameValue = ref(props.list.title)
+
+watch(() => props.list.title, (title) => {
+  if (!menuOpen.value) renameValue.value = title
+})
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
+  if (menuOpen.value) renameValue.value = props.list.title
+}
+
+function commitRename() {
+  const clean = renameValue.value.trim()
+  if (!clean || clean === props.list.title) return
+  emit('renameList', clean)
+  menuOpen.value = false
+}
+
+function handleDeleteList() {
+  emit('deleteList')
+  menuOpen.value = false
 }
 
 interface CategoryGroup { cat: string; items: ShoppingItem[] }
@@ -55,6 +83,21 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
       <button class="back-btn" @click="emit('back')">‹ Zurück</button>
       <h2 class="detail-title">{{ list.title }}</h2>
       <span class="detail-count mono">{{ uncheckedCount }}</span>
+      <button class="menu-btn" @click="toggleMenu">⋯</button>
+    </div>
+
+    <div v-if="menuOpen" class="manage-menu">
+      <input
+        v-model="renameValue"
+        class="rename-input"
+        type="text"
+        placeholder="Listenname"
+        @keyup.enter="commitRename"
+      />
+      <div class="menu-row">
+        <button class="menu-action" @click="commitRename">Speichern</button>
+        <button class="menu-action menu-action--danger" @click="handleDeleteList">Liste löschen</button>
+      </div>
     </div>
 
     <!-- Items by category -->
@@ -81,6 +124,7 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
     <div class="add-row">
       <button class="add-btn" :disabled="!newName.trim()" @click="handleAdd">+</button>
       <input
+        ref="inputRef"
         v-model="newName"
         class="add-field"
         type="text"
@@ -147,6 +191,65 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
   font-size: 14px;
   color: var(--text-meta);
   flex-shrink: 0;
+}
+
+.menu-btn {
+  flex-shrink: 0;
+  background: var(--surface);
+  border: none;
+  color: var(--text-faint);
+  font-size: 18px;
+  line-height: 1;
+  padding: 8px 12px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+}
+
+.manage-menu {
+  margin: 0 var(--screen-pad) 12px;
+  padding: 12px 13px;
+  border: 1px solid var(--border-softer);
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.rename-input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: var(--surface-deep);
+  border: 1px solid var(--border-softer);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  outline: none;
+}
+
+.menu-row {
+  display: flex;
+  gap: 6px;
+}
+
+.menu-action {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 9px 0;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.menu-action--danger {
+  border-color: var(--danger-border);
+  color: var(--danger);
 }
 
 .empty {

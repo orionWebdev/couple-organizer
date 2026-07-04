@@ -252,6 +252,34 @@ export function useShopping(coupleId: Ref<string | null>) {
     }
   }
 
+  async function renameList(listId: string, title: string) {
+    const cleanTitle = title.trim()
+    if (!cleanTitle) return
+    try {
+      await updateDoc(doc(db, 'shoppingLists', listId), {
+        title: cleanTitle,
+        updatedAt: serverTimestamp()
+      })
+    } catch (err: any) {
+      console.error('Failed to rename shopping list:', err)
+      error.value = err.message
+    }
+  }
+
+  async function deleteList(listId: string) {
+    try {
+      const batch = writeBatch(db)
+      for (const item of items.value.filter((i) => i.listId === listId)) {
+        batch.delete(doc(db, 'shoppingItems', item.id))
+      }
+      batch.delete(doc(db, 'shoppingLists', listId))
+      await batch.commit()
+    } catch (err: any) {
+      console.error('Failed to delete shopping list:', err)
+      error.value = err.message
+    }
+  }
+
   async function addItem(input: AddShoppingItemInput) {
     if (!coupleId.value || !user.value) return
     const cleanName = input.name.trim()
@@ -378,6 +406,8 @@ export function useShopping(coupleId: Ref<string | null>) {
     setActiveList,
     createList,
     archiveList,
+    renameList,
+    deleteList,
     addItem,
     toggleChecked,
     deleteItem,

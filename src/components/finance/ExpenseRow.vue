@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { Expense, Couple } from '@/types'
-import InitialChip from '@/components/ui/InitialChip.vue'
 
 const props = defineProps<{
   expense: Expense
@@ -22,19 +21,24 @@ const tagColors: Record<string, string> = {
   other:     'var(--finanzen)',
 }
 
+const tagLabels: Record<string, string> = {
+  food: 'Lebensmittel', transport: 'Auto', home: 'Haushalt', leisure: 'Essen', other: 'Sonstiges'
+}
+
+const tagIcons: Record<string, string> = {
+  food: '🛒', transport: '🚗', home: '🏠', leisure: '🍽️', other: '📦'
+}
+
 const tagColor = computed(() => tagColors[props.expense.category] ?? 'var(--text-faint)')
+const categoryLabel = computed(() => tagLabels[props.expense.category] ?? props.expense.category)
+const categoryIcon = computed(() => tagIcons[props.expense.category] ?? '📦')
 
 const amountFormatted = computed(() => {
   const euros = props.expense.amount / 100
   return euros.toFixed(2).replace('.', ',') + ' €'
 })
 
-const subtitle = computed(() => {
-  const tagLabels: Record<string, string> = {
-    food: 'Lebensmittel', transport: 'Auto', home: 'Haushalt', leisure: 'Essen', other: 'Sonstiges'
-  }
-  return tagLabels[props.expense.category] ?? props.expense.category
-})
+const payerName = computed(() => props.couple?.memberNames[props.expense.paidBy] ?? 'Partner')
 
 let pressTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -52,32 +56,34 @@ function toggleExpand() {
 <template>
   <div
     class="row list-row"
+    :class="{ 'row--expanded': expanded }"
     @click="toggleExpand"
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"
   >
     <div class="row-main">
-      <InitialChip :uid="expense.paidBy" :couple="couple" :size="28" />
+      <span class="category-chip" :style="{ background: tagColor }" :title="categoryLabel">{{ categoryIcon }}</span>
       <div class="row-text">
         <span class="row-title">{{ expense.title }}</span>
-        <span class="row-sub">{{ subtitle }}</span>
+        <span class="row-sub">{{ payerName }}</span>
       </div>
       <div class="row-right">
         <span class="row-amount mono">{{ amountFormatted }}</span>
-        <span class="tag-dot" :style="{ background: tagColor }" />
       </div>
     </div>
 
-    <Transition name="expand">
-      <div v-if="expanded" class="row-actions">
-        <button class="edit-btn" @click.stop="emit('edit', expense)">
-          Bearbeiten
-        </button>
-        <button class="delete-btn" @click.stop="emit('delete', expense.id)">
-          Löschen
-        </button>
+    <div class="expand-track">
+      <div class="expand-inner">
+        <div class="row-actions">
+          <button class="edit-btn" @click.stop="emit('edit', expense)">
+            Bearbeiten
+          </button>
+          <button class="delete-btn" @click.stop="emit('delete', expense.id)">
+            Löschen
+          </button>
+        </div>
       </div>
-    </Transition>
+    </div>
 
     <div class="row-divider" />
   </div>
@@ -92,6 +98,12 @@ function toggleExpand() {
   border: 1px solid var(--border-softer);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s var(--ease-standard), border-color 0.2s var(--ease-standard);
+}
+
+.row--expanded {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-float);
 }
 
 .row-main {
@@ -124,6 +136,20 @@ function toggleExpand() {
   color: var(--text-meta);
 }
 
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 13px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
+  flex-shrink: 0;
+  user-select: none;
+}
+
 .row-right {
   display: flex;
   align-items: center;
@@ -136,22 +162,33 @@ function toggleExpand() {
   color: var(--text);
 }
 
-.tag-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
+/* Höhen-Animation ohne feste Höhe: Grid-Trick statt max-height-Hack. */
+.expand-track {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s var(--ease-standard);
+}
+
+.row--expanded .expand-track {
+  grid-template-rows: 1fr;
+}
+
+.expand-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .row-actions {
-  padding-bottom: 10px;
   display: flex;
-  justify-content: flex-end;
   gap: 8px;
+  padding-top: 11px;
+  margin-bottom: 11px;
+  border-top: 1px solid var(--border-softer);
 }
 
 .edit-btn {
-  padding: 7px 16px;
+  flex: 1;
+  padding: 9px 0;
   background: var(--accent-tint);
   border: 1.5px solid var(--accent);
   border-radius: 10px;
@@ -163,7 +200,8 @@ function toggleExpand() {
 }
 
 .delete-btn {
-  padding: 7px 16px;
+  flex: 1;
+  padding: 9px 0;
   background: var(--danger-tint);
   border: 1.5px solid var(--danger-border);
   border-radius: 10px;
@@ -176,16 +214,5 @@ function toggleExpand() {
 
 .row-divider {
   display: none;
-}
-
-.expand-enter-active,
-.expand-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.expand-enter-from,
-.expand-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
 }
 </style>

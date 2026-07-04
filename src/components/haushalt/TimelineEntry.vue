@@ -27,7 +27,7 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 </script>
 
 <template>
-  <div class="card">
+  <div class="card" :class="{ 'card--expanded': menuOpen }">
     <div class="row">
       <div class="text">
         <div class="name">{{ entry.choreName }}</div>
@@ -41,26 +41,30 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
       <button class="menu-btn" @click="emit('toggleMenu')">⋯</button>
     </div>
 
-    <div v-if="menuOpen" class="menu">
-      <div class="menu-label">Zuweisen</div>
-      <div class="menu-row">
-        <button
-          class="menu-pill"
-          :class="{ 'menu-pill--chris-active': entry.completedBy === personA }"
-          @click="emit('assign', personA)"
-        >{{ couple?.memberNames[personA ?? ''] ?? 'Person A' }}</button>
-        <button
-          class="menu-pill"
-          :class="{ 'menu-pill--sarah-active': entry.completedBy === personB }"
-          @click="emit('assign', personB)"
-        >{{ couple?.memberNames[personB ?? ''] ?? 'Person B' }}</button>
-        <button
-          class="menu-pill"
-          :class="{ 'menu-pill--both-active': entry.completedBy === 'both' }"
-          @click="emit('assign', 'both')"
-        >Beide</button>
+    <div class="expand-track">
+      <div class="expand-inner">
+        <div class="menu">
+          <div class="menu-label">Zuweisen</div>
+          <div class="menu-row">
+            <button
+              class="menu-pill"
+              :class="{ 'menu-pill--chris-active': entry.completedBy === personA }"
+              @click="emit('assign', personA)"
+            >{{ couple?.memberNames[personA ?? ''] ?? 'Person A' }}</button>
+            <button
+              class="menu-pill"
+              :class="{ 'menu-pill--sarah-active': entry.completedBy === personB }"
+              @click="emit('assign', personB)"
+            >{{ couple?.memberNames[personB ?? ''] ?? 'Person B' }}</button>
+            <button
+              class="menu-pill"
+              :class="{ 'menu-pill--both-active': entry.completedBy === 'both' }"
+              @click="emit('assign', 'both')"
+            >Beide</button>
+          </div>
+          <button class="delete-btn" @click="emit('delete')">Eintrag löschen</button>
+        </div>
       </div>
-      <button class="delete-btn" @click="emit('delete')">Eintrag löschen</button>
     </div>
   </div>
 </template>
@@ -73,6 +77,12 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   padding: 12px 13px;
   margin-bottom: 8px;
   box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s var(--ease-standard), border-color 0.2s var(--ease-standard);
+}
+
+.card--expanded {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-float);
 }
 
 .row {
@@ -137,6 +147,22 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   padding: 4px 6px;
   border-radius: 8px;
   cursor: pointer;
+}
+
+/* Höhen-Animation ohne feste Höhe: Grid-Trick statt max-height-Hack. */
+.expand-track {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s var(--ease-standard);
+}
+
+.card--expanded .expand-track {
+  grid-template-rows: 1fr;
+}
+
+.expand-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .menu {

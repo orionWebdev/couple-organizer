@@ -36,9 +36,6 @@ const activeIndex = computed(() =>
   display: flex;
   align-items: center;
   background: var(--surface);
-  border: 1px solid var(--border-softer);
-  border-radius: 13px;
-  padding: 3px;
   box-shadow: var(--shadow-card);
 }
 

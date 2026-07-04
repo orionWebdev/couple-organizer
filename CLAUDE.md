@@ -43,10 +43,11 @@ Domain composables (`useChores`, `useExpenses`, `useShopping`) share one shape �
 
 ### Chores domain specifics
 
-- A chore is `recurring` (has an `interval`: täglich/wöchentlich/monatlich) or `once`. Completing a recurring chore just stamps `completedAt`/`completedBy` for "today" — it is never deleted and is expected to reset next interval. Completing a `once` chore sets `done: true` and permanently removes it from the active pool (it still appears in `choreHistory`).
+- A chore is `recurring` or `once` — there is no interval (täglich/wöchentlich/monatlich) or fixed due date field on `Chore`; recurring just means it resets rather than being permanently completed. Completing a recurring chore just stamps `completedAt`/`completedBy` for "today" — it is never deleted. Completing a `once` chore sets `done: true` and permanently removes it from the active pool (it still appears in `choreHistory`).
 - `assignee` is `uid | 'both' | null` (`null` = unassigned/"offen").
 - Completing/undoing a chore writes/removes a matching `choreHistory` entry; `undoChore` restores the previous history entry's completion state rather than just clearing it.
 - `room: ChoreRoom` (see `src/utils/rooms.ts`) is used for pool filtering; older documents without a `room` field are treated as `allgemein` via `roomOf()`.
+- The Haushalt view's "Zuweisungen" tab (default landing tab, `HaushaltZuweisungen.vue`/`AssignmentRow.vue`) lists every assigned (non-`null`-assignee) chore with a "last completed" column derived from `choreHistory`; it flags "Vertretung" when the most recent completion was by someone other than the chore's assignee. It defaults to filtering by the current user (tap their summary card again to clear the filter, tap the partner's card to switch); rows expand in place on tap to reveal the same complete/undo controls as the "Alle" tab.
 
 ### Finance domain specifics
 

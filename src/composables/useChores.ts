@@ -1,11 +1,11 @@
 import { ref, computed, onScopeDispose, readonly, type Ref, watch } from 'vue'
 import {
   collection, query, where, orderBy, onSnapshot,
-  addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp, writeBatch
+  addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { Chore, ChoreAssignee, ChoreHistoryEntry, ChoreInterval, ChorePoints, ChoreRoom, ChoreType } from '@/types'
+import type { Chore, ChoreAssignee, ChoreHistoryEntry, ChorePoints, ChoreRoom, ChoreType } from '@/types'
 import { POOL_SEED } from '@/utils/poolSeed'
 import { isPointValue, pointsForChore, pointsForName } from '@/utils/points'
 
@@ -13,8 +13,6 @@ interface AddChoreInput {
   name: string
   room: ChoreRoom
   type: ChoreType
-  interval: ChoreInterval | null
-  dueDate: Date | null
   assignee: ChoreAssignee
   points: ChorePoints
 }
@@ -105,8 +103,6 @@ export function useChores(coupleId: Ref<string | null>) {
         name: cleanName,
         room: input.room,
         type: input.type,
-        interval: input.type === 'recurring' ? input.interval : null,
-        dueDate: input.dueDate ? Timestamp.fromDate(input.dueDate) : null,
         assignee: input.assignee,
         points: isPointValue(input.points) ? input.points : pointsForName(cleanName, input.room),
         done: false,
@@ -145,8 +141,6 @@ export function useChores(coupleId: Ref<string | null>) {
           name: task.name,
           room: task.room,
           type: 'recurring',
-          interval: 'wöchentlich',
-          dueDate: null,
           assignee: null,
           points: pointsForName(task.name, task.room),
           done: false,
@@ -176,8 +170,6 @@ export function useChores(coupleId: Ref<string | null>) {
         name: cleanName,
         room: input.room,
         type: input.type,
-        interval: input.type === 'recurring' ? input.interval : null,
-        dueDate: input.dueDate ? Timestamp.fromDate(input.dueDate) : null,
         assignee: input.assignee,
         points: isPointValue(input.points) ? input.points : pointsForName(cleanName, input.room),
         updatedAt: serverTimestamp()

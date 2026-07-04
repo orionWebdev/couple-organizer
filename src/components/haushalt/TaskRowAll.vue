@@ -30,42 +30,48 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 
 <template>
   <div class="list-row">
-    <div class="row">
-      <div class="row-top">
-        <div class="row-text">
-          <div class="row-title-line">
-            <span class="row-name" :class="{ 'row-name--done': struck }">{{ chore.name }}</span>
-            <span class="points-badge">{{ points }} P</span>
-            <span class="recur-badge">{{ recurLabel(chore) }}</span>
+    <div class="row" :class="{ 'row--expanded': menuOpen }">
+      <div class="row-main">
+        <div class="row-top">
+          <div class="row-text">
+            <div class="row-title-line">
+              <span class="row-name" :class="{ 'row-name--done': struck }">{{ chore.name }}</span>
+              <span class="points-badge">{{ points }} P</span>
+              <span class="recur-badge">{{ recurLabel(chore) }}</span>
+            </div>
+            <span class="row-meta">{{ metaLine(chore, couple, todayCount) }}</span>
           </div>
-          <span class="row-meta">{{ metaLine(chore, couple, todayCount) }}</span>
+          <span
+            class="assignee-avatar"
+            :style="{ background: avatar.bg, border: avatar.border, color: avatar.color }"
+          >{{ avatar.init }}</span>
+          <button class="menu-btn" @click="emit('toggleMenu')">⋯</button>
         </div>
-        <span
-          class="assignee-avatar"
-          :style="{ background: avatar.bg, border: avatar.border, color: avatar.color }"
-        >{{ avatar.init }}</span>
-        <button class="menu-btn" @click="emit('toggleMenu')">⋯</button>
+        <div class="row-actions">
+          <TaskAbhakControl :chore="chore" :couple="couple" :todayCount="todayCount" @pick="emit('pick', $event)" @undo="emit('undo')" />
+        </div>
       </div>
-      <div class="row-actions">
-        <TaskAbhakControl :chore="chore" :couple="couple" :todayCount="todayCount" @pick="emit('pick', $event)" @undo="emit('undo')" />
-      </div>
-    </div>
 
-    <div v-if="menuOpen" class="menu">
-      <div class="menu-label">Zuweisen an</div>
-      <div class="menu-row">
-        <button class="menu-pill menu-pill--chris" @click="emit('assign', personA)">
-          {{ couple?.memberNames[personA ?? ''] ?? 'Person A' }}
-        </button>
-        <button class="menu-pill menu-pill--sarah" @click="emit('assign', personB)">
-          {{ couple?.memberNames[personB ?? ''] ?? 'Person B' }}
-        </button>
-        <button class="menu-pill menu-pill--both" @click="emit('assign', 'both')">Beide</button>
-        <button class="menu-pill menu-pill--open" @click="emit('assign', null)">Offen</button>
-      </div>
-      <div class="menu-row">
-        <button class="menu-action" @click="emit('edit')">Bearbeiten</button>
-        <button class="menu-action menu-action--danger" @click="emit('delete')">Aus Pool löschen</button>
+      <div class="expand-track">
+        <div class="expand-inner">
+          <div class="menu">
+            <div class="menu-label">Zuweisen an</div>
+            <div class="menu-row">
+              <button class="menu-pill menu-pill--chris" @click="emit('assign', personA)">
+                {{ couple?.memberNames[personA ?? ''] ?? 'Person A' }}
+              </button>
+              <button class="menu-pill menu-pill--sarah" @click="emit('assign', personB)">
+                {{ couple?.memberNames[personB ?? ''] ?? 'Person B' }}
+              </button>
+              <button class="menu-pill menu-pill--both" @click="emit('assign', 'both')">Beide</button>
+              <button class="menu-pill menu-pill--open" @click="emit('assign', null)">Offen</button>
+            </div>
+            <div class="menu-row">
+              <button class="menu-action" @click="emit('edit')">Bearbeiten</button>
+              <button class="menu-action menu-action--danger" @click="emit('delete')">Aus Pool löschen</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -74,14 +80,23 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 <style scoped>
 /* Nido: weiße Karte — Text/Zuweisung oben, Erledigt-Buttons als zweite Zeile */
 .row {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   padding: 12px 13px;
   background: var(--surface);
   border: 1px solid var(--border-softer);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s var(--ease-standard), border-color 0.2s var(--ease-standard);
+}
+
+.row--expanded {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-float);
+}
+
+.row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .row-top {
@@ -171,13 +186,26 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   cursor: pointer;
 }
 
+/* Höhen-Animation ohne feste Höhe: Grid-Trick statt max-height-Hack. */
+.expand-track {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s var(--ease-standard);
+}
+
+.row--expanded .expand-track {
+  grid-template-rows: 1fr;
+}
+
+.expand-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
 .menu {
-  margin: 6px 0 0;
-  padding: 12px 13px;
-  border: 1px solid var(--border-softer);
-  background: var(--surface);
-  border-radius: 14px;
-  box-shadow: var(--shadow-card);
+  margin-top: 11px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border-softer);
 }
 
 .menu-label {

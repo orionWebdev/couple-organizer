@@ -17,7 +17,6 @@ export interface Couple {
 }
 
 export type ChoreType = 'recurring' | 'once'
-export type ChoreInterval = 'täglich' | 'wöchentlich' | 'monatlich'
 export type ChoreAssignee = string | 'both' | null // uid | Beide | Offen
 
 // Punkte je Aufgabengröße: 5 = winzig, 10 = klein, 20 = mittel, 30 = groß.
@@ -43,8 +42,6 @@ export interface Chore {
   name: string
   room: ChoreRoom // Raum/Bereich für Filter (Altbestand ohne Feld = 'allgemein')
   type: ChoreType
-  interval: ChoreInterval | null // only set when type === 'recurring'
-  dueDate: Timestamp | null // null = kein fester Tag; same day = heute; future = demnächst
   assignee: ChoreAssignee
   points: ChorePoints // Belohnungspunkte je nach Aufgabengröße (Altbestand: via pointsForChore abgeleitet)
   done: boolean // once-tasks only: permanently done, hides from pool

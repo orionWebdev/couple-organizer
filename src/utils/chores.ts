@@ -18,27 +18,29 @@ export function isDoneToday(chore: Chore): boolean {
   return isSameDay(completed, new Date())
 }
 
-export type DueBucket = 'today' | 'none' | { days: number }
-
-export function dueBucket(chore: Chore): DueBucket {
-  const due = toDate(chore.dueDate)
-  if (!due) return 'none'
-  const now = new Date()
-  if (isSameDay(due, now)) return 'today'
-  const startOfDue = new Date(due.getFullYear(), due.getMonth(), due.getDate())
-  const startOfNow = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const days = Math.round((startOfDue.getTime() - startOfNow.getTime()) / 86400000)
-  return { days }
-}
-
 export function recurLabel(chore: Chore): string {
-  if (chore.type === 'once') return 'Einmalig'
-  if (chore.interval === 'täglich') return 'Täglich'
-  if (chore.interval === 'monatlich') return 'Monatlich'
-  return 'Wöchentlich'
+  return chore.type === 'once' ? 'Einmalig' : 'Wiederkehrend'
 }
 
-const dueDateFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })
+const shortDateFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })
+
+// "zuletzt erledigt"-Label für die Zuweisungen-Tabelle: heute/gestern/vor N
+// Tagen für die letzten zwei Wochen, danach Wochen- bzw. Datumsangabe.
+export function relativeCompletionLabel(timestamp: unknown): string {
+  const date = toDate(timestamp)
+  if (!date) return 'Noch nie erledigt'
+
+  const now = new Date()
+  if (isSameDay(date, now)) return 'Heute'
+
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const days = Math.round((startOfDay(now).getTime() - startOfDay(date).getTime()) / 86400000)
+
+  if (days === 1) return 'Gestern'
+  if (days < 14) return `vor ${days} Tagen`
+  if (days < 60) return `vor ${Math.round(days / 7)} Wochen`
+  return shortDateFormatter.format(date)
+}
 
 export function metaLine(chore: Chore, couple: Couple | null, todayCount = 0): string {
   if (isDoneToday(chore)) {
@@ -47,12 +49,6 @@ export function metaLine(chore: Chore, couple: Couple | null, todayCount = 0): s
     return `${times} · zuletzt ${personName(chore.completedBy, couple)}`
   }
 
-  const bucket = dueBucket(chore)
-  if (bucket === 'today') return 'Fällig · Heute'
-  if (bucket !== 'none') {
-    const due = toDate(chore.dueDate)
-    return `Fällig · ${due ? dueDateFormatter.format(due) : ''}`
-  }
   if (chore.assignee === null) return 'Offen · wartet auf Zuweisung'
   return recurLabel(chore)
 }

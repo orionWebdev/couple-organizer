@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Chore, ChoreAssignee, Couple } from '@/types'
 import TaskAbhakControl from './TaskAbhakControl.vue'
 import { assigneeAvatarVisual, isDoneToday, metaLine, recurLabel } from '@/utils/chores'
+import { pointsForChore } from '@/utils/points'
 
 const props = withDefaults(defineProps<{
   chore: Chore
@@ -21,6 +22,7 @@ const emit = defineEmits<{
 }>()
 
 const struck = computed(() => props.chore.type === 'once' && isDoneToday(props.chore))
+const points = computed(() => pointsForChore(props.chore))
 const avatar = computed(() => assigneeAvatarVisual(props.chore.assignee, props.couple))
 const personA = computed(() => props.couple?.memberIds[0] ?? null)
 const personB = computed(() => props.couple?.memberIds[1] ?? null)
@@ -29,19 +31,24 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 <template>
   <div class="list-row">
     <div class="row">
-      <TaskAbhakControl :chore="chore" :couple="couple" :todayCount="todayCount" @pick="emit('pick', $event)" @undo="emit('undo')" />
-      <div class="row-text">
-        <div class="row-title-line">
-          <span class="row-name" :class="{ 'row-name--done': struck }">{{ chore.name }}</span>
-          <span class="recur-badge">{{ recurLabel(chore) }}</span>
+      <div class="row-top">
+        <div class="row-text">
+          <div class="row-title-line">
+            <span class="row-name" :class="{ 'row-name--done': struck }">{{ chore.name }}</span>
+            <span class="points-badge">{{ points }} P</span>
+            <span class="recur-badge">{{ recurLabel(chore) }}</span>
+          </div>
+          <span class="row-meta">{{ metaLine(chore, couple, todayCount) }}</span>
         </div>
-        <span class="row-meta">{{ metaLine(chore, couple, todayCount) }}</span>
+        <span
+          class="assignee-avatar"
+          :style="{ background: avatar.bg, border: avatar.border, color: avatar.color }"
+        >{{ avatar.init }}</span>
+        <button class="menu-btn" @click="emit('toggleMenu')">⋯</button>
       </div>
-      <span
-        class="assignee-avatar"
-        :style="{ background: avatar.bg, border: avatar.border, color: avatar.color }"
-      >{{ avatar.init }}</span>
-      <button class="menu-btn" @click="emit('toggleMenu')">⋯</button>
+      <div class="row-actions">
+        <TaskAbhakControl :chore="chore" :couple="couple" :todayCount="todayCount" @pick="emit('pick', $event)" @undo="emit('undo')" />
+      </div>
     </div>
 
     <div v-if="menuOpen" class="menu">
@@ -65,16 +72,26 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 </template>
 
 <style scoped>
-/* Nido: weiße Karte statt Trennlinien-Zeile */
+/* Nido: weiße Karte — Text/Zuweisung oben, Erledigt-Buttons als zweite Zeile */
 .row {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
-  padding: 11px 13px;
+  padding: 12px 13px;
   background: var(--surface);
   border: 1px solid var(--border-softer);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+}
+
+.row-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.row-actions {
+  display: flex;
 }
 
 .row-text {
@@ -90,6 +107,17 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   align-items: center;
   gap: 7px;
   flex-wrap: wrap;
+}
+
+.points-badge {
+  font-family: var(--font-headline);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .row-name {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Couple, FinanceEventSummary } from '@/types'
+import type { Couple, Expense, FinanceEventSummary } from '@/types'
 import ExpenseRow from './ExpenseRow.vue'
 
 const props = defineProps<{
@@ -13,6 +13,7 @@ const emit = defineEmits<{
   back: []
   addExpense: []
   deleteExpense: [id: string]
+  editExpense: [expense: Expense]
   settle: []
 }>()
 
@@ -73,6 +74,7 @@ const settleAmountFormatted = computed(() => {
           :couple="couple"
           :currentUserId="currentUserId"
           @delete="emit('deleteExpense', $event)"
+          @edit="emit('editExpense', $event)"
         />
       </div>
 

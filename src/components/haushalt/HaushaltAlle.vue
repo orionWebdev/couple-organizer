@@ -23,7 +23,6 @@ const emit = defineEmits<{
 type Filter = 'alle' | 'personA' | 'personB' | 'both' | 'offen'
 const filter = ref<Filter>('alle')
 const roomFilter = ref<ChoreRoom | 'alle'>('alle')
-const showSearch = ref(false)
 const search = ref('')
 const menuOpenId = ref<string | null>(null)
 
@@ -60,11 +59,6 @@ const filtered = computed(() => {
   return list
 })
 
-function toggleSearch() {
-  showSearch.value = !showSearch.value
-  if (!showSearch.value) search.value = ''
-}
-
 function toggleMenu(id: string) {
   menuOpenId.value = menuOpenId.value === id ? null : id
 }
@@ -76,20 +70,19 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
   <div class="alle">
     <div class="pool-head">
       <span class="pool-label">Aufgaben-Pool</span>
-      <button class="search-toggle" :class="{ 'search-toggle--active': showSearch }" @click="toggleSearch">
-        Suche <span aria-hidden="true">🔍</span>
-      </button>
     </div>
 
-    <input
-      v-if="showSearch"
-      v-model="search"
-      class="app-field pool-search"
-      type="text"
-      placeholder="Aufgabe suchen…"
-    />
+    <div class="pool-search-wrap">
+      <span class="pool-search-icon" aria-hidden="true">🔍</span>
+      <input
+        v-model="search"
+        class="app-field pool-search"
+        type="text"
+        placeholder="Aufgabe suchen…"
+      />
+    </div>
 
-    <div class="room-row">
+    <div class="room-row" data-hswipe-skip>
       <button
         class="room-chip"
         :class="{ 'room-chip--active': roomFilter === 'alle' }"
@@ -108,7 +101,7 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
       </button>
     </div>
 
-    <div class="filter-row">
+    <div class="filter-row" data-hswipe-skip>
       <button class="filter-chip" :class="{ 'filter-chip--active': filter === 'alle' }" @click="filter = 'alle'">Alle</button>
       <button class="filter-chip" :class="{ 'filter-chip--active': filter === 'personA' }" @click="filter = 'personA'">{{ personAName }}</button>
       <button class="filter-chip" :class="{ 'filter-chip--active': filter === 'personB' }" @click="filter = 'personB'">{{ personBName }}</button>
@@ -163,26 +156,27 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
   color: var(--text);
 }
 
-.search-toggle {
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 100px;
-  border: 1px solid var(--border-softer);
-  background: transparent;
-  color: var(--text-meta);
-  cursor: pointer;
+/* Volle Breite, Eingabe-Stil wie in den Modals (.app-field) */
+.pool-search-wrap {
+  position: relative;
+  width: 100%;
+  margin-bottom: 14px;
 }
 
-.search-toggle--active {
-  border-color: var(--accent);
-  background: var(--accent-tint);
-  color: var(--text);
+.pool-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0.7;
 }
 
 .pool-search {
-  margin-bottom: 12px;
+  width: 100%;
+  padding-left: 40px;
 }
 
 .room-row {

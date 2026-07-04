@@ -8,6 +8,10 @@
       "Glob(*)",
       "Grep(*)"
     ],
+    "ask": [
+      "Bash(git commit*)",
+      "Bash(git push*)"
+    ],
     "defaultMode": "acceptEdits"
   }
 }

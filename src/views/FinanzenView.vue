@@ -119,7 +119,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
 </script>
 
 <template>
-  <div class="finanzen-page">
+  <div class="finanzen-page area-finanzen">
     <template v-if="finView === 'dashboard'">
       <!-- Header -->
       <div class="page-header">
@@ -167,7 +167,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       </TransitionGroup>
 
       <!-- FAB -->
-      <button class="fab" @click="openAddExpense">Ausgabe +</button>
+      <button class="fab" @click="openAddExpense"><span class="fab-plus">+</span>Ausgabe erfassen</button>
     </template>
 
     <EventDetail
@@ -207,7 +207,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
 <style scoped>
 .finanzen-page {
   min-height: 100%;
-  padding-bottom: 24px;
+  padding-bottom: 96px;
 }
 
 .page-header {
@@ -234,10 +234,10 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
   flex: 0 0 168px;
   text-align: center;
   cursor: pointer;
-  font-family: 'Mali', system-ui, sans-serif;
-  border: 1px dashed var(--border);
+  font-family: var(--font-body);
+  border: 1.5px dashed var(--border);
   background: transparent;
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -249,8 +249,9 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
 .new-event-icon {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--accent-tint);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -260,7 +261,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
 
 .new-event-label {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--text-secondary);
 }
 
@@ -273,25 +274,38 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
 }
 
 .expense-list {
-  border-top: 1px solid var(--border-softer);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 0 var(--screen-pad);
 }
 
 .fab {
   position: fixed;
-  bottom: calc(72px + var(--safe-bottom));
-  right: 22px;
-  padding: 13px 20px;
+  left: 18px;
+  right: 18px;
+  bottom: calc(74px + var(--safe-bottom));
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: 100px;
-  font-family: 'Mali', system-ui, sans-serif;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-accent);
   transition: background 0.18s ease, transform 0.12s ease;
   z-index: 50;
+}
+
+.fab-plus {
+  font-size: 18px;
+  font-weight: 300;
 }
 
 .fab:active {
@@ -313,8 +327,9 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
   background: none;
   border: none;
   color: var(--text-faint);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   margin-top: 10px;
 }

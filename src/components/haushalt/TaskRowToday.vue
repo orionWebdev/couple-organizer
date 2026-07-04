@@ -31,12 +31,16 @@ const struck = computed(() => props.chore.type === 'once' && isDoneToday(props.c
 </template>
 
 <style scoped>
+/* Nido: weiße Karte statt Trennlinien-Zeile */
 .row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--border-softer);
+  padding: 11px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .row-text {
@@ -48,14 +52,14 @@ const struck = computed(() => props.chore.type === 'once' && isDoneToday(props.c
 }
 
 .row-name {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text);
   transition: color var(--dur-base) var(--ease-standard);
 }
 
 .row-name--done {
-  color: #6f665d;
+  color: var(--text-faint);
   text-decoration: line-through;
 }
 

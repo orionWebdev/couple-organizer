@@ -13,12 +13,13 @@ const emit = defineEmits<{ delete: [id: string] }>()
 
 const expanded = ref(false)
 
+// Kategoriefarben aus der Nido-Referenz (Icon-Kacheln der Ausgaben-Liste)
 const tagColors: Record<string, string> = {
-  food:      'var(--accent)',
-  transport: 'var(--sarah)',
-  home:      '#a99ac2',
-  leisure:   '#c98a7e',
-  other:     'var(--chris)',
+  food:      'var(--einkauf)',
+  transport: 'oklch(0.66 0.12 255)',
+  home:      'var(--haushalt)',
+  leisure:   'oklch(0.64 0.14 312)',
+  other:     'var(--finanzen)',
 }
 
 const tagColor = computed(() => tagColors[props.expense.category] ?? 'var(--text-faint)')
@@ -80,17 +81,22 @@ function toggleExpand() {
 </template>
 
 <style scoped>
+/* Nido: weiße Karte statt Trennlinien-Zeile */
 .row {
   cursor: pointer;
-  padding: 0 var(--screen-pad);
+  padding: 0 13px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .row-main {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 13px 0;
-  min-height: 56px;
+  gap: 11px;
+  padding: 11px 0;
+  min-height: 54px;
 }
 
 .row-text {
@@ -102,8 +108,8 @@ function toggleExpand() {
 }
 
 .row-title {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -123,8 +129,7 @@ function toggleExpand() {
 }
 
 .row-amount {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
   color: var(--text);
 }
 
@@ -144,19 +149,17 @@ function toggleExpand() {
 .delete-btn {
   padding: 7px 16px;
   background: var(--danger-tint);
-  border: 1px solid var(--danger-border);
-  border-radius: 8px;
+  border: 1.5px solid var(--danger-border);
+  border-radius: 10px;
   color: var(--danger);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .row-divider {
-  height: 1px;
-  background: var(--border-softer);
-  margin: 0;
+  display: none;
 }
 
 .expand-enter-active,

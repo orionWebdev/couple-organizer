@@ -43,12 +43,14 @@ const { justAdded } = useJustAdded(() => myChores.value, c => c.id)
 
 <template>
   <div class="heute">
-    <div class="progress-head">
-      <span class="section-label">Heute</span>
-      <span class="progress-count mono">{{ heuteDoneCount }} / {{ heuteTotalCount }}</span>
-    </div>
-    <div class="progress-bar">
-      <div class="progress-fill" :style="{ width: heutePct + '%' }" />
+    <div class="progress-card">
+      <div class="progress-head">
+        <span class="progress-title">Heute</span>
+        <span class="progress-count mono">{{ heuteDoneCount }} / {{ heuteTotalCount }}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" :style="{ width: heutePct + '%' }" />
+      </div>
     </div>
 
     <div v-if="heuteItems.length === 0" class="empty">Nichts für heute geplant. ✓</div>
@@ -88,30 +90,51 @@ const { justAdded } = useJustAdded(() => myChores.value, c => c.id)
   padding: 0 var(--screen-pad);
 }
 
+/* Nido: Fortschritt als getönte Karte mit weißem Balken-Track */
+.progress-card {
+  background: var(--accent-tint);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: var(--radius-card-lg);
+  padding: 15px 16px;
+  margin-bottom: 16px;
+}
+
 .progress-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+}
+
+.progress-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .progress-count {
-  font-size: 12px;
-  color: var(--text-meta);
+  font-size: 13px;
+  color: var(--accent);
 }
 
 .progress-bar {
-  height: 6px;
-  border-radius: 4px;
-  background: var(--border-soft);
+  height: 10px;
+  border-radius: 6px;
+  background: var(--surface);
   overflow: hidden;
-  margin-bottom: 16px;
+  margin-top: 11px;
 }
 
 .progress-fill {
   height: 100%;
   background: var(--accent);
+  border-radius: 6px;
   transition: width 0.3s ease;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
 }
 
 .empty {

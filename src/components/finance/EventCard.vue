@@ -53,33 +53,34 @@ const itemCount = computed(() => props.summary.expenses.length)
   flex: 0 0 168px;
   text-align: left;
   cursor: pointer;
-  font-family: 'Mali', system-ui, sans-serif;
-  border: 1px solid var(--border);
+  font-family: var(--font-body);
+  border: 1px solid var(--border-softer);
   background: var(--surface);
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-shadow: var(--shadow-card);
 }
 
 .card-name {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
 }
 
 .card-total {
   font-size: 18px;
-  font-weight: 500;
   color: var(--text);
 }
 
 .card-bar {
-  height: 5px;
+  height: 6px;
   border-radius: 4px;
   overflow: hidden;
   display: flex;
+  background: var(--surface-deep);
 }
 
 .card-bar-chris { background: var(--chris); }

@@ -90,7 +90,7 @@ async function submit() {
   justify-content: center;
   padding: 24px var(--screen-pad);
   background:
-    radial-gradient(circle at 30% 20%, rgba(134, 165, 150, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent) 7%, transparent) 0%, transparent 40%),
     var(--bg);
 }
 
@@ -136,7 +136,7 @@ async function submit() {
   background: none;
   border: none;
   color: var(--accent);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;

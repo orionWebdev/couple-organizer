@@ -21,12 +21,6 @@ const color = computed(() => {
   const idx = props.couple.memberIds.indexOf(props.uid)
   return idx === 0 ? 'var(--chris)' : 'var(--sarah)'
 })
-
-const tint = computed(() => {
-  if (!props.couple) return 'transparent'
-  const idx = props.couple.memberIds.indexOf(props.uid)
-  return idx === 0 ? 'var(--chris-tint)' : 'var(--sarah-tint)'
-})
 </script>
 
 <template>
@@ -35,22 +29,24 @@ const tint = computed(() => {
     :style="{
       width: size + 'px',
       height: size + 'px',
-      fontSize: Math.round(size * 0.46) + 'px',
-      color: color,
-      background: tint,
-      border: `1px solid ${color}`,
+      fontSize: Math.round(size * 0.42) + 'px',
+      background: color,
     }"
   >{{ initial }}</span>
 </template>
 
 <style scoped>
+/* Nido: runder Avatar-Chip in Personenfarbe, weißer Rand, weicher Schatten */
 .chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
-  font-family: 'Mali', system-ui, sans-serif;
-  font-weight: 600;
+  border-radius: 50%;
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
+  font-family: var(--font-body);
+  font-weight: 700;
   flex-shrink: 0;
   user-select: none;
 }

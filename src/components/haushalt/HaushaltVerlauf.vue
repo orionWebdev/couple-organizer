@@ -117,16 +117,17 @@ function toggleMenu(id: string) {
 
 .month-chip {
   padding: 7px 13px;
-  background: transparent;
+  background: var(--surface);
   border: 1px solid var(--border-softer);
-  border-radius: 9px;
+  border-radius: 10px;
   color: var(--text-meta);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+  box-shadow: var(--shadow-card);
   transition: all 0.15s ease;
 }
 
@@ -156,9 +157,9 @@ function toggleMenu(id: string) {
 
 .day-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-meta);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
   margin: 14px 0 8px;
   padding-left: 24px;
@@ -190,7 +191,7 @@ function toggleMenu(id: string) {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid var(--surface-deep);
+  border: 2px solid var(--bg);
   z-index: 1;
 }
 </style>

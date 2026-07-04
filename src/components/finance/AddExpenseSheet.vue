@@ -46,12 +46,13 @@ const displayAmount = computed(() => {
   return isNaN(n) ? '0,00' : n.toFixed(2).replace('.', ',')
 })
 
+// Kategoriefarben aus der Nido-Referenz (Icon-Kacheln der Ausgaben-Liste)
 const tags: Array<{ value: ExpenseCategory; label: string; color: string }> = [
-  { value: 'food',      label: 'Lebensmittel', color: 'var(--accent)' },
-  { value: 'transport', label: 'Auto',         color: 'var(--sarah)' },
-  { value: 'home',      label: 'Haushalt',     color: '#a99ac2' },
-  { value: 'leisure',   label: 'Essen',        color: '#c98a7e' },
-  { value: 'other',     label: 'Sonstiges',    color: 'var(--chris)' },
+  { value: 'food',      label: 'Lebensmittel', color: 'var(--einkauf)' },
+  { value: 'transport', label: 'Auto',         color: 'oklch(0.66 0.12 255)' },
+  { value: 'home',      label: 'Haushalt',     color: 'var(--haushalt)' },
+  { value: 'leisure',   label: 'Essen',        color: 'oklch(0.64 0.14 312)' },
+  { value: 'other',     label: 'Sonstiges',    color: 'var(--finanzen)' },
 ]
 
 const partnerUid = computed(() => {
@@ -228,7 +229,7 @@ watch(() => props.isOpen, (open) => {
         class="tag-chip"
         :class="{ 'tag-chip--active': tag === t.value }"
         :style="tag === t.value ? {
-          background: t.color + '28',
+          background: `color-mix(in srgb, ${t.color} 16%, transparent)`,
           borderColor: t.color,
           color: t.color
         } : {}"
@@ -295,7 +296,7 @@ watch(() => props.isOpen, (open) => {
 .mode-btn {
   flex: 1;
   border: none;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 13.5px;
   font-weight: 600;
   padding: 11px 0;
@@ -327,13 +328,14 @@ watch(() => props.isOpen, (open) => {
 
 .amount-value {
   font-size: 40px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
   line-height: 1;
 }
 
 .amount-currency {
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--font-headline);
+  font-weight: 700;
   font-size: 24px;
   color: var(--text-meta);
 }
@@ -359,7 +361,7 @@ watch(() => props.isOpen, (open) => {
   border: 1px solid var(--border-soft);
   border-radius: 10px;
   color: var(--text-meta);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -384,7 +386,7 @@ watch(() => props.isOpen, (open) => {
   border: 1px solid var(--border-soft);
   border-radius: 100px;
   color: var(--text-meta);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -406,7 +408,7 @@ watch(() => props.isOpen, (open) => {
   border: 1px solid var(--border-soft);
   border-radius: 10px;
   color: var(--text-meta);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

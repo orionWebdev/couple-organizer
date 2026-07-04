@@ -66,9 +66,9 @@ async function share() {
 }
 
 .invite-code {
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--font-headline);
+  font-weight: 700;
   font-size: 32px;
-  font-weight: 600;
   letter-spacing: 0.2em;
   text-align: center;
   color: var(--accent);
@@ -98,7 +98,7 @@ async function share() {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 14px;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;

@@ -31,8 +31,9 @@ const uncheckedCount = computed(() => props.items.filter(i => !i.checked).length
   width: 100%;
   padding: 18px 20px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-softer);
   border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
   text-align: left;
   transition: background 0.15s ease;
@@ -52,7 +53,7 @@ const uncheckedCount = computed(() => props.items.filter(i => !i.checked).length
 
 .card-title {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -67,10 +68,9 @@ const uncheckedCount = computed(() => props.items.filter(i => !i.checked).length
   height: 26px;
   padding: 0 7px;
   background: var(--accent-tint);
-  color: var(--accent);
-  border-radius: 8px;
+  color: var(--accent-hover);
+  border-radius: 9px;
   font-size: 13px;
-  font-weight: 600;
   flex-shrink: 0;
 }
 

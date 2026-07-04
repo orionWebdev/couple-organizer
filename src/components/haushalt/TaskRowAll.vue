@@ -65,12 +65,16 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 </template>
 
 <style scoped>
+/* Nido: weiße Karte statt Trennlinien-Zeile */
 .row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-softer);
+  padding: 11px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .row-text {
@@ -89,22 +93,22 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 }
 
 .row-name {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text);
   transition: color var(--dur-base) var(--ease-standard);
 }
 
 .row-name--done {
-  color: #6f665d;
+  color: var(--text-faint);
   text-decoration: line-through;
 }
 
 .recur-badge {
   font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 6px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 7px;
   background: var(--accent-tint);
   color: var(--accent);
 }
@@ -116,14 +120,15 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 
 .assignee-avatar {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  font-size: 10.5px;
-  font-weight: 600;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 
 .menu-btn {
@@ -139,19 +144,20 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 }
 
 .menu {
-  margin: 0 0 12px;
+  margin: 6px 0 0;
   padding: 12px 13px;
   border: 1px solid var(--border-softer);
-  background: var(--surface-deep);
+  background: var(--surface);
   border-radius: 14px;
+  box-shadow: var(--shadow-card);
 }
 
 .menu-label {
   font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-weight: 700;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-meta);
   margin-bottom: 8px;
 }
 
@@ -167,13 +173,13 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 
 .menu-pill {
   flex: 1;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   background: transparent;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 8px 0;
-  border-radius: 9px;
+  border-radius: 10px;
   cursor: pointer;
 }
 
@@ -184,13 +190,13 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 
 .menu-action {
   flex: 1;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   background: transparent;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 9px 0;
-  border-radius: 9px;
+  border-radius: 10px;
   color: var(--text-secondary);
   cursor: pointer;
 }

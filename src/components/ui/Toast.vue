@@ -20,16 +20,16 @@ const { message, visible } = useToastState()
   transform: translateX(-50%);
   z-index: 9999;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-softer);
   color: var(--text);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 700;
   padding: 10px 20px;
   border-radius: 100px;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-float);
 }
 
 .toast-enter-active,

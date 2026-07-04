@@ -1,35 +1,55 @@
 @import "tailwindcss";
 
 :root {
-  --bg:             #f6f0e2;
-  --surface:        #fffdf6;
-  --surface-deep:   #efe6d1;
-  --border:         #ddd0b0;
-  --border-soft:    #e6dabc;
-  --border-softer:  #ece2c8;
-  --text:           #1c1810;
-  --text-secondary: #4f4a3d;
-  --text-meta:      #756c5a;
-  --text-faint:     #948c78;
-  --accent:         #5f8271;
-  --accent-hover:   #4d6c5d;
-  --accent-tint:    rgba(95, 130, 113, 0.16);
-  --chris:          #3f6389;
-  --chris-tint:     rgba(63, 99, 137, 0.14);
-  --sarah:          #9c5c3f;
-  --sarah-tint:     rgba(156, 92, 63, 0.16);
-  --danger:         #a14632;
-  --danger-border:  #c98a7e;
-  --danger-tint:    rgba(161, 70, 50, 0.12);
+  /* ── Nido-Palette (Werte aus reference/Nido-source-code.dc.html) ── */
+  --bg:             #fdfaf5;
+  --surface:        #ffffff;
+  --surface-deep:   #f7f1e6;
+  --border:         #d8d0c2;
+  --border-soft:    #e9e0d0;
+  --border-softer:  #f0e8db;
+  --text:           #2c2823;
+  --text-secondary: #8c857b;
+  --text-meta:      #9a9286;
+  --text-faint:     #b8b0a4;
+
+  /* Bereichsfarben — je Tab eine eigene Akzentfarbe */
+  --haushalt:        oklch(0.70 0.15 38);
+  --haushalt-hover:  oklch(0.63 0.15 38);
+  --haushalt-tint:   oklch(0.955 0.03 40);
+  --einkauf:         oklch(0.78 0.13 80);
+  --einkauf-hover:   oklch(0.71 0.13 80);
+  --einkauf-tint:    oklch(0.955 0.05 80);
+  --finanzen:        oklch(0.69 0.10 195);
+  --finanzen-hover:  oklch(0.62 0.10 195);
+  --finanzen-tint:   oklch(0.95 0.03 195);
+
+  /* Default-Akzent (Login/Setup, alles außerhalb der Bereiche) = Terrakotta */
+  --accent:         var(--haushalt);
+  --accent-hover:   var(--haushalt-hover);
+  --accent-tint:    var(--haushalt-tint);
+
+  --chris:          oklch(0.70 0.15 38);
+  --chris-tint:     oklch(0.70 0.15 38 / 0.14);
+  --sarah:          oklch(0.69 0.10 195);
+  --sarah-tint:     oklch(0.69 0.10 195 / 0.15);
+  --danger:         #b34a32;
+  --danger-border:  #ddaa95;
+  --danger-tint:    rgba(179, 74, 50, 0.12);
   --radius-card:    16px;
+  --radius-card-lg: 20px;
+  --radius-tile:    13px;
   --radius-sheet:   26px;
-  --radius-chip:    10px;
-  --screen-pad:     22px;
+  --radius-chip:    11px;
+  --screen-pad:     20px;
+  --shadow-card:    0 4px 12px rgba(60, 45, 30, 0.05);
+  --shadow-float:   0 10px 22px rgba(60, 45, 30, 0.14);
+  --shadow-accent:  0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
   --safe-bottom:    env(safe-area-inset-bottom, 0px);
   --safe-top:       env(safe-area-inset-top, 0px);
-  --font-body:      'Mali', system-ui, sans-serif;
-  --font-headline:  'Lobster', cursive;
-  --on-accent:      #fbf7ee;
+  --font-body:      'Nunito', system-ui, sans-serif;
+  --font-headline:  'Fredoka', system-ui, sans-serif;
+  --on-accent:      #ffffff;
 
   /* ── Motion tokens (see Animations-Spec) ──────────────────── */
   --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1); /* the "bounce" — for anything entering */
@@ -57,8 +77,8 @@
     min-height: 100dvh;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Mali', system-ui, sans-serif;
-    font-weight: 500;
+    font-family: var(--font-body);
+    font-weight: 600;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     overscroll-behavior: none;
@@ -82,10 +102,32 @@
   }
 }
 
+/* ── Bereichsfarben: Override pro Tab-View ───────────────── */
+
+.area-haushalt {
+  --accent:       var(--haushalt);
+  --accent-hover: var(--haushalt-hover);
+  --accent-tint:  var(--haushalt-tint);
+}
+
+.area-einkauf {
+  --accent:       var(--einkauf);
+  --accent-hover: var(--einkauf-hover);
+  --accent-tint:  var(--einkauf-tint);
+}
+
+.area-finanzen {
+  --accent:       var(--finanzen);
+  --accent-hover: var(--finanzen-hover);
+  --accent-tint:  var(--finanzen-tint);
+}
+
 /* ── Utility classes ─────────────────────────────────────── */
 
+/* Beträge, Zähler, Uhrzeiten: Fredoka 700 (Nido-Referenz) */
 .mono {
-  font-family: 'Geist Mono', 'Courier New', monospace;
+  font-family: var(--font-headline);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -95,11 +137,11 @@
   padding: 13px 16px;
   background: var(--surface-deep);
   border: 1px solid var(--border-soft);
-  border-radius: 12px;
+  border-radius: 13px;
   color: var(--text);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.5;
   outline: none;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
@@ -122,15 +164,16 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 14px 20px;
+  padding: 15px 20px;
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: 14px;
-  font-family: 'Mali', system-ui, sans-serif;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 16px;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: var(--shadow-accent);
   transition: background 0.18s ease, transform 0.12s ease;
 }
 
@@ -146,10 +189,10 @@
 
 .section-label {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.13em;
+  font-weight: 700;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-meta);
 }
 
 /* ── Animation 5 · New list/item entry ("Slide + Highlight") ──
@@ -176,5 +219,5 @@
 }
 
 .list-row.just-added {
-  background-color: rgba(134, 165, 150, 0.22);
+  background-color: color-mix(in srgb, var(--accent) 18%, transparent);
 }

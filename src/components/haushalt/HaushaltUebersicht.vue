@@ -152,10 +152,11 @@ const statRows = computed(() => {
 }
 
 .person-card {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-softer);
   border-radius: 18px;
   padding: 16px;
   background: var(--surface);
+  box-shadow: var(--shadow-card);
   margin-bottom: 14px;
 }
 
@@ -167,16 +168,18 @@ const statRows = computed(() => {
 }
 
 .person-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  color: var(--on-accent);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #fff;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 
 .person-info {
@@ -186,7 +189,7 @@ const statRows = computed(() => {
 
 .person-name {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -197,15 +200,16 @@ const statRows = computed(() => {
 }
 
 .person-bar {
-  height: 6px;
-  border-radius: 4px;
-  background: var(--border-soft);
+  height: 10px;
+  border-radius: 6px;
+  background: var(--surface-deep);
   overflow: hidden;
   margin-bottom: 12px;
 }
 
 .person-bar-fill {
   height: 100%;
+  border-radius: 6px;
   transition: width 0.3s ease;
 }
 
@@ -239,10 +243,10 @@ const statRows = computed(() => {
 }
 
 .stats-card {
-  border: 1px solid var(--border);
-  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: var(--radius-card-lg);
   padding: 18px;
-  background: var(--surface);
+  background: var(--accent-tint);
   margin-bottom: 20px;
 }
 
@@ -255,7 +259,7 @@ const statRows = computed(() => {
 
 .stats-total {
   font-size: 34px;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -270,6 +274,7 @@ const statRows = computed(() => {
   border-radius: 7px;
   overflow: hidden;
   display: flex;
+  background: var(--surface);
 }
 
 .stats-bar-chris {
@@ -298,7 +303,7 @@ const statRows = computed(() => {
 .legend-dot {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: 50%;
   display: block;
 }
 
@@ -314,9 +319,16 @@ const statRows = computed(() => {
   flex-direction: column;
 }
 
+.stat-rows {
+  gap: 9px;
+}
+
 .stat-row {
-  padding: 11px 0;
-  border-bottom: 1px solid var(--border-softer);
+  padding: 11px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .stat-row-head {
@@ -328,7 +340,7 @@ const statRows = computed(() => {
 
 .stat-row-name {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -338,11 +350,11 @@ const statRows = computed(() => {
 }
 
 .stat-row-bar {
-  height: 7px;
-  border-radius: 4px;
+  height: 8px;
+  border-radius: 5px;
   overflow: hidden;
   display: flex;
-  background: var(--border-soft);
+  background: var(--surface-deep);
 }
 
 .stat-row-chris { background: var(--chris); }

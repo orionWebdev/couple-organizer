@@ -156,7 +156,7 @@ async function handleLogout() {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 14px;
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -181,9 +181,9 @@ async function handleLogout() {
 }
 
 .invite-input {
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--font-headline);
+  font-weight: 700;
   font-size: 22px;
-  font-weight: 600;
   letter-spacing: 0.15em;
   text-align: center;
   text-transform: uppercase;
@@ -199,7 +199,7 @@ async function handleLogout() {
   background: none;
   border: none;
   color: var(--text-faint);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   cursor: pointer;
   padding: 8px;
@@ -210,7 +210,7 @@ async function handleLogout() {
   background: none;
   border: none;
   color: var(--text-faint);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   cursor: pointer;
   padding: 8px;

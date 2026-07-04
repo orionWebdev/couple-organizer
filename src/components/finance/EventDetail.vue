@@ -98,37 +98,38 @@ const settleAmountFormatted = computed(() => {
   padding: calc(var(--safe-top) + 20px) var(--screen-pad) 8px;
 }
 
+/* Nido: Zurück-Button als weiße Icon-Kachel */
 .back-btn {
-  background: none;
+  background: var(--surface);
   border: none;
-  color: var(--text-meta);
-  font-family: 'Mali', system-ui, sans-serif;
+  color: var(--text);
+  font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  padding: 4px 0;
+  padding: 8px 14px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-float);
 }
 
 .balance-card {
-  background: linear-gradient(150deg, #e7efe7 0%, #f7f1de 58%);
-  border: 1px solid #cfe0d2;
+  background: var(--accent-tint);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 22px;
-  padding: 22px;
+  padding: 18px;
   margin: 12px var(--screen-pad) 24px;
 }
 
 .card-label {
-  color: var(--text-faint);
-  margin-bottom: 12px;
-  letter-spacing: 0.14em;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
 }
 
 .card-amount {
-  font-size: 42px;
-  font-weight: 600;
+  font-size: 36px;
+  font-weight: 700;
   color: var(--text);
-  line-height: 1;
-  text-align: center;
+  line-height: 1.1;
 }
 
 .empty-state {
@@ -144,27 +145,32 @@ const settleAmountFormatted = computed(() => {
   display: block;
   width: 100%;
   margin-top: 14px;
-  border: 1px dashed var(--border);
+  border: 1.5px dashed var(--border);
   cursor: pointer;
   background: transparent;
   color: var(--accent);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 13px;
-  border-radius: 13px;
+  border-radius: 14px;
 }
 
 .expense-list {
-  border-top: 1px solid var(--border-softer);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 0 var(--screen-pad);
 }
 
+/* Nido: Ausgleich-Banner in voller Akzentfarbe */
 .settle-card {
   margin: 22px var(--screen-pad) 0;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 16px;
-  background: var(--surface);
+  border: none;
+  border-radius: var(--radius-card);
+  padding: 15px 16px;
+  background: var(--accent);
+  color: #fff;
 }
 
 .settle-row {
@@ -175,17 +181,18 @@ const settleAmountFormatted = computed(() => {
 
 .settle-label {
   font-size: 13px;
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .settle-value {
   font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
+  font-weight: 700;
+  color: #fff;
 }
 
 .settle-amount {
-  color: var(--accent);
+  color: #fff;
 }
 
 .settle-btn {
@@ -193,27 +200,27 @@ const settleAmountFormatted = computed(() => {
   width: 100%;
   border: none;
   cursor: pointer;
-  background: var(--accent);
-  color: var(--on-accent);
-  font-family: 'Mali', system-ui, sans-serif;
-  font-size: 14.5px;
-  font-weight: 600;
-  padding: 13px;
-  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px;
+  border-radius: 12px;
 }
 
 .add-more-btn {
   display: block;
   width: calc(100% - 2 * var(--screen-pad));
   margin: 16px var(--screen-pad) 0;
-  border: 1px dashed var(--border);
+  border: 1.5px dashed var(--border);
   cursor: pointer;
   background: transparent;
   color: var(--accent);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 13px;
-  border-radius: 13px;
+  border-radius: 14px;
 }
 </style>

@@ -66,40 +66,28 @@ const displayAmount = computed(() => {
 </template>
 
 <style scoped>
+/* Nido: Türkis-Tint-Karte (Frame „Gemeinsame Kasse") */
 .balance-card {
-  background: linear-gradient(150deg, #e7efe7 0%, #f7f1de 58%);
-  border: 1px solid #cfe0d2;
+  background: var(--accent-tint);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 22px;
-  padding: 22px;
+  padding: 18px;
   margin: 0 var(--screen-pad) 24px;
   position: relative;
   overflow: hidden;
 }
 
-.balance-card::before {
-  content: '';
-  position: absolute;
-  top: -20px;
-  left: -20px;
-  width: 120px;
-  height: 120px;
-  background: radial-gradient(circle, rgba(134,165,150,.12) 0%, transparent 70%);
-  pointer-events: none;
-}
-
 .card-label {
-  color: var(--text-faint);
-  margin-bottom: 12px;
-  letter-spacing: 0.14em;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
 }
 
 .card-amount {
-  font-size: 42px;
-  font-weight: 600;
+  font-size: 36px;
+  font-weight: 700;
   color: var(--text);
-  line-height: 1;
-  margin-bottom: 12px;
-  text-align: center;
+  line-height: 1.1;
+  margin-bottom: 10px;
 }
 
 .card-debtor {
@@ -111,6 +99,7 @@ const displayAmount = computed(() => {
 
 .debt-text {
   font-size: 14px;
+  font-weight: 700;
   color: var(--text-secondary);
 }
 
@@ -120,11 +109,12 @@ const displayAmount = computed(() => {
   background: var(--accent);
   color: var(--on-accent);
   border: none;
-  border-radius: 13px;
-  font-family: 'Mali', system-ui, sans-serif;
-  font-size: 14.5px;
-  font-weight: 600;
+  border-radius: 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: var(--shadow-accent);
   transition: background 0.18s ease;
 }
 

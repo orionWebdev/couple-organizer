@@ -62,9 +62,9 @@ function press(key: string) {
   border: 1px solid var(--border-softer);
   border-radius: 12px;
   color: var(--text);
-  font-family: 'Geist Mono', monospace;
+  font-family: var(--font-headline);
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.1s ease;
 }
@@ -75,7 +75,7 @@ function press(key: string) {
 
 .key--delete {
   color: var(--text-meta);
-  font-family: 'Mali', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 20px;
 }
 </style>

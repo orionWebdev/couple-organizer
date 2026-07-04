@@ -77,16 +77,16 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
       </div>
     </div>
 
-    <!-- Inline add input -->
+    <!-- Inline add input (Nido: weiße Bar mit Plus-Kachel links) -->
     <div class="add-row">
+      <button class="add-btn" :disabled="!newName.trim()" @click="handleAdd">+</button>
       <input
         v-model="newName"
-        class="app-field add-field"
+        class="add-field"
         type="text"
         placeholder="Artikel hinzufügen…"
         @keyup.enter="handleAdd"
       />
-      <button class="add-btn" :disabled="!newName.trim()" @click="handleAdd">+</button>
     </div>
 
     <!-- Start shopping button -->
@@ -116,22 +116,26 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
   padding: calc(var(--safe-top) + 16px) var(--screen-pad) 16px;
 }
 
+/* Nido: Zurück-Button als weiße Icon-Kachel */
 .back-btn {
-  background: none;
+  background: var(--surface);
   border: none;
-  color: var(--accent);
-  font-family: 'Mali', system-ui, sans-serif;
-  font-size: 15px;
-  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  padding: 0;
+  padding: 8px 14px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-float);
   flex-shrink: 0;
 }
 
 .detail-title {
   flex: 1;
-  font-size: 18px;
-  font-weight: 600;
+  font-family: var(--font-headline);
+  font-size: 19px;
+  font-weight: 700;
   color: var(--text);
   margin: 0;
   white-space: nowrap;
@@ -159,32 +163,51 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
 }
 
 .cat-header {
-  padding: 10px var(--screen-pad) 4px;
-  background: var(--surface-deep);
-  color: var(--text-faint);
-  letter-spacing: 0.1em;
+  padding: 14px var(--screen-pad) 9px;
+  color: var(--text-meta);
 }
 
+/* Nido: weiße Eingabe-Bar mit Amber-Plus-Kachel (Frame „Einkaufsliste") */
 .add-row {
   display: flex;
-  gap: 10px;
-  padding: 14px var(--screen-pad);
-  border-top: 1px solid var(--border-softer);
+  align-items: center;
+  gap: 11px;
+  margin: 14px var(--screen-pad) 0;
+  padding: 0 14px;
+  height: 50px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: 16px;
+  box-shadow: var(--shadow-float);
 }
 
 .add-field {
   flex: 1;
-  margin-bottom: 0;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.add-field::placeholder {
+  color: var(--text-meta);
+  opacity: 1;
 }
 
 .add-btn {
-  width: 46px;
-  height: 46px;
-  background: var(--accent-tint);
-  border: 1px solid var(--accent);
-  border-radius: 12px;
-  color: var(--accent);
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  border: none;
+  border-radius: 11px;
+  color: #fff;
   font-size: 22px;
+  font-weight: 300;
+  line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
   display: flex;

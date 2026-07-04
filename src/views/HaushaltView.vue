@@ -46,13 +46,48 @@ const todayCounts = computed(() => {
   return counts
 })
 
-const tab = ref<'heute' | 'alle' | 'uebersicht' | 'verlauf'>('heute')
+type Tab = 'heute' | 'alle' | 'uebersicht' | 'verlauf'
+// Standard-Landing im Haushalt ist „Verlauf".
+const tab = ref<Tab>('verlauf')
 const tabOptions = [
   { label: 'Heute', value: 'heute' },
   { label: 'Alle', value: 'alle' },
   { label: 'Übersicht', value: 'uebersicht' },
   { label: 'Verlauf', value: 'verlauf' },
 ]
+
+// ── Horizontaler Swipe zwischen den Tabs ─────────────────────
+const order: Tab[] = ['heute', 'alle', 'uebersicht', 'verlauf']
+let swipeStartX = 0
+let swipeStartY = 0
+let swipeIgnore = false
+
+function goTab(dir: 1 | -1) {
+  const i = order.indexOf(tab.value)
+  const next = i + dir
+  if (next < 0 || next >= order.length) return
+  tab.value = order[next]
+}
+
+function onTouchStart(e: TouchEvent) {
+  const t = e.touches[0]
+  swipeStartX = t.clientX
+  swipeStartY = t.clientY
+  // Swipes, die in einem horizontal scrollbaren Bereich starten (Chip-/Monats-
+  // Reihen), nicht als Tab-Wechsel werten.
+  swipeIgnore = !!(e.target as HTMLElement | null)?.closest?.('[data-hswipe-skip]')
+}
+
+function onTouchEnd(e: TouchEvent) {
+  if (swipeIgnore) return
+  const t = e.changedTouches[0]
+  const dx = t.clientX - swipeStartX
+  const dy = t.clientY - swipeStartY
+  // Deutlich horizontaler Swipe mit ausreichender Distanz.
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.7) {
+    goTab(dx < 0 ? 1 : -1)
+  }
+}
 
 const showSheet = ref(false)
 const editingChore = ref<Chore | null>(null)
@@ -130,42 +165,53 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
     </div>
 
     <div v-if="loading" class="loading-msg">Laden…</div>
-    <template v-else>
-      <HaushaltHeute
-        v-if="tab === 'heute'"
-        :chores="chores"
-        :couple="couple"
-        :currentUserId="user?.uid ?? ''"
-        :todayCounts="todayCounts"
-        @pick="onPick"
-        @undo="onUndo"
-      />
-      <HaushaltAlle
-        v-else-if="tab === 'alle'"
-        :chores="chores"
-        :couple="couple"
-        :todayCounts="todayCounts"
-        @pick="onPick"
-        @undo="onUndo"
-        @assign="onAssign"
-        @edit="openEditChore"
-        @delete="onDelete"
-        @seed="onSeed"
-      />
-      <HaushaltUebersicht
-        v-else-if="tab === 'uebersicht'"
-        :chores="chores"
-        :history="history"
-        :couple="couple"
-      />
-      <HaushaltVerlauf
-        v-else
-        :history="history"
-        :couple="couple"
-        @assign="onHistoryAssign"
-        @delete="onHistoryDelete"
-      />
-    </template>
+    <div
+      v-else
+      class="tab-content"
+      @touchstart.passive="onTouchStart"
+      @touchend.passive="onTouchEnd"
+    >
+      <Transition :name="'tab-fade'" mode="out-in">
+        <HaushaltHeute
+          v-if="tab === 'heute'"
+          key="heute"
+          :chores="chores"
+          :couple="couple"
+          :currentUserId="user?.uid ?? ''"
+          :todayCounts="todayCounts"
+          @pick="onPick"
+          @undo="onUndo"
+        />
+        <HaushaltAlle
+          v-else-if="tab === 'alle'"
+          key="alle"
+          :chores="chores"
+          :couple="couple"
+          :todayCounts="todayCounts"
+          @pick="onPick"
+          @undo="onUndo"
+          @assign="onAssign"
+          @edit="openEditChore"
+          @delete="onDelete"
+          @seed="onSeed"
+        />
+        <HaushaltUebersicht
+          v-else-if="tab === 'uebersicht'"
+          key="uebersicht"
+          :chores="chores"
+          :history="history"
+          :couple="couple"
+        />
+        <HaushaltVerlauf
+          v-else
+          key="verlauf"
+          :history="history"
+          :couple="couple"
+          @assign="onHistoryAssign"
+          @delete="onHistoryDelete"
+        />
+      </Transition>
+    </div>
 
     <button v-if="tab === 'alle'" class="fab" @click="openNewChore"><span class="fab-plus">+</span>Aufgabe hinzufügen</button>
 
@@ -218,6 +264,30 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
   font-size: 14px;
   color: var(--text-faint);
   text-align: center;
+}
+
+.tab-content {
+  min-height: 60vh;
+  touch-action: pan-y;
+}
+
+/* Sanfter Übergang beim Tab-Wechsel (auch per Swipe) */
+.tab-fade-enter-active {
+  transition: opacity 220ms var(--ease-standard), transform 220ms var(--ease-standard);
+}
+
+.tab-fade-leave-active {
+  transition: opacity 140ms var(--ease-in), transform 140ms var(--ease-in);
+}
+
+.tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.tab-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 .fab {

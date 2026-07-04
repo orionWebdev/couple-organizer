@@ -20,6 +20,9 @@ export type ChoreType = 'recurring' | 'once'
 export type ChoreInterval = 'täglich' | 'wöchentlich' | 'monatlich'
 export type ChoreAssignee = string | 'both' | null // uid | Beide | Offen
 
+// Punkte je Aufgabengröße: 5 = winzig, 10 = klein, 20 = mittel, 30 = groß.
+export type ChorePoints = 5 | 10 | 20 | 30
+
 // Feste Aufgabenbereiche/Räume für Pool-Filter und Zuordnung.
 export type ChoreRoom =
   | 'allgemein'
@@ -43,6 +46,7 @@ export interface Chore {
   interval: ChoreInterval | null // only set when type === 'recurring'
   dueDate: Timestamp | null // null = kein fester Tag; same day = heute; future = demnächst
   assignee: ChoreAssignee
+  points: ChorePoints // Belohnungspunkte je nach Aufgabengröße (Altbestand: via pointsForChore abgeleitet)
   done: boolean // once-tasks only: permanently done, hides from pool
   completedAt: Timestamp | null // last completion instant (recurring: today's occurrence)
   completedBy: ChoreAssignee
@@ -57,6 +61,7 @@ export interface ChoreHistoryEntry {
   choreId: string
   choreName: string
   completedBy: ChoreAssignee
+  points: ChorePoints // beim Erledigen gutgeschriebene Punkte (Altbestand: via pointsForName abgeleitet)
   completedAt: Timestamp
   createdAt: Timestamp
 }

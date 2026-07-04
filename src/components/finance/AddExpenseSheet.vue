@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { Couple } from '@/types'
+import type { Couple, Expense } from '@/types'
 import type { ExpenseCategory } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import NumericKeypad from './NumericKeypad.vue'
@@ -11,6 +11,7 @@ const props = defineProps<{
   currentUserId: string
   addContext?: 'dashboard' | 'event'
   startInEventMode?: boolean
+  editingExpense?: Expense | null
 }>()
 
 const emit = defineEmits<{
@@ -29,9 +30,14 @@ const addMode = ref<'expense' | 'event'>('expense')
 const newEventTitle = ref('')
 const newEventDate = ref('')
 
-const showModeToggle = computed(() => (props.addContext ?? 'dashboard') === 'dashboard')
+const isEditing = computed(() => !!props.editingExpense)
+const showModeToggle = computed(() => !isEditing.value && (props.addContext ?? 'dashboard') === 'dashboard')
 
-const sheetTitle = computed(() => addMode.value === 'event' ? 'Neues Finanzevent' : 'Ausgabe hinzufügen')
+const sheetTitle = computed(() => {
+  if (isEditing.value) return 'Ausgabe bearbeiten'
+  return addMode.value === 'event' ? 'Neues Finanzevent' : 'Ausgabe hinzufügen'
+})
+const submitLabel = computed(() => (isEditing.value ? 'Speichern' : 'Hinzufügen'))
 
 const rawAmount = ref('')
 const title = ref('')
@@ -130,8 +136,35 @@ function handleSubmitEvent() {
   newEventDate.value = ''
 }
 
+function prefillFromExpense(exp: Expense) {
+  rawAmount.value = String(exp.amount / 100)
+  title.value = exp.title
+  paidBy.value = exp.paidBy
+  tag.value = exp.category
+  const partner = partnerUid.value
+  const mine = exp.owedBy[props.currentUserId]
+  if (partner && typeof mine === 'number' && exp.amount > 0) {
+    const pct = Math.round((mine / exp.amount) * 100)
+    if (pct === 50) {
+      splitMode.value = '5050'
+      customPct.value = 50
+    } else {
+      splitMode.value = 'custom'
+      customPct.value = pct
+    }
+  } else {
+    splitMode.value = '5050'
+    customPct.value = 50
+  }
+}
+
 watch(() => props.isOpen, (open) => {
   if (!open) return
+  if (props.editingExpense) {
+    addMode.value = 'expense'
+    prefillFromExpense(props.editingExpense)
+    return
+  }
   addMode.value = props.startInEventMode ? 'event' : 'expense'
 })
 </script>
@@ -277,7 +310,7 @@ watch(() => props.isOpen, (open) => {
       :disabled="!rawAmount || parseFloat(rawAmount) <= 0 || !title.trim()"
       @click="handleSubmit"
     >
-      Hinzufügen
+      {{ submitLabel }}
     </button>
     </template>
   </BottomSheet>

@@ -11,6 +11,7 @@ import EventDetail from '@/components/finance/EventDetail.vue'
 import AddExpenseSheet from '@/components/finance/AddExpenseSheet.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { useJustAdded } from '@/composables/useJustAdded'
+import type { Expense } from '@/types'
 
 const { user } = useAuth()
 const { couple } = useCouple()
@@ -23,6 +24,7 @@ const {
   activeEventSummaries,
   eventSummaries,
   addExpense,
+  updateExpense,
   deleteExpense,
   markAllPaid,
   createEvent,
@@ -49,29 +51,57 @@ function backToDashboard() {
 const showAdd = ref(false)
 const showSettle = ref(false)
 const startInEventMode = ref(false)
+const editingExpense = ref<Expense | null>(null)
 
 function openAddExpense() {
   startInEventMode.value = false
+  editingExpense.value = null
   showAdd.value = true
 }
 
 function openNewEvent() {
   startInEventMode.value = true
+  editingExpense.value = null
   showAdd.value = true
 }
 
 function openAddForCurrentEvent() {
   startInEventMode.value = false
+  editingExpense.value = null
   showAdd.value = true
 }
 
-async function onSubmitExpense(payload: Parameters<typeof addExpense>[0]) {
-  await addExpense({
-    ...payload,
-    eventId: finView.value === 'event' ? currentEventId.value : null,
-  })
+function openEditExpense(expense: Expense) {
+  editingExpense.value = expense
+  startInEventMode.value = false
+  showAdd.value = true
+}
+
+function closeAdd() {
   showAdd.value = false
-  showToast('Ausgabe gespeichert')
+  editingExpense.value = null
+}
+
+async function onSubmitExpense(payload: Parameters<typeof addExpense>[0]) {
+  if (editingExpense.value) {
+    // eventId der bestehenden Ausgabe beibehalten
+    await updateExpense(editingExpense.value.id, {
+      title: payload.title,
+      amountInCents: payload.amountInCents,
+      paidBy: payload.paidBy,
+      owedBy: payload.owedBy,
+      category: payload.category,
+      eventId: editingExpense.value.eventId,
+    })
+    showToast('Ausgabe aktualisiert')
+  } else {
+    await addExpense({
+      ...payload,
+      eventId: finView.value === 'event' ? currentEventId.value : null,
+    })
+    showToast('Ausgabe gespeichert')
+  }
+  closeAdd()
 }
 
 async function onSubmitEvent(payload: { title: string; dateLabel: string }) {
@@ -163,6 +193,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
           :currentUserId="user?.uid ?? ''"
           :class="{ 'just-added': justAddedExpense.has(exp.id) }"
           @delete="onDeleteExpense"
+          @edit="openEditExpense"
         />
       </TransitionGroup>
 
@@ -178,6 +209,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       @back="backToDashboard"
       @addExpense="openAddForCurrentEvent"
       @deleteExpense="onDeleteExpense"
+      @editExpense="openEditExpense"
       @settle="onSettleEvent"
     />
 
@@ -188,7 +220,8 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       :currentUserId="user?.uid ?? ''"
       :addContext="finView"
       :startInEventMode="startInEventMode"
-      @close="showAdd = false"
+      :editingExpense="editingExpense"
+      @close="closeAdd"
       @submit="onSubmitExpense"
       @submitEvent="onSubmitEvent"
     />

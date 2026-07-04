@@ -5,8 +5,9 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { Chore, ChoreAssignee, ChoreHistoryEntry, ChoreInterval, ChoreRoom, ChoreType } from '@/types'
+import type { Chore, ChoreAssignee, ChoreHistoryEntry, ChoreInterval, ChorePoints, ChoreRoom, ChoreType } from '@/types'
 import { POOL_SEED } from '@/utils/poolSeed'
+import { isPointValue, pointsForChore, pointsForName } from '@/utils/points'
 
 interface AddChoreInput {
   name: string
@@ -15,9 +16,14 @@ interface AddChoreInput {
   interval: ChoreInterval | null
   dueDate: Date | null
   assignee: ChoreAssignee
+  points: ChorePoints
 }
 
 type UpdateChoreInput = AddChoreInput
+
+// Merkt sich pro Couple, dass die Punkte-Migration in dieser Session bereits
+// lief, damit mehrere Mountings der View sie nicht mehrfach anstoßen.
+const migratedCouples = new Set<string>()
 
 export function useChores(coupleId: Ref<string | null>) {
   const { user } = useAuth()
@@ -102,6 +108,7 @@ export function useChores(coupleId: Ref<string | null>) {
         interval: input.type === 'recurring' ? input.interval : null,
         dueDate: input.dueDate ? Timestamp.fromDate(input.dueDate) : null,
         assignee: input.assignee,
+        points: isPointValue(input.points) ? input.points : pointsForName(cleanName, input.room),
         done: false,
         completedAt: null,
         completedBy: null,
@@ -141,6 +148,7 @@ export function useChores(coupleId: Ref<string | null>) {
           interval: 'wöchentlich',
           dueDate: null,
           assignee: null,
+          points: pointsForName(task.name, task.room),
           done: false,
           completedAt: null,
           completedBy: null,
@@ -171,6 +179,7 @@ export function useChores(coupleId: Ref<string | null>) {
         interval: input.type === 'recurring' ? input.interval : null,
         dueDate: input.dueDate ? Timestamp.fromDate(input.dueDate) : null,
         assignee: input.assignee,
+        points: isPointValue(input.points) ? input.points : pointsForName(cleanName, input.room),
         updatedAt: serverTimestamp()
       })
       error.value = null
@@ -220,6 +229,7 @@ export function useChores(coupleId: Ref<string | null>) {
         choreId: chore.id,
         choreName: chore.name,
         completedBy: by,
+        points: pointsForChore(chore),
         completedAt: serverTimestamp(),
         createdAt: serverTimestamp()
       })
@@ -292,6 +302,57 @@ export function useChores(coupleId: Ref<string | null>) {
     }
     return 0
   }
+
+  // Einmalige Migration: weist Altbestand (Aufgaben + Verlauf) ohne points-Feld
+  // faire Werte zu und schreibt so Nutzer:innen rückwirkend Punkte für bereits
+  // erledigte Aufgaben gut. Läuft je Couple nur einmal pro Session und nur,
+  // wenn tatsächlich Dokumente ohne Punkte existieren.
+  async function migratePointsIfNeeded(id: string): Promise<void> {
+    if (migratedCouples.has(id)) return
+
+    const choresToFix = chores.value.filter((c) => !isPointValue(c.points))
+    const historyToFix = history.value.filter((h) => !isPointValue(h.points))
+    if (choresToFix.length === 0 && historyToFix.length === 0) {
+      migratedCouples.add(id)
+      return
+    }
+
+    // Vorab markieren, damit parallele Listener-Updates die Migration nicht
+    // erneut anstoßen, während der Batch noch läuft.
+    migratedCouples.add(id)
+
+    try {
+      // Ein WriteBatch fasst max. 500 Operationen — in Blöcken committen.
+      let batch = writeBatch(db)
+      let ops = 0
+      const flush = async () => {
+        if (ops > 0) {
+          await batch.commit()
+          batch = writeBatch(db)
+          ops = 0
+        }
+      }
+
+      for (const c of choresToFix) {
+        batch.update(doc(db, 'chores', c.id), { points: pointsForChore(c) })
+        if (++ops >= 400) await flush()
+      }
+      for (const h of historyToFix) {
+        batch.update(doc(db, 'choreHistory', h.id), { points: pointsForName(h.choreName) })
+        if (++ops >= 400) await flush()
+      }
+      await flush()
+    } catch (err: any) {
+      console.error('Failed to migrate chore points:', err)
+      // Bei Fehler erneut versuchbar machen (z. B. beim nächsten Snapshot).
+      migratedCouples.delete(id)
+    }
+  }
+
+  // Sobald beide Listener erstmals geladen haben, Migration prüfen/anstoßen.
+  watch(loading, (isLoading) => {
+    if (!isLoading && coupleId.value) migratePointsIfNeeded(coupleId.value)
+  }, { immediate: true })
 
   onScopeDispose(() => {
     if (unsubscribeChores) unsubscribeChores()

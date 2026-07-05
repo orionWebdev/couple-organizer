@@ -4,11 +4,10 @@ import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useShopping } from '@/composables/useShopping'
 import { useExpenses } from '@/composables/useExpenses'
-import { useMealPlan } from '@/composables/useMealPlan'
 import { showToast } from '@/composables/useToast'
-import { dateKey } from '@/utils/mealplan'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import FabButton from '@/components/ui/FabButton.vue'
+import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import ShoppingListCard from '@/components/shopping/ShoppingListCard.vue'
 import ShoppingListDetail from '@/components/shopping/ShoppingListDetail.vue'
 import ShoppingModeView from '@/components/shopping/ShoppingModeView.vue'
@@ -39,23 +38,47 @@ const {
 
 const { addExpense } = useExpenses(coupleId)
 
-// Vorschau-Werte für die beiden Link-Cards (Essensplan/Rezepte)
-const { week, recipes } = useMealPlan(coupleId)
+type Tab = 'liste' | 'wochenplan' | 'rezepte'
+const tab = ref<Tab>('liste')
+const tabOptions = [
+  { label: 'Einkaufsliste', value: 'liste' },
+  { label: 'Wochenplan', value: 'wochenplan' },
+  { label: 'Rezepte', value: 'rezepte' },
+]
 
-const todayRecipeTitle = computed(() => {
-  const today = dateKey(new Date())
-  return week.value.find((d) => d.dateKey === today)?.recipe?.title ?? null
-})
+const rezeptWikiRef = ref<InstanceType<typeof RezeptWikiView> | null>(null)
 
-const planPreviewText = computed(() =>
-  todayRecipeTitle.value ? `Heute: ${todayRecipeTitle.value}` : 'Diese Woche planen'
-)
+// ── Horizontaler Swipe zwischen den Tabs (gleiches Muster wie HaushaltView) ──
+const tabOrder: Tab[] = ['liste', 'wochenplan', 'rezepte']
+let swipeStartX = 0
+let swipeStartY = 0
+let swipeIgnore = false
 
-const wikiPreviewText = computed(() =>
-  recipes.value.length > 0 ? `${recipes.value.length} Rezept${recipes.value.length === 1 ? '' : 'e'} gespeichert` : 'Eure Sammlung starten'
-)
+function goTab(dir: 1 | -1) {
+  const i = tabOrder.indexOf(tab.value)
+  const next = i + dir
+  if (next < 0 || next >= tabOrder.length) return
+  tab.value = tabOrder[next]
+}
 
-type View = 'lists' | 'detail' | 'shopping-mode' | 'essensplan' | 'wiki'
+function onTouchStart(e: TouchEvent) {
+  const t = e.touches[0]
+  swipeStartX = t.clientX
+  swipeStartY = t.clientY
+  swipeIgnore = !!(e.target as HTMLElement | null)?.closest?.('[data-hswipe-skip]')
+}
+
+function onTouchEnd(e: TouchEvent) {
+  if (swipeIgnore) return
+  const t = e.changedTouches[0]
+  const dx = t.clientX - swipeStartX
+  const dy = t.clientY - swipeStartY
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.7) {
+    goTab(dx < 0 ? 1 : -1)
+  }
+}
+
+type View = 'lists' | 'detail' | 'shopping-mode'
 const view = ref<View>('lists')
 
 const showNewList = ref(false)
@@ -178,64 +201,66 @@ function listItemsFor(listId: string) {
       @deleteList="handleDeleteList(activeList.id)"
     />
 
-    <!-- Essensplan -->
-    <EssensplanView
-      v-else-if="view === 'essensplan'"
-      :coupleId="coupleId"
-      :couple="couple"
-      @back="view = 'lists'"
-    />
-
-    <!-- Rezept-Wiki -->
-    <RezeptWikiView
-      v-else-if="view === 'wiki'"
-      :coupleId="coupleId"
-      @back="view = 'lists'"
-    />
-
-    <!-- List overview -->
+    <!-- List overview + Wochenplan/Rezepte tabs -->
     <template v-else>
       <div class="page-header">
         <h1 class="page-title">Einkaufen</h1>
       </div>
-
-      <div class="page-container">
-        <div class="link-cards">
-          <button class="link-card" @click="view = 'essensplan'">
-            <span class="link-card-icon">🍽️</span>
-            <div class="link-card-text">
-              <span class="link-card-title">Essensplan <span class="link-card-chevron">›</span></span>
-              <span class="link-card-sub">{{ planPreviewText }}</span>
-            </div>
-          </button>
-          <button class="link-card" @click="view = 'wiki'">
-            <span class="link-card-icon">📖</span>
-            <div class="link-card-text">
-              <span class="link-card-title">Rezepte <span class="link-card-chevron">›</span></span>
-              <span class="link-card-sub">{{ wikiPreviewText }}</span>
-            </div>
-          </button>
-        </div>
-
-        <div v-if="loading" class="loading-msg">Laden…</div>
-        <div v-else class="lists-wrap">
-          <TransitionGroup tag="div" name="list-add" class="lists-grid">
-            <ShoppingListCard
-              v-for="list in lists"
-              :key="list.id"
-              :list="list"
-              :items="listItemsFor(list.id)"
-              :menuOpen="menuOpenId === list.id"
-              @select="selectList(list.id)"
-              @toggleMenu="toggleListMenu(list.id)"
-              @rename="handleRenameList(list.id, $event)"
-              @delete="handleDeleteList(list.id)"
-            />
-          </TransitionGroup>
-        </div>
+      <div class="tab-bar-wrap">
+        <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
       </div>
 
-      <FabButton label="Neue Liste" @click="showNewList = true" />
+      <div
+        class="tab-content"
+        @touchstart.passive="onTouchStart"
+        @touchend.passive="onTouchEnd"
+      >
+        <Transition name="tab-fade" mode="out-in">
+          <div v-if="tab === 'liste'" key="liste" class="page-container">
+            <div v-if="loading" class="loading-msg">Laden…</div>
+            <div v-else class="lists-wrap">
+              <TransitionGroup tag="div" name="list-add" class="lists-grid">
+                <ShoppingListCard
+                  v-for="list in lists"
+                  :key="list.id"
+                  :list="list"
+                  :items="listItemsFor(list.id)"
+                  :menuOpen="menuOpenId === list.id"
+                  @select="selectList(list.id)"
+                  @toggleMenu="toggleListMenu(list.id)"
+                  @rename="handleRenameList(list.id, $event)"
+                  @delete="handleDeleteList(list.id)"
+                />
+              </TransitionGroup>
+            </div>
+          </div>
+
+          <EssensplanView
+            v-else-if="tab === 'wochenplan'"
+            key="wochenplan"
+            :coupleId="coupleId"
+            :couple="couple"
+          />
+
+          <RezeptWikiView
+            v-else
+            key="rezepte"
+            ref="rezeptWikiRef"
+            :coupleId="coupleId"
+          />
+        </Transition>
+      </div>
+
+      <!-- Fixierte Add-Buttons leben hier außerhalb der Tab-Transition, nicht
+           in den einzelnen Tab-Panes — sonst würde das transform der
+           tab-fade-Transition sie kurzzeitig zum Containing Block für ihre
+           position:fixed-Kindelemente machen (sichtbares Reinrutschen). -->
+      <FabButton v-if="tab === 'liste'" label="Neue Liste" @click="showNewList = true" />
+      <FabButton
+        v-else-if="tab === 'rezepte' && !rezeptWikiRef?.showForm"
+        label="Rezept hinzufügen"
+        @click="rezeptWikiRef?.openCreateForm()"
+      />
     </template>
 
     <!-- New list sheet -->
@@ -273,8 +298,51 @@ function listItemsFor(listId: string) {
   margin: 0;
 }
 
-/* Responsiver Container für alles unterhalb des Headers, damit die
-   50/50-Cards auf breiten Screens nicht randlos auseinanderlaufen. */
+.tab-bar-wrap {
+  padding: 0 var(--screen-pad);
+  margin-bottom: 20px;
+}
+
+.tab-bar {
+  display: flex;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.tab-bar :deep(.seg-btn) {
+  padding: 9px 0;
+  font-size: 12px;
+}
+
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  touch-action: pan-y;
+}
+
+/* Sanfter Übergang beim Tab-Wechsel (gleiches Muster wie HaushaltView) */
+.tab-fade-enter-active {
+  transition: opacity 220ms var(--ease-standard), transform 220ms var(--ease-standard);
+}
+
+.tab-fade-leave-active {
+  transition: opacity 140ms var(--ease-in), transform 140ms var(--ease-in);
+}
+
+.tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.tab-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* Responsiver Container für die Listenübersicht, damit sie auf breiten
+   Screens nicht randlos auseinanderläuft. */
 .page-container {
   width: 100%;
   max-width: 880px;
@@ -283,76 +351,6 @@ function listItemsFor(listId: string) {
   min-height: 0;
   display: flex;
   flex-direction: column;
-}
-
-.link-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 0 var(--screen-pad) 16px;
-}
-
-.link-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  width: 100%;
-  min-width: 0;
-  padding: 14px;
-  background: var(--einkauf-tint-strong);
-  border: 1px solid color-mix(in srgb, var(--einkauf) 30%, transparent);
-  border-radius: var(--radius-card-lg);
-  cursor: pointer;
-  text-align: left;
-}
-
-.link-card:active {
-  background: var(--einkauf-tint);
-}
-
-.link-card-icon {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--einkauf);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-}
-
-.link-card-text {
-  width: 100%;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.link-card-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-}
-
-.link-card-sub {
-  font-size: 11px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.link-card-chevron {
-  font-size: 18px;
-  color: color-mix(in srgb, var(--einkauf) 70%, var(--text-faint));
-  flex-shrink: 0;
 }
 
 .loading-msg {

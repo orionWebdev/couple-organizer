@@ -191,6 +191,37 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     }
   }
 
+  // Verplant ein bereits existierendes Wiki-Rezept für einen Tag, ohne es
+  // zu duplizieren (im Gegensatz zu assignRecipe, das immer ein neues
+  // Recipe-Dokument anlegt).
+  async function assignExistingRecipe(dateKeyValue: string, recipeId: string): Promise<boolean> {
+    if (!coupleId.value || !user.value) return false
+
+    try {
+      const existing = entries.value.find((e) => e.dateKey === dateKeyValue)
+      if (existing) {
+        await deleteDoc(doc(db, 'mealPlans', existing.id))
+      }
+
+      await addDoc(collection(db, 'mealPlans'), {
+        coupleId: coupleId.value,
+        dateKey: dateKeyValue,
+        recipeId,
+        cookAssignee: null,
+        createdBy: user.value.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+
+      error.value = null
+      return true
+    } catch (err: any) {
+      console.error('Failed to assign existing recipe:', err)
+      error.value = err.message
+      return false
+    }
+  }
+
   // Speichert ein Rezept in der Wiki-Sammlung, ohne es einem Tag zuzuweisen.
   async function createRecipe(input: AssignRecipeInput): Promise<boolean> {
     if (!coupleId.value || !user.value) return false
@@ -281,6 +312,7 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     error: readonly(error),
     suggestRecipes,
     assignRecipe,
+    assignExistingRecipe,
     createRecipe,
     updateRecipe,
     deleteRecipe,

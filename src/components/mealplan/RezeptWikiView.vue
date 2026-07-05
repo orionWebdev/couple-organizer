@@ -5,13 +5,10 @@ import { useMealPlan } from '@/composables/useMealPlan'
 import { showToast } from '@/composables/useToast'
 import { RECIPE_TAGS, primaryTagMeta, recipeTagDef, type RecipeTagId } from '@/utils/recipeTags'
 import RecipeDetailModal from './RecipeDetailModal.vue'
-import FabButton from '@/components/ui/FabButton.vue'
 
 const props = defineProps<{
   coupleId: string | null
 }>()
-
-const emit = defineEmits<{ back: [] }>()
 
 const coupleIdRef = computed(() => props.coupleId)
 const { recipes, createRecipe, updateRecipe, deleteRecipe } = useMealPlan(coupleIdRef)
@@ -124,15 +121,18 @@ async function handleDeleteRecipe(recipe: Recipe) {
   showToast(ok ? 'Rezept gelöscht' : 'Fehler beim Löschen')
   if (ok) showDetail.value = false
 }
+
+// Der "Rezept hinzufügen"-Button lebt in EinkaufenView (außerhalb der
+// Tab-Transition) — ein fixiertes Element hier drin würde während des
+// tab-fade-Übergangs kurzzeitig relativ zum transformierten .wiki statt
+// zum Viewport positioniert (transform erzeugt einen Containing Block
+// für position:fixed-Nachfahren), was als sichtbares Herunterrutschen
+// beim Laden auffiel.
+defineExpose({ openCreateForm, showForm })
 </script>
 
 <template>
   <div class="wiki">
-    <div class="page-header">
-      <button class="back-caret" type="button" @click="emit('back')" aria-label="Zurück">‹</button>
-      <h1 class="page-title">Rezepte</h1>
-    </div>
-
     <div class="wiki-scroll">
       <input
         v-model="search"
@@ -228,8 +228,6 @@ async function handleDeleteRecipe(recipe: Recipe) {
       </div>
     </div>
 
-    <FabButton v-if="!showForm" label="Rezept hinzufügen" @click="openCreateForm" />
-
     <RecipeDetailModal
       :isOpen="showDetail"
       :recipe="detailRecipe"
@@ -246,41 +244,6 @@ async function handleDeleteRecipe(recipe: Recipe) {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: calc(var(--safe-top) + 20px) var(--screen-pad) 20px;
-}
-
-.back-caret {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: transparent;
-  border: none;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-faint);
-  cursor: pointer;
-}
-
-.back-caret:active {
-  color: var(--text);
-}
-
-.page-title {
-  font-family: var(--font-headline);
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0;
 }
 
 /* Responsiver Container, damit das Karten-Grid auf breiten Screens nicht

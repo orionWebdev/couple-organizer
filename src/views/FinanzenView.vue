@@ -317,7 +317,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
   position: fixed;
   left: 18px;
   right: 18px;
-  bottom: calc(74px + var(--safe-bottom));
+  bottom: calc(104px + var(--safe-bottom));
   height: 50px;
   display: flex;
   align-items: center;

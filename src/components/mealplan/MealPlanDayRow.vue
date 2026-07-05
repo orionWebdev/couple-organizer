@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { MealPlanEntry, Recipe } from '@/types'
 import { weekdayLabel, dayMonthLabel } from '@/utils/mealplan'
+import { primaryTagMeta, recipeTagDef } from '@/utils/recipeTags'
 
 const props = defineProps<{
   date: Date
@@ -13,13 +14,17 @@ const props = defineProps<{
 const emit = defineEmits<{
   addRecipe: [dateKey: string]
   remove: [entryId: string]
+  open: [recipe: Recipe]
 }>()
+
+const icon = computed(() => (props.recipe ? primaryTagMeta(props.recipe.tags) : null))
 
 const metaLabel = computed(() => {
   if (!props.recipe) return ''
   const parts: string[] = []
   if (props.recipe.minutes) parts.push(`${props.recipe.minutes} Min`)
-  if (props.recipe.tags.length) parts.push(props.recipe.tags.join(', '))
+  const tagLabel = recipeTagDef(props.recipe.tags[0])?.label
+  if (tagLabel) parts.push(tagLabel)
   return parts.join(' · ')
 })
 </script>
@@ -34,8 +39,8 @@ const metaLabel = computed(() => {
     <button v-if="!recipe" class="day-empty" type="button" @click="emit('addRecipe', dateKey)">
       + Rezept hinzufügen
     </button>
-    <div v-else class="day-filled">
-      <span class="recipe-icon">🍽️</span>
+    <div v-else class="day-filled" @click="emit('open', recipe)">
+      <span class="recipe-icon" :style="{ background: icon?.color }">{{ icon?.emoji }}</span>
       <div class="recipe-text">
         <span class="recipe-title">{{ recipe.title }}</span>
         <span v-if="metaLabel" class="recipe-meta">{{ metaLabel }}</span>
@@ -103,6 +108,7 @@ const metaLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
 }
 
 .recipe-icon {

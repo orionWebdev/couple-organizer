@@ -22,7 +22,12 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: '/finanzen'
+          redirect: '/dashboard'
+        },
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: () => import('@/views/DashboardView.vue')
         },
         {
           path: 'finanzen',
@@ -63,11 +68,11 @@ router.beforeEach(async (to) => {
   }
 
   if (to.name === 'login' && isAuthenticated) {
-    return hasCouple ? { name: 'finanzen' } : { name: 'couple-setup' }
+    return hasCouple ? { name: 'dashboard' } : { name: 'couple-setup' }
   }
 
   if (to.name === 'couple-setup' && hasCouple) {
-    return { name: 'finanzen' }
+    return { name: 'dashboard' }
   }
 })
 

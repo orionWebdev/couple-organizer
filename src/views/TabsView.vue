@@ -6,7 +6,6 @@ import { useCouple } from '@/composables/useCouple'
 import Toast from '@/components/ui/Toast.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
-import NavIcon from '@/components/ui/NavIcon.vue'
 
 const { user } = useAuth()
 const { couple, watchCouple } = useCouple()
@@ -24,26 +23,76 @@ const partnerMissing = computed(() =>
 )
 const showInvite = ref(false)
 
-const tabs = [
-  { id: 'finanzen',  label: 'Finanzen',  href: '/finanzen' },
-  { id: 'haushalt',  label: 'Haushalt',  href: '/haushalt' },
-  { id: 'einkaufen', label: 'Einkaufen', href: '/einkaufen' },
-] as const
+interface NavItem { id: string; label: string; icon: string; color: string; href: string }
+
+// Bereichsfarbe + Icon je Tab (Nido-Referenz: Dashboard indigo, Haushalt
+// terrakotta, Finanzen türkis, Essen amber).
+const NAV_ITEMS: readonly NavItem[] = [
+  { id: 'dashboard', label: 'Start', icon: '🏠', color: 'var(--dashboard)', href: '/dashboard' },
+  { id: 'haushalt', label: 'Haushalt', icon: '🧽', color: 'var(--haushalt)', href: '/haushalt' },
+  { id: 'finanzen', label: 'Finanzen', icon: '💶', color: 'var(--finanzen)', href: '/finanzen' },
+  { id: 'einkaufen', label: 'Essen', icon: '🍽️', color: 'var(--einkauf)', href: '/einkaufen' },
+]
 
 const activeId = computed(() => {
-  const seg = route.path.split('/')[1] || 'finanzen'
-  return tabs.find(t => t.id === seg)?.id ?? 'finanzen'
+  const seg = route.path.split('/')[1] || 'dashboard'
+  return NAV_ITEMS.find(i => i.id === seg)?.id ?? 'dashboard'
 })
 
 const activeIndex = computed(() =>
-  Math.max(0, tabs.findIndex(t => t.id === activeId.value))
+  Math.max(0, NAV_ITEMS.findIndex(i => i.id === activeId.value))
 )
 
-// Bereichsfarbe des aktiven Tabs (Nido: jeder Bereich hat eigene Akzentfarbe)
-const areaColor: Record<string, string> = {
-  finanzen: 'var(--finanzen)',
-  haushalt: 'var(--haushalt)',
-  einkaufen: 'var(--einkauf)',
+const activeItem = computed(() => NAV_ITEMS[activeIndex.value])
+
+function slotCenterPercent(index: number): number {
+  return ((index + 0.5) / NAV_ITEMS.length) * 100
+}
+
+const bubbleLeftPercent = computed(() => slotCenterPercent(activeIndex.value))
+
+// ── Bounce beim Ankommen + Farbtropfen entlang der Strecke ────
+// Zwei inhaltsgleiche Keyframe-Namen im Wechsel, weil ein erneutes Zuweisen
+// desselben Animationsnamens die Animation sonst nicht neu startet.
+const bounceParity = ref(false)
+
+interface Droplet { id: number; leftPercent: number; top: number; color: string; delay: number }
+const droplets = ref<Droplet[]>([])
+let dropletSeq = 0
+
+function selectNav(id: string) {
+  const item = NAV_ITEMS.find(i => i.id === id)
+  if (!item) return
+
+  if (id !== activeId.value) {
+    const oldIndex = activeIndex.value
+    const oldColor = activeItem.value.color
+    const newIndex = NAV_ITEMS.findIndex(i => i.id === id)
+    const x0 = slotCenterPercent(oldIndex)
+    const x1 = slotCenterPercent(newIndex)
+    const dropCount = 5
+    const newDroplets: Droplet[] = []
+    for (let i = 1; i <= dropCount; i++) {
+      const t = i / (dropCount + 1)
+      dropletSeq++
+      newDroplets.push({
+        id: dropletSeq,
+        leftPercent: x0 + (x1 - x0) * t + (Math.random() * 2 - 1),
+        top: 2 + Math.sin(t * Math.PI) * -10 + Math.random() * 6,
+        color: oldColor,
+        delay: t * 90,
+      })
+    }
+    bounceParity.value = !bounceParity.value
+    droplets.value = [...droplets.value, ...newDroplets]
+    newDroplets.forEach((d) => {
+      setTimeout(() => {
+        droplets.value = droplets.value.filter((x) => x.id !== d.id)
+      }, 800 + d.delay)
+    })
+  }
+
+  router.push(item.href)
 }
 </script>
 
@@ -66,25 +115,34 @@ const areaColor: Record<string, string> = {
       <InviteCodeBox v-if="couple" :code="couple.inviteCode" />
     </BottomSheet>
 
-    <nav class="tab-bar" :style="{ '--tab-count': tabs.length }">
-      <span
-        class="nav-indicator"
-        :style="{ transform: `translateX(${activeIndex * 100}%)`, color: areaColor[activeId] }"
-      >
-        <span class="nav-dot" />
-      </span>
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        class="tab-btn"
-        :class="{ 'tab-btn--active': activeId === tab.id }"
-        :style="activeId === tab.id ? { color: areaColor[tab.id] } : undefined"
-        @click="router.push(tab.href)"
-      >
-        <NavIcon :name="tab.id" class="tab-icon" />
-        <span class="tab-label">{{ tab.label }}</span>
-      </button>
-    </nav>
+    <div class="nav-wrap">
+      <div class="nav-bar">
+        <button
+          v-for="item in NAV_ITEMS"
+          :key="item.id"
+          class="nav-slot"
+          @click="selectNav(item.id)"
+        >
+          <span class="nav-icon" :class="{ 'nav-icon--hidden': activeId === item.id }">{{ item.icon }}</span>
+          <span class="nav-label" :style="{ color: activeId === item.id ? item.color : undefined }">{{ item.label }}</span>
+        </button>
+
+        <span
+          v-for="d in droplets"
+          :key="d.id"
+          class="nav-droplet"
+          :style="{ left: d.leftPercent + '%', top: d.top + 'px', background: d.color, animationDelay: d.delay + 'ms' }"
+        />
+
+        <span class="nav-collar" :style="{ left: bubbleLeftPercent + '%' }" />
+        <button
+          class="nav-bubble"
+          :class="bounceParity ? 'nav-bubble--jump1' : 'nav-bubble--jump2'"
+          :style="{ left: bubbleLeftPercent + '%', background: activeItem.color }"
+          @click="selectNav(activeId)"
+        >{{ activeItem.icon }}</button>
+      </div>
+    </div>
 
     <Toast />
   </div>
@@ -100,7 +158,7 @@ const areaColor: Record<string, string> = {
 
 .tabs-content {
   flex: 1;
-  padding-bottom: calc(60px + var(--safe-bottom));
+  padding-bottom: calc(120px + var(--safe-bottom));
   overflow-y: auto;
 }
 
@@ -127,78 +185,140 @@ const areaColor: Record<string, string> = {
   line-height: 1;
 }
 
-.tab-bar {
+.nav-wrap {
   position: fixed;
-  bottom: 0;
   left: 0;
   right: 0;
+  bottom: 0;
+  height: calc(92px + var(--safe-bottom));
+  z-index: 100;
+  pointer-events: none;
+}
+
+.nav-bar {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: calc(14px + var(--safe-bottom));
+  height: 58px;
+  background: var(--surface);
+  border-radius: 24px;
+  box-shadow: var(--shadow-float);
   display: flex;
   align-items: stretch;
-  background: rgba(255, 253, 249, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--border-softer);
-  padding-bottom: var(--safe-bottom);
-  z-index: 100;
+  pointer-events: auto;
 }
 
-/* Sliding dot: one tab-slot wide, dot centred; only transform changes */
-.nav-indicator {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: calc(100% / var(--tab-count));
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-  transition: transform 380ms var(--ease-overshoot);
-}
-
-.nav-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  margin-top: 8px;
-}
-
-.tab-btn {
+.nav-slot {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  min-height: 60px;
-  padding: 8px 4px 8px;
   border: none;
   background: transparent;
-  color: var(--text-faint);
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 700;
   cursor: pointer;
-  transition: color 0.18s ease;
 }
 
-.tab-icon {
-  flex-shrink: 0;
-  transition: color 0.18s ease;
+.nav-icon {
+  font-size: 17px;
+  line-height: 1;
 }
 
-.tab-btn--active {
-  color: var(--accent);
-  /* Bereichsfarbe kommt per Inline-Style aus areaColor */
+.nav-icon--hidden {
+  visibility: hidden;
 }
 
-.tab-label {
+.nav-label {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+
+/* Weißer Halo hinter der Bubble, damit sie organisch aus der Leiste
+   herauszuwachsen scheint statt hart überzulappen. */
+.nav-collar {
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--surface);
+  transform: translate(-50%, -50%);
+  transition: left 0.55s var(--ease-overshoot);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.nav-bubble {
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  color: #fff;
   display: flex;
   align-items: center;
-  color: var(--text-faint);
-  transition: color 220ms var(--ease-standard);
+  justify-content: center;
+  font-size: 21px;
+  line-height: 1;
+  box-shadow: 0 8px 16px rgba(30, 20, 10, 0.24);
+  transform: translate(-50%, -50%);
+  transition: left 0.55s var(--ease-overshoot), background 0.3s;
+  z-index: 3;
+  cursor: pointer;
 }
 
-.tab-btn--active .tab-label {
-  color: var(--text);
+.nav-bubble--jump1 {
+  animation: bubbleJump1 0.5s var(--ease-overshoot);
+}
+
+.nav-bubble--jump2 {
+  animation: bubbleJump2 0.5s var(--ease-overshoot);
+}
+
+@keyframes bubbleJump1 {
+  0%   { transform: translate(-50%, -50%) translateY(0); }
+  28%  { transform: translate(-50%, -50%) translateY(-12px); }
+  52%  { transform: translate(-50%, -50%) translateY(2px); }
+  74%  { transform: translate(-50%, -50%) translateY(-4px); }
+  100% { transform: translate(-50%, -50%) translateY(0); }
+}
+
+@keyframes bubbleJump2 {
+  0%   { transform: translate(-50%, -50%) translateY(0); }
+  28%  { transform: translate(-50%, -50%) translateY(-12px); }
+  52%  { transform: translate(-50%, -50%) translateY(2px); }
+  74%  { transform: translate(-50%, -50%) translateY(-4px); }
+  100% { transform: translate(-50%, -50%) translateY(0); }
+}
+
+.nav-droplet {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: dropletFall 0.7s ease forwards;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes dropletFall {
+  0%   { opacity: 0.9; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% + 20px)) scale(0.25); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-bubble--jump1,
+  .nav-bubble--jump2,
+  .nav-droplet {
+    animation: none;
+  }
 }
 </style>

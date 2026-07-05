@@ -23,6 +23,13 @@
   --finanzen:        oklch(0.69 0.10 195);
   --finanzen-hover:  oklch(0.62 0.10 195);
   --finanzen-tint:   oklch(0.95 0.03 195);
+  --dashboard:       oklch(0.60 0.14 280);
+  --dashboard-hover: oklch(0.53 0.14 280);
+  --dashboard-tint:  oklch(0.95 0.03 280);
+
+  /* Essensplan/Rezept-Akzent (Nährwerte, "Wer kocht? · Beide", Fleisch/Fisch-Tag) */
+  --food:            oklch(0.66 0.15 25);
+  --food-tint:       oklch(0.955 0.035 25);
 
   /* Default-Akzent (Login/Setup, alles außerhalb der Bereiche) = Terrakotta */
   --accent:         var(--haushalt);
@@ -120,6 +127,12 @@
   --accent:       var(--finanzen);
   --accent-hover: var(--finanzen-hover);
   --accent-tint:  var(--finanzen-tint);
+}
+
+.area-dashboard {
+  --accent:       var(--dashboard);
+  --accent-hover: var(--dashboard-hover);
+  --accent-tint:  var(--dashboard-tint);
 }
 
 /* ── Utility classes ─────────────────────────────────────── */

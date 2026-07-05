@@ -112,6 +112,18 @@ export function useCouple() {
     }
   }
 
+  async function updateBudget(monthlyBudget: number | null): Promise<boolean> {
+    if (!couple.value) return false
+    try {
+      await updateDoc(doc(db, 'couples', couple.value.id), { monthlyBudget })
+      error.value = null
+      return true
+    } catch (e: any) {
+      error.value = e.message
+      return false
+    }
+  }
+
   onScopeDispose(() => {
     if (unsubscribe) unsubscribe()
   })
@@ -122,6 +134,7 @@ export function useCouple() {
     error: readonly(error),
     createCouple,
     joinCouple,
-    watchCouple
+    watchCouple,
+    updateBudget
   }
 }

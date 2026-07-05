@@ -13,6 +13,7 @@ export interface Couple {
   memberIds: string[]
   memberNames: Record<string, string> // { uid: displayName }
   inviteCode: string
+  monthlyBudget?: number | null // cents; optional — absent on older couple docs
   createdAt: Timestamp
 }
 
@@ -97,6 +98,13 @@ export interface RecipeIngredient {
   unit?: string
 }
 
+export interface RecipeNutrition {
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
 export interface Recipe {
   id: string
   coupleId: string
@@ -104,8 +112,10 @@ export interface Recipe {
   description: string
   minutes: number | null
   servings: number | null
-  tags: string[]
-  ingredients: RecipeIngredient[]
+  tags: readonly string[]
+  ingredients: readonly RecipeIngredient[]
+  steps: readonly string[]
+  nutrition: RecipeNutrition | null
   source: 'manual' | 'ai'
   createdBy: string
   createdAt: Timestamp
@@ -117,6 +127,7 @@ export interface MealPlanEntry {
   coupleId: string
   dateKey: string // YYYY-MM-DD, der geplante Kalendertag
   recipeId: string
+  cookAssignee?: string | 'both' | null // wer kocht — optional, absent auf älteren Einträgen
   createdBy: string
   createdAt: Timestamp
   updatedAt: Timestamp

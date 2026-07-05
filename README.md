@@ -6,7 +6,12 @@ Design-Referenz für ein Redesign eurer bestehenden Play-Store-App. Die Dateien 
 ## Dateien
 - `reference/01-onboarding.png` — Onboarding
 - `reference/02-home.png` — Home / Dashboard (Bereiche: Haushalt, Einkauf, Finanzen)
-- `reference/03-putzplan.png` — Haushalt / Putzplan, abhakbare Aufgabenliste
+- `reference/03-zuweisungen.png` — Haushalt-Seite, Tab „Zuweisungen": feste Zuständigkeit pro Aufgabe + wer sie zuletzt gemacht hat (tabellenartig, gruppiert nach Person)
+- `reference/06-essensplan.png` — Wochen Essensplan: 7-Tage-Liste mit Rezepten, KI-Rezeptvorschlag-Einstieg, Button zum Erstellen der Einkaufsliste aus dem Plan
+- `reference/07-dashboard-bento.png` — Neues Dashboard im Bento-Grid: Essensplan heute + "Wer kocht?", Einkauf-Mini-Checkliste, Haushalt-Quick-Check, Finanzen-Budget
+- `reference/08-essensplan-modal.png` — Rezept-Detail-Modal aus dem Essensplan: Nährwerte (nur wenn hinterlegt), Zutaten zum Abhaken, nummerierte Zubereitung
+- `reference/09-rezept-wiki.png` — Rezept-Wiki: Suche, Kategorie-Filter-Badges, Karten-Grid mit Tags (Formular zum Anlegen ist im Live-Prototyp enthalten, hier nicht abgebildet)
+- `reference/10-nav-dashboard.png`, `reference/11-nav-essen.png` — Neue Bottom-Navigation: schwebende Bubble je Bereich in dessen Akzentfarbe (Dashboard = Indigo, Haushalt = Terrakotta, Finanzen = Türkis, Essen/Einkauf = Amber). Beim Wechsel springt die Bubble mit Bounce zum neuen Punkt und lässt auf dem Weg Farbtropfen in der vorherigen Farbe fallen, die sich auflösen (im Screenshot nicht sichtbar — siehe Animationsbeschreibung im Prompt/Quellcode)
 - `reference/04-finanzen.png` — Gemeinsame Kasse (Ausgaben, Split, Ausgleich)
 - `reference/05-einkauf.png` — Einkaufsliste, gruppiert nach Kategorie
 - `reference/Nido-source-code.dc.html` — der tatsächliche Design-Quellcode (HTML/CSS-Werte: exakte Farben, Radien, Schatten, Schriftgrößen). Nutzt das, um exakte Werte abzulesen — kein Rendering-Framework, nur Referenz für Zahlen.

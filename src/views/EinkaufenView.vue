@@ -10,6 +10,7 @@ import ShoppingListCard from '@/components/shopping/ShoppingListCard.vue'
 import ShoppingListDetail from '@/components/shopping/ShoppingListDetail.vue'
 import ShoppingModeView from '@/components/shopping/ShoppingModeView.vue'
 import EssensplanView from '@/components/mealplan/EssensplanView.vue'
+import RezeptWikiView from '@/components/mealplan/RezeptWikiView.vue'
 
 const { user } = useAuth()
 const { couple } = useCouple()
@@ -35,7 +36,7 @@ const {
 
 const { addExpense } = useExpenses(coupleId)
 
-type View = 'lists' | 'detail' | 'shopping-mode' | 'essensplan'
+type View = 'lists' | 'detail' | 'shopping-mode' | 'essensplan' | 'wiki'
 const view = ref<View>('lists')
 
 const showNewList = ref(false)
@@ -166,11 +167,21 @@ function listItemsFor(listId: string) {
       @back="view = 'lists'"
     />
 
+    <!-- Rezept-Wiki -->
+    <RezeptWikiView
+      v-else-if="view === 'wiki'"
+      :coupleId="coupleId"
+      @back="view = 'lists'"
+    />
+
     <!-- List overview -->
     <template v-else>
       <div class="page-header">
         <h1 class="page-title">Einkaufen</h1>
-        <button class="essensplan-btn" @click="view = 'essensplan'">🍽️ Essensplan</button>
+        <div class="header-actions">
+          <button class="essensplan-btn" @click="view = 'essensplan'">🍽️ Essensplan</button>
+          <button class="essensplan-btn" @click="view = 'wiki'">📖 Rezepte</button>
+        </div>
       </div>
 
       <div v-if="loading" class="loading-msg">Laden…</div>
@@ -222,9 +233,16 @@ function listItemsFor(listId: string) {
 .page-header {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   padding: calc(var(--safe-top) + 20px) var(--screen-pad) 20px;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .page-title {

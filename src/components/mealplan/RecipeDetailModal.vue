@@ -6,9 +6,10 @@ import BottomSheet from '@/components/ui/BottomSheet.vue'
 const props = defineProps<{
   isOpen: boolean
   recipe: Recipe | null
+  manageable?: boolean
 }>()
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; edit: [recipe: Recipe]; delete: [recipe: Recipe] }>()
 
 // Nur eine Kochsession lang gemerkt — jedes Öffnen startet mit leerer Liste.
 const checked = ref<Set<number>>(new Set())
@@ -39,6 +40,11 @@ const hasNutrition = computed(() => !!props.recipe?.nutrition)
       <div class="modal-header">
         <h2 class="modal-title">{{ recipe.title }}</h2>
         <span v-if="recipe.minutes" class="modal-time">⏱ {{ recipe.minutes }} Min</span>
+      </div>
+
+      <div v-if="manageable" class="modal-actions">
+        <button type="button" class="modal-action" @click="emit('edit', recipe)">✎ Bearbeiten</button>
+        <button type="button" class="modal-action modal-action--danger" @click="emit('delete', recipe)">🗑 Löschen</button>
       </div>
 
       <div v-if="hasNutrition && recipe.nutrition" class="nutrition-grid">
@@ -118,6 +124,30 @@ const hasNutrition = computed(() => !!props.recipe?.nutrition)
   font-weight: 600;
   color: var(--text-secondary);
   margin-top: 2px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.modal-action {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.modal-action--danger {
+  border-color: var(--danger-border);
+  color: var(--danger);
 }
 
 .nutrition-grid {

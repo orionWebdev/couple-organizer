@@ -53,7 +53,7 @@ const settleAmountFormatted = computed(() => {
 <template>
   <div class="event-detail">
     <div class="detail-header">
-      <button class="back-btn" @click="emit('back')">← Zurück</button>
+      <button class="back-caret" type="button" @click="emit('back')" aria-label="Zurück">‹</button>
     </div>
 
     <div class="balance-card">
@@ -100,18 +100,23 @@ const settleAmountFormatted = computed(() => {
   padding: calc(var(--safe-top) + 20px) var(--screen-pad) 8px;
 }
 
-/* Nido: Zurück-Button als weiße Icon-Kachel */
-.back-btn {
-  background: var(--surface);
+.back-caret {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
   border: none;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 24px;
   font-weight: 700;
+  color: var(--text-faint);
   cursor: pointer;
-  padding: 8px 14px;
-  border-radius: 12px;
-  box-shadow: var(--shadow-float);
+}
+
+.back-caret:active {
+  color: var(--text);
 }
 
 .balance-card {

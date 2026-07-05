@@ -80,7 +80,7 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
   <div class="detail">
     <!-- Nav -->
     <div class="detail-nav">
-      <button class="back-btn" @click="emit('back')">‹ Zurück</button>
+      <button class="back-caret" type="button" @click="emit('back')" aria-label="Zurück">‹</button>
       <h2 class="detail-title">{{ list.title }}</h2>
       <span class="detail-count mono">{{ uncheckedCount }}</span>
       <button class="menu-btn" @click="toggleMenu">⋯</button>
@@ -160,19 +160,24 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
   padding: calc(var(--safe-top) + 16px) var(--screen-pad) 16px;
 }
 
-/* Nido: Zurück-Button als weiße Icon-Kachel */
-.back-btn {
-  background: var(--surface);
-  border: none;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 8px 14px;
-  border-radius: 12px;
-  box-shadow: var(--shadow-float);
+.back-caret {
   flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.back-caret:active {
+  color: var(--text);
 }
 
 .detail-title {

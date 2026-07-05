@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Couple } from '@/types'
+import type { Couple, Recipe } from '@/types'
 import { useMealPlan } from '@/composables/useMealPlan'
 import { useShopping } from '@/composables/useShopping'
 import { showToast } from '@/composables/useToast'
 import MealPlanDayRow from './MealPlanDayRow.vue'
 import RecipeSuggestSheet from './RecipeSuggestSheet.vue'
+import RecipeDetailModal from './RecipeDetailModal.vue'
 
 const props = defineProps<{
   coupleId: string | null
@@ -23,6 +24,14 @@ const hasAnyRecipe = computed(() => week.value.some((d) => d.recipe))
 
 const showSheet = ref(false)
 const suggestDateKey = ref<string | null>(null)
+
+const detailRecipe = ref<Recipe | null>(null)
+const showDetail = ref(false)
+
+function openDetail(recipe: Recipe) {
+  detailRecipe.value = recipe
+  showDetail.value = true
+}
 
 const weekForSheet = computed(() => week.value.map((d) => ({
   date: d.date,
@@ -109,6 +118,7 @@ async function handleCreateShoppingList() {
           :recipe="day.recipe"
           @addRecipe="openSuggest"
           @remove="handleRemove"
+          @open="openDetail"
         />
       </div>
     </div>
@@ -127,6 +137,12 @@ async function handleCreateShoppingList() {
       :assign="assignRecipe"
       @close="showSheet = false"
       @assigned="onAssigned"
+    />
+
+    <RecipeDetailModal
+      :isOpen="showDetail"
+      :recipe="detailRecipe"
+      @close="showDetail = false"
     />
   </div>
 </template>

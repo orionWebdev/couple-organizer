@@ -19,6 +19,13 @@ export interface RecipeIngredient {
   unit?: string
 }
 
+export interface RecipeNutrition {
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
 export interface RecipeSuggestion {
   title: string
   description?: string
@@ -26,7 +33,13 @@ export interface RecipeSuggestion {
   servings?: number
   tags?: string[]
   ingredients: RecipeIngredient[]
+  steps: string[]
+  nutrition?: RecipeNutrition
 }
+
+// Vokabular der Rezept-Wiki-Kategorien (src/utils/recipeTags.ts) — Gemini
+// bekommt die IDs vorgegeben, damit Vorschläge zu den Filter-Badges passen.
+const TAG_IDS = ['quick', 'onepot', 'mealprep', 'datenight', 'veggie', 'meat', 'pasta', 'fakeaway']
 
 // Controlled generation: Gemini returns JSON matching this shape directly,
 // no free-text parsing needed.
@@ -42,7 +55,7 @@ const RECIPE_RESPONSE_SCHEMA = {
           description: { type: 'STRING' },
           minutes: { type: 'INTEGER' },
           servings: { type: 'INTEGER' },
-          tags: { type: 'ARRAY', items: { type: 'STRING' } },
+          tags: { type: 'ARRAY', items: { type: 'STRING', enum: TAG_IDS } },
           ingredients: {
             type: 'ARRAY',
             items: {
@@ -55,8 +68,20 @@ const RECIPE_RESPONSE_SCHEMA = {
               required: ['name'],
             },
           },
+          steps: { type: 'ARRAY', items: { type: 'STRING' } },
+          nutrition: {
+            type: 'OBJECT',
+            nullable: true,
+            properties: {
+              kcal: { type: 'INTEGER' },
+              protein: { type: 'INTEGER' },
+              carbs: { type: 'INTEGER' },
+              fat: { type: 'INTEGER' },
+            },
+            required: ['kcal', 'protein', 'carbs', 'fat'],
+          },
         },
-        required: ['title', 'ingredients'],
+        required: ['title', 'ingredients', 'steps'],
       },
     },
   },
@@ -74,7 +99,10 @@ export async function suggestRecipes(query: string, count = 3): Promise<RecipeSu
 
   const prompt = `Du bist ein Kochassistent für ein Paar, das seinen Wochen-Essensplan erstellt.
 Schlage genau ${count} Rezept(e) vor, die zu folgendem Wunsch passen: "${query}".
-Nutze nur haushaltsübliche Zutaten und gib realistische Kochzeiten und Portionsangaben an.`
+Nutze nur haushaltsübliche Zutaten und gib realistische Kochzeiten und Portionsangaben an.
+Gib nummerierte, knappe Zubereitungsschritte an (steps).
+Ordne jedem Rezept 1-3 passende Kategorien aus dieser Liste zu: ${TAG_IDS.join(', ')}.
+Schätze Nährwerte pro Portion (nutrition) nur, wenn du dir einigermaßen sicher bist — sonst lass das Feld weg.`
 
   const res = await fetch(`${API_BASE}/${MODEL}:generateContent?key=${apiKey}`, {
     method: 'POST',

@@ -1,11 +1,11 @@
 import { ref, computed, onScopeDispose, readonly, type Ref, watch } from 'vue'
 import {
   collection, query, where, orderBy, onSnapshot,
-  addDoc, deleteDoc, doc, serverTimestamp
+  addDoc, updateDoc, deleteDoc, doc, serverTimestamp
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { MealPlanEntry, Recipe, RecipeIngredient } from '@/types'
+import type { MealPlanEntry, Recipe, RecipeIngredient, RecipeNutrition } from '@/types'
 import { suggestRecipes as fetchSuggestions, type RecipeSuggestion } from '@/services/gemini'
 import { currentWeekDates, dateKey as toDateKey } from '@/utils/mealplan'
 
@@ -16,6 +16,8 @@ export interface AssignRecipeInput {
   servings?: number | null
   tags?: string[]
   ingredients?: RecipeIngredient[]
+  steps?: string[]
+  nutrition?: RecipeNutrition | null
   source: 'manual' | 'ai'
 }
 
@@ -125,25 +127,31 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     }
   }
 
+  function recipeDocPayload(input: AssignRecipeInput, cleanTitle: string) {
+    return {
+      coupleId: coupleId.value,
+      title: cleanTitle,
+      description: input.description?.trim() ?? '',
+      minutes: input.minutes ?? null,
+      servings: input.servings ?? null,
+      tags: input.tags ?? [],
+      ingredients: input.ingredients ?? [],
+      steps: input.steps ?? [],
+      nutrition: input.nutrition ?? null,
+      source: input.source,
+      createdBy: user.value!.uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }
+  }
+
   async function assignRecipe(dateKeyValue: string, input: AssignRecipeInput): Promise<boolean> {
     if (!coupleId.value || !user.value) return false
     const cleanTitle = input.title.trim()
     if (!cleanTitle) return false
 
     try {
-      const recipeRef = await addDoc(collection(db, 'recipes'), {
-        coupleId: coupleId.value,
-        title: cleanTitle,
-        description: input.description?.trim() ?? '',
-        minutes: input.minutes ?? null,
-        servings: input.servings ?? null,
-        tags: input.tags ?? [],
-        ingredients: input.ingredients ?? [],
-        source: input.source,
-        createdBy: user.value.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      })
+      const recipeRef = await addDoc(collection(db, 'recipes'), recipeDocPayload(input, cleanTitle))
 
       // Vorhandenen Eintrag für den Tag ersetzen statt zu duplizieren.
       const existing = entries.value.find((e) => e.dateKey === dateKeyValue)
@@ -155,6 +163,7 @@ export function useMealPlan(coupleId: Ref<string | null>) {
         coupleId: coupleId.value,
         dateKey: dateKeyValue,
         recipeId: recipeRef.id,
+        cookAssignee: null,
         createdBy: user.value.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
@@ -164,6 +173,23 @@ export function useMealPlan(coupleId: Ref<string | null>) {
       return true
     } catch (err: any) {
       console.error('Failed to assign recipe:', err)
+      error.value = err.message
+      return false
+    }
+  }
+
+  // Speichert ein Rezept in der Wiki-Sammlung, ohne es einem Tag zuzuweisen.
+  async function createRecipe(input: AssignRecipeInput): Promise<boolean> {
+    if (!coupleId.value || !user.value) return false
+    const cleanTitle = input.title.trim()
+    if (!cleanTitle) return false
+
+    try {
+      await addDoc(collection(db, 'recipes'), recipeDocPayload(input, cleanTitle))
+      error.value = null
+      return true
+    } catch (err: any) {
+      console.error('Failed to create recipe:', err)
       error.value = err.message
       return false
     }
@@ -181,6 +207,18 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     }
   }
 
+  async function setCookAssignee(entryId: string, cookAssignee: string | 'both' | null): Promise<boolean> {
+    try {
+      await updateDoc(doc(db, 'mealPlans', entryId), { cookAssignee, updatedAt: serverTimestamp() })
+      error.value = null
+      return true
+    } catch (err: any) {
+      console.error('Failed to set cook assignee:', err)
+      error.value = err.message
+      return false
+    }
+  }
+
   onScopeDispose(() => {
     if (unsubscribeRecipes) unsubscribeRecipes()
     if (unsubscribeEntries) unsubscribeEntries()
@@ -188,10 +226,13 @@ export function useMealPlan(coupleId: Ref<string | null>) {
 
   return {
     week,
+    recipes: readonly(recipes),
     loading,
     error: readonly(error),
     suggestRecipes,
     assignRecipe,
-    removeAssignment
+    createRecipe,
+    removeAssignment,
+    setCookAssignee
   }
 }

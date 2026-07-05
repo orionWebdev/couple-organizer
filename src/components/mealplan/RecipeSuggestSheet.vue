@@ -59,6 +59,8 @@ async function handlePick(s: RecipeSuggestion) {
     servings: s.servings ?? null,
     tags: s.tags ?? [],
     ingredients: s.ingredients,
+    steps: s.steps,
+    nutrition: s.nutrition ?? null,
     source: 'ai',
   })
   emit('assigned', ok)

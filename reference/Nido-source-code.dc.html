@@ -14,6 +14,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box}
+  @keyframes bubbleJump1 { 0%{transform:translateY(0)} 28%{transform:translateY(-18px)} 52%{transform:translateY(3px)} 74%{transform:translateY(-5px)} 100%{transform:translateY(0)} }
+  @keyframes bubbleJump2 { 0%{transform:translateY(0)} 28%{transform:translateY(-18px)} 52%{transform:translateY(3px)} 74%{transform:translateY(-5px)} 100%{transform:translateY(0)} }
+  @keyframes dropletFall { 0%{opacity:.9;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(20px) scale(.25)} }
 </style>
 </helmet>
 
@@ -24,7 +27,7 @@
 </div>
 
 <div style="position:absolute;left:80px;top:122px;font:700 16px Fredoka,sans-serif;color:rgba(60,50,40,.75)">1 · Kern-Flow — Haushalt · Einkauf · Finanzen</div>
-<div style="position:absolute;left:80px;top:986px;font:700 16px Fredoka,sans-serif;color:rgba(60,50,40,.75)">2 · Detail-Screens</div>
+<div style="position:absolute;left:80px;top:986px;font:700 16px Fredoka,sans-serif;color:rgba(60,50,40,.75)">2 · Detail-Screens &amp; Couple-Organizer-Erweiterung (Bento-Dashboard, Essensplan+Modal, Rezept-Wiki)</div>
 
 <!-- ============ FRAME 1 · ONBOARDING ============ -->
 <div style="position:absolute;left:80px;top:176px;width:340px">
@@ -66,28 +69,57 @@
       <div style="font:700 13px Nunito,sans-serif">9:41</div>
       <div style="display:flex;align-items:center;gap:6px"><div style="display:flex;align-items:flex-end;gap:2px;height:11px"><div style="width:3px;height:5px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:7px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:9px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:11px;background:#cdc6ba;border-radius:1px"></div></div><div style="width:21px;height:11px;border:1.5px solid #2c2823;border-radius:3px;padding:1.5px"><div style="width:70%;height:100%;background:#2c2823;border-radius:1px"></div></div></div>
     </div>
-    <div style="position:absolute;left:0;right:0;top:40px;bottom:64px;overflow:hidden">
+    <div style="position:absolute;left:0;right:0;top:40px;bottom:64px;overflow-y:auto">
       <div style="padding:8px 20px 0;display:flex;align-items:flex-start;justify-content:space-between">
         <div>
           <div style="font:700 21px Fredoka,sans-serif">Moin, ihr zwei 👋</div>
-          <div style="font:600 12.5px Nunito,sans-serif;color:#8c857b;margin-top:2px">Freitag, 27. Juni</div>
+          <div style="font:600 12.5px Nunito,sans-serif;color:#8c857b;margin-top:2px">Sonntag, 5. Juli</div>
         </div>
         <div style="display:flex">
           <div style="width:34px;height:34px;border-radius:50%;background:oklch(0.70 0.15 38);color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px Nunito,sans-serif;border:2px solid #fdfaf5">L</div>
           <div style="width:34px;height:34px;border-radius:50%;background:oklch(0.69 0.10 195);color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px Nunito,sans-serif;border:2px solid #fdfaf5;margin-left:-12px">J</div>
         </div>
       </div>
-      <div style="margin:14px 20px 0;background:oklch(0.955 0.03 40);border-radius:20px;padding:15px 16px;border:1px solid rgba(255,255,255,.55);display:flex;align-items:center;gap:13px">
-        <div style="width:44px;height:44px;border-radius:15px;background:oklch(0.70 0.15 38);display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0">🧽</div>
-        <div style="flex:1"><div style="font:600 11px Nunito,sans-serif;color:#9a8a82">Du bist heute dran</div><div style="font:700 16px Fredoka,sans-serif;margin-top:1px">Bad putzen</div></div>
-        <div style="background:oklch(0.70 0.15 38);color:#fff;border-radius:12px;padding:8px 12px;font:700 11px Nunito,sans-serif">Erledigt</div>
-      </div>
-      <div style="padding:16px 20px 0">
-        <div style="font:700 13px Nunito,sans-serif;margin-bottom:11px">Bereiche</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div style="background:oklch(0.955 0.03 40);border-radius:18px;padding:12px;border:1px solid rgba(255,255,255,.5)"><div style="width:38px;height:38px;border-radius:13px;background:oklch(0.70 0.15 38);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 5px 12px oklch(0.70 0.15 38 / .3)">🧽</div><div style="font:700 13.5px Nunito,sans-serif;margin-top:9px">Haushalt</div><div style="font:600 11px Nunito,sans-serif;color:#9a9286;margin-top:1px">Du bist dran</div></div>
-          <div style="background:oklch(0.955 0.05 80);border-radius:18px;padding:12px;border:1px solid rgba(255,255,255,.5)"><div style="width:38px;height:38px;border-radius:13px;background:oklch(0.78 0.13 80);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 5px 12px oklch(0.78 0.13 80 / .3)">🛒</div><div style="font:700 13.5px Nunito,sans-serif;margin-top:9px">Einkauf</div><div style="font:600 11px Nunito,sans-serif;color:#9a9286;margin-top:1px">6 Artikel</div></div>
-          <div style="background:oklch(0.95 0.03 195);border-radius:18px;padding:12px;border:1px solid rgba(255,255,255,.5);grid-column:span 2"><div style="width:38px;height:38px;border-radius:13px;background:oklch(0.69 0.10 195);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 5px 12px oklch(0.69 0.10 195 / .3)">💶</div><div style="font:700 13.5px Nunito,sans-serif;margin-top:9px">Finanzen</div><div style="font:600 11px Nunito,sans-serif;color:#9a9286;margin-top:1px">612 € im Juni · 34 € offen</div></div>
+
+      <div style="padding:14px 20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="grid-column:span 2;background:oklch(0.955 0.035 25);border-radius:20px;padding:15px 16px;border:1px solid rgba(255,255,255,.55)">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:44px;height:44px;border-radius:15px;background:oklch(0.66 0.15 25);display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;box-shadow:0 5px 12px oklch(0.66 0.15 25 / .3)">🍝</div>
+            <div style="flex:1"><div style="font:600 11px Nunito,sans-serif;color:#9a8272">Heute Abend</div><div style="font:700 15.5px Fredoka,sans-serif;margin-top:1px">Pasta al limone</div></div>
+            <div style="font:700 11px Nunito,sans-serif;color:oklch(0.5 0.14 25)">25 Min</div>
+          </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(120,90,70,.14);display:flex;align-items:center;gap:8px">
+            <div style="font:600 11px Nunito,sans-serif;color:#9a8272;margin-right:2px;flex-shrink:0">Wer kocht?</div>
+            <div onClick="{{ setCookL }}" style="{{ cookChipL }}">L</div>
+            <div onClick="{{ setCookJ }}" style="{{ cookChipJ }}">J</div>
+            <div onClick="{{ setCookBoth }}" style="{{ cookChipBoth }}">Beide</div>
+          </div>
+        </div>
+
+        <div style="background:oklch(0.955 0.05 80);border-radius:20px;padding:13px;border:1px solid rgba(255,255,255,.5)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px"><div style="width:30px;height:30px;border-radius:11px;background:oklch(0.78 0.13 80);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🛒</div><div style="font:700 13px Nunito,sans-serif">Einkauf</div></div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <sc-for list="{{ nextShopItems }}" as="s" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:7px">
+                <div onClick="{{ s.onToggle }}" style="{{ s.miniBox }}">{{ s.tick }}</div>
+                <div style="{{ s.miniTxt }}">{{ s.name }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:10px;font:700 11px Nunito,sans-serif;color:oklch(0.5 0.13 80)">Zum Einkaufszettel ›</div>
+        </div>
+
+        <div style="background:oklch(0.955 0.03 40);border-radius:20px;padding:13px;border:1px solid rgba(255,255,255,.5)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px"><div style="width:30px;height:30px;border-radius:11px;background:oklch(0.70 0.15 38);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🧽</div><div style="font:700 13px Nunito,sans-serif">Haushalt</div></div>
+          <div style="font:700 13px Fredoka,sans-serif">{{ nextChore.name }}</div>
+          <div style="font:600 10.5px Nunito,sans-serif;color:#9a8a82;margin-top:1px">{{ nextChore.sub }}</div>
+          <div onClick="{{ nextChore.onToggle }}" style="margin-top:10px;background:oklch(0.70 0.15 38);color:#fff;text-align:center;border-radius:10px;padding:7px;font:700 11px Nunito,sans-serif;cursor:pointer">✓ Erledigt</div>
+        </div>
+
+        <div style="grid-column:span 2;background:oklch(0.95 0.03 195);border-radius:20px;padding:15px 16px;border:1px solid rgba(255,255,255,.55)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:700 13px Nunito,sans-serif">Finanzen · Juni</div><div style="font:700 15px Fredoka,sans-serif">612 € / 800 €</div></div>
+          <div style="height:8px;border-radius:5px;background:#fff;margin-top:9px;overflow:hidden"><div style="width:76%;height:100%;background:oklch(0.69 0.10 195);border-radius:5px"></div></div>
+          <div style="margin-top:9px;font:600 11.5px Nunito,sans-serif;color:#5f7876">Lena bekommt noch <span style="font-weight:700;color:#2c2823">34 €</span> von Jonas</div>
         </div>
       </div>
     </div>
@@ -265,10 +297,11 @@
       <div style="padding:16px 18px 0;display:flex;flex-direction:column;gap:9px">
         <sc-for list="{{ mealDays }}" as="d" hint-placeholder-count="7">
           <sc-if value="{{ d.hasRecipe }}" hint-placeholder-val="{{ true }}">
-            <div style="background:#fff;border-radius:16px;padding:12px 13px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;display:flex;align-items:center;gap:12px">
+            <div onClick="{{ d.onOpen }}" style="background:#fff;border-radius:16px;padding:12px 13px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;display:flex;align-items:center;gap:12px;cursor:pointer">
               <div style="width:38px;text-align:left"><div style="font:700 12.5px Nunito,sans-serif">{{ d.day }}</div><div style="font:600 10px Nunito,sans-serif;color:#9a9286">{{ d.date }}</div></div>
               <div style="width:42px;height:42px;border-radius:13px;background:oklch(0.955 0.05 80);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">{{ d.icon }}</div>
               <div style="flex:1;min-width:0"><div style="font:700 13.5px Nunito,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.recipe }}</div><div style="font:600 11px Nunito,sans-serif;color:#9a9286;margin-top:1px">{{ d.meta }}</div></div>
+              <div style="font-size:14px;color:#c9bfae">›</div>
             </div>
           </sc-if>
           <sc-if value="{{ d.hasRecipeNot }}" hint-placeholder-val="{{ false }}">
@@ -281,6 +314,204 @@
       </div>
     </div>
     <div style="position:absolute;left:18px;right:18px;bottom:18px;height:50px;border-radius:16px;background:oklch(0.78 0.13 80);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font:700 14px Nunito,sans-serif;box-shadow:0 10px 22px oklch(0.78 0.13 80 / .35)">🛒 Einkaufsliste aus Plan erstellen</div>
+
+    <sc-if value="{{ essensplanModal }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:rgba(30,22,14,.42);display:flex;align-items:flex-end;z-index:10">
+        <div style="background:#fdfaf5;width:100%;max-height:88%;border-radius:26px 26px 0 0;overflow-y:auto;padding:20px 18px 26px;box-shadow:0 -10px 30px rgba(0,0,0,.25)">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between">
+            <div><div style="font:700 19px Fredoka,sans-serif">{{ essensplanModal.name }}</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b;margin-top:2px">⏱ {{ essensplanModal.time }} Min</div></div>
+            <div onClick="{{ closeEssensplanModal }}" style="width:30px;height:30px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(60,45,30,.1);display:flex;align-items:center;justify-content:center;font:400 15px Nunito,sans-serif;cursor:pointer">✕</div>
+          </div>
+          <sc-if value="{{ essensplanModal.hasNutrition }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px">
+              <div style="background:oklch(0.955 0.035 25);border-radius:12px;padding:8px 4px;text-align:center"><div style="font:700 13px Fredoka,sans-serif">{{ essensplanModal.cal }}</div><div style="font:600 9px Nunito,sans-serif;color:#9a8272">kcal</div></div>
+              <div style="background:oklch(0.955 0.035 25);border-radius:12px;padding:8px 4px;text-align:center"><div style="font:700 13px Fredoka,sans-serif">{{ essensplanModal.protein }}g</div><div style="font:600 9px Nunito,sans-serif;color:#9a8272">Protein</div></div>
+              <div style="background:oklch(0.955 0.035 25);border-radius:12px;padding:8px 4px;text-align:center"><div style="font:700 13px Fredoka,sans-serif">{{ essensplanModal.carbs }}g</div><div style="font:600 9px Nunito,sans-serif;color:#9a8272">KH</div></div>
+              <div style="background:oklch(0.955 0.035 25);border-radius:12px;padding:8px 4px;text-align:center"><div style="font:700 13px Fredoka,sans-serif">{{ essensplanModal.fat }}g</div><div style="font:600 9px Nunito,sans-serif;color:#9a8272">Fett</div></div>
+            </div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px">
+            <div>
+              <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Zutaten</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ essensplanModal.ingredients }}" as="ing" hint-placeholder-count="5">
+                  <div onClick="{{ ing.onToggle }}" style="display:flex;align-items:flex-start;gap:7px;cursor:pointer">
+                    <div style="{{ ing.box }}">{{ ing.tick }}</div>
+                    <div style="{{ ing.txt }}">{{ ing.name }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Zubereitung</div>
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <sc-for list="{{ essensplanModal.steps }}" as="st" hint-placeholder-count="4">
+                  <div style="display:flex;gap:7px">
+                    <div style="width:17px;height:17px;border-radius:50%;background:oklch(0.66 0.15 25);color:#fff;font:700 9px Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">{{ st.n }}</div>
+                    <div style="font:600 11.5px/1.4 Nunito,sans-serif;color:#4a413a">{{ st.text }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+
+<!-- ============ FRAME 9 · REZEPT-WIKI ============ -->
+<div style="position:absolute;left:1370px;top:1040px;width:340px">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:6px;font:700 12px Nunito,sans-serif;color:rgba(70,58,46,.6)">Detail — Rezept-Wiki (Erstellen &amp; Filtern)</div>
+  <div style="width:340px;height:724px;background:#fdfaf5;border-radius:38px;box-shadow:0 14px 40px rgba(60,45,30,.16);border:1px solid #efe7da;overflow:hidden;position:relative;font-family:Nunito,system-ui,sans-serif;color:#2c2823">
+    <div style="height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px">
+      <div style="font:700 13px Nunito,sans-serif">9:41</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="display:flex;align-items:flex-end;gap:2px;height:11px"><div style="width:3px;height:5px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:7px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:9px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:11px;background:#cdc6ba;border-radius:1px"></div></div><div style="width:21px;height:11px;border:1.5px solid #2c2823;border-radius:3px;padding:1.5px"><div style="width:70%;height:100%;background:#2c2823;border-radius:1px"></div></div></div>
+    </div>
+    <div style="padding:8px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div><div style="font:700 19px Fredoka,sans-serif">Rezepte</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b">Eure gemeinsame Sammlung</div></div>
+      <div onClick="{{ toggleWikiForm }}" style="width:36px;height:36px;border-radius:12px;background:oklch(0.78 0.13 80);color:#fff;display:flex;align-items:center;justify-content:center;font:400 20px Nunito,sans-serif;cursor:pointer;box-shadow:0 5px 12px oklch(0.78 0.13 80 / .35)">{{ wikiFormToggleIcon }}</div>
+    </div>
+
+    <div style="position:absolute;left:0;right:0;top:80px;bottom:0;overflow-y:auto;padding-bottom:24px">
+      <div style="padding:10px 18px 0">
+        <input value="{{ wikiSearch }}" onChange="{{ onWikiSearch }}" placeholder="Rezept suchen …" style="width:100%;height:38px;border-radius:12px;border:1px solid #f0e8db;background:#fff;padding:0 13px;font:600 12.5px Nunito,sans-serif;color:#2c2823;outline:none;box-sizing:border-box"/>
+      </div>
+      <div style="padding:10px 18px 0;display:flex;flex-wrap:wrap;gap:6px">
+        <sc-for list="{{ wikiFilterBadges }}" as="fb" hint-placeholder-count="8">
+          <div onClick="{{ fb.onToggle }}" style="{{ fb.style }}">{{ fb.label }}</div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ wikiShowForm }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:14px 18px 0;background:#fff;border-radius:18px;padding:14px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db">
+          <div style="font:700 13.5px Nunito,sans-serif;margin-bottom:10px">Neues Rezept</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input value="{{ formName }}" onChange="{{ onFormName }}" placeholder="Name" style="height:36px;border-radius:10px;border:1px solid #f0e8db;padding:0 11px;font:600 12px Nunito,sans-serif;box-sizing:border-box"/>
+            <input value="{{ formDuration }}" onChange="{{ onFormDuration }}" placeholder="Dauer (Min.)" style="height:36px;border-radius:10px;border:1px solid #f0e8db;padding:0 11px;font:600 12px Nunito,sans-serif;box-sizing:border-box"/>
+
+            <div style="font:700 10.5px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Zutaten</div>
+            <sc-for list="{{ formIngredients }}" as="fi" hint-placeholder-count="3">
+              <div style="display:flex;gap:6px">
+                <input value="{{ fi.value }}" onChange="{{ fi.onChange }}" placeholder="Zutat" style="flex:1;height:34px;border-radius:9px;border:1px solid #f0e8db;padding:0 10px;font:600 11.5px Nunito,sans-serif;box-sizing:border-box"/>
+                <div onClick="{{ fi.onRemove }}" style="width:34px;height:34px;border-radius:9px;background:#f5efe4;display:flex;align-items:center;justify-content:center;color:#b09a86;font:700 14px Nunito,sans-serif;cursor:pointer;flex-shrink:0">–</div>
+              </div>
+            </sc-for>
+            <div onClick="{{ addFormIngredient }}" style="text-align:center;font:700 11.5px Nunito,sans-serif;color:oklch(0.55 0.13 80);cursor:pointer">+ Zutat hinzufügen</div>
+
+            <div style="font:700 10.5px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Schritte</div>
+            <sc-for list="{{ formSteps }}" as="fs" hint-placeholder-count="3">
+              <div style="display:flex;gap:6px">
+                <input value="{{ fs.value }}" onChange="{{ fs.onChange }}" placeholder="Schritt {{ fs.n }}" style="flex:1;height:34px;border-radius:9px;border:1px solid #f0e8db;padding:0 10px;font:600 11.5px Nunito,sans-serif;box-sizing:border-box"/>
+                <div onClick="{{ fs.onRemove }}" style="width:34px;height:34px;border-radius:9px;background:#f5efe4;display:flex;align-items:center;justify-content:center;color:#b09a86;font:700 14px Nunito,sans-serif;cursor:pointer;flex-shrink:0">–</div>
+              </div>
+            </sc-for>
+            <div onClick="{{ addFormStep }}" style="text-align:center;font:700 11.5px Nunito,sans-serif;color:oklch(0.55 0.13 80);cursor:pointer">+ Schritt hinzufügen</div>
+
+            <div style="font:700 10.5px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Kategorien</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <sc-for list="{{ formTagBadges }}" as="ft" hint-placeholder-count="8">
+                <div onClick="{{ ft.onToggle }}" style="{{ ft.style }}">{{ ft.label }}</div>
+              </sc-for>
+            </div>
+
+            <div onClick="{{ saveRecipe }}" style="margin-top:6px;background:oklch(0.78 0.13 80);color:#fff;text-align:center;border-radius:12px;padding:11px;font:700 13px Nunito,sans-serif;cursor:pointer;box-shadow:0 6px 16px oklch(0.78 0.13 80 / .3)">Rezept speichern</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="padding:16px 18px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <sc-for list="{{ wikiRecipeCards }}" as="rc" hint-placeholder-count="8">
+          <div onClick="{{ rc.onOpen }}" style="background:#fff;border-radius:16px;padding:12px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;cursor:pointer">
+            <div style="width:34px;height:34px;border-radius:12px;background:oklch(0.955 0.05 80);display:flex;align-items:center;justify-content:center;font-size:16px">{{ rc.emoji }}</div>
+            <div style="font:700 12.5px Nunito,sans-serif;margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ rc.name }}</div>
+            <div style="font:600 10.5px Nunito,sans-serif;color:#9a9286;margin-top:1px">⏱ {{ rc.time }} Min</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:7px">
+              <sc-for list="{{ rc.tagPills }}" as="tp" hint-placeholder-count="2">
+                <div style="{{ tp.style }}">{{ tp.emoji }}</div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{ wikiModal }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;background:rgba(30,22,14,.42);display:flex;align-items:flex-end;z-index:10">
+        <div style="background:#fdfaf5;width:100%;max-height:88%;border-radius:26px 26px 0 0;overflow-y:auto;padding:20px 18px 26px;box-shadow:0 -10px 30px rgba(0,0,0,.25)">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between">
+            <div><div style="font:700 19px Fredoka,sans-serif">{{ wikiModal.name }}</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b;margin-top:2px">⏱ {{ wikiModal.time }} Min</div></div>
+            <div onClick="{{ closeWikiModal }}" style="width:30px;height:30px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(60,45,30,.1);display:flex;align-items:center;justify-content:center;font:400 15px Nunito,sans-serif;cursor:pointer">✕</div>
+          </div>
+          <sc-if value="{{ wikiModal.hasNutrition }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px">
+              <div style="background:oklch(0.955 0.035 25);border-radius:12px;padding:8px 4px;text-align:center"><div style="font:700 13px Fredoka,sans-serif">{{ wikiModal.cal }}</div><div style="font:600 9px Nunito,sans-serif;color:#9a8272">kcal</div></div>
+              <div style="background:oklch(0.955 0.035 25);border-radius:12px;padding:8px 4px;text-align:center"><div style="font:700 13px Fredoka,sans-serif">{{ wikiModal.protein }}g</div><div style="font:600 9px Nunito,sans-serif;color:#9a8272">Protein</div></div>
+              <div style="background:oklch(0.955 0.035 25);border-radius:12px;padding:8px 4px;text-align:center"><div style="font:700 13px Fredoka,sans-serif">{{ wikiModal.carbs }}g</div><div style="font:600 9px Nunito,sans-serif;color:#9a8272">KH</div></div>
+              <div style="background:oklch(0.955 0.035 25);border-radius:12px;padding:8px 4px;text-align:center"><div style="font:700 13px Fredoka,sans-serif">{{ wikiModal.fat }}g</div><div style="font:600 9px Nunito,sans-serif;color:#9a8272">Fett</div></div>
+            </div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px">
+            <div>
+              <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Zutaten</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ wikiModal.ingredients }}" as="ing" hint-placeholder-count="5">
+                  <div onClick="{{ ing.onToggle }}" style="display:flex;align-items:flex-start;gap:7px;cursor:pointer">
+                    <div style="{{ ing.box }}">{{ ing.tick }}</div>
+                    <div style="{{ ing.txt }}">{{ ing.name }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Zubereitung</div>
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <sc-for list="{{ wikiModal.steps }}" as="st" hint-placeholder-count="4">
+                  <div style="display:flex;gap:7px">
+                    <div style="width:17px;height:17px;border-radius:50%;background:oklch(0.66 0.15 25);color:#fff;font:700 9px Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">{{ st.n }}</div>
+                    <div style="font:600 11.5px/1.4 Nunito,sans-serif;color:#4a413a">{{ st.text }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+
+<!-- ============ FRAME 10 · BOTTOM NAVIGATION (neu) ============ -->
+<div style="position:absolute;left:1800px;top:1040px;width:340px">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:6px;font:700 12px Nunito,sans-serif;color:rgba(70,58,46,.6)">Detail — Navigation neu gedacht (Bubble-Animation, Farbe je Bereich)</div>
+  <div style="width:340px;height:724px;background:#fdfaf5;border-radius:38px;box-shadow:0 14px 40px rgba(60,45,30,.16);border:1px solid #efe7da;overflow:hidden;position:relative;font-family:Nunito,system-ui,sans-serif;color:#2c2823">
+    <div style="height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px">
+      <div style="font:700 13px Nunito,sans-serif">9:41</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="display:flex;align-items:flex-end;gap:2px;height:11px"><div style="width:3px;height:5px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:7px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:9px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:11px;background:#cdc6ba;border-radius:1px"></div></div><div style="width:21px;height:11px;border:1.5px solid #2c2823;border-radius:3px;padding:1.5px"><div style="width:70%;height:100%;background:#2c2823;border-radius:1px"></div></div></div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:40px;bottom:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+      <div style="{{ navContentIconWrap }}">{{ navContentIcon }}</div>
+      <div style="font:700 21px Fredoka,sans-serif">{{ navContentTitle }}</div>
+      <div style="font:600 12px Nunito,sans-serif;color:#9a9286">Tippe unten auf einen anderen Bereich</div>
+    </div>
+
+    <div style="position:absolute;left:0;right:0;bottom:0;height:100px">
+      <div style="position:absolute;left:16px;right:16px;top:36px;height:64px;background:#fffdf9;border-radius:26px;box-shadow:0 10px 26px rgba(60,45,30,.14);display:flex;align-items:center;justify-content:space-around;padding:0 10px">
+        <sc-for list="{{ navSlots }}" as="n" hint-placeholder-count="4">
+          <div onClick="{{ n.onClick }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;width:60px">
+            <div style="{{ n.iconStyle }}">{{ n.icon }}</div>
+            <div style="{{ n.labelStyle }}">{{ n.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-for list="{{ droplets }}" as="dp" hint-placeholder-count="0">
+        <div style="{{ dp.style }}"></div>
+      </sc-for>
+
+      <div style="{{ collarStyle }}"></div>
+      <div onClick="{{ noopNav }}" style="{{ bubbleStyle }}">{{ navActiveIcon }}</div>
+    </div>
   </div>
 </div>
 
@@ -295,10 +526,170 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Canvas&quot;}}">
 class Component extends DCLogic {
-  state = { done: { ch1: true, ch2: true, sh3: true, sh6: true } };
+  state = {
+    done: { ch1: true, ch2: true, sh3: true, sh6: true },
+    cookWho: 'both',
+    ingredientChecks: {},
+    essensplanModalId: null,
+    wikiModalId: null,
+    wikiSearch: '',
+    wikiActiveTags: {},
+    wikiShowForm: false,
+    formName: '', formDuration: '',
+    formIngredients: [''], formSteps: [''],
+    formTags: {},
+    navActive: 'dashboard',
+    navBounceParity: false,
+    droplets: [],
+    recipes: [
+      { id: 'pasta-limone', name: 'Pasta al limone', time: 25, tags: ['quick','pasta','veggie'], nutrition: { cal: 520, protein: 16, carbs: 68, fat: 18 }, ingredients: ['300g Spaghetti','2 Bio-Zitronen','100g Parmesan','200ml Sahne','Olivenöl','Salz & Pfeffer'], steps: ['Wasser salzen und Pasta al dente kochen.','Zitronenschale abreiben, Saft auspressen.','Sahne mit Zitronensaft und -schale erhitzen.','Parmesan unterrühren, cremig einkochen.','Pasta unterheben, mit Pfeffer servieren.'] },
+      { id: 'bowl-halloumi', name: 'Bowl mit Halloumi', time: 20, tags: ['quick','veggie','onepot'], nutrition: null, ingredients: ['200g Halloumi','1 Beutel Salat','1 Avocado','Cherrytomaten','Zitronen-Dressing'], steps: ['Halloumi in Scheiben schneiden und anbraten.','Gemüse waschen und schneiden.','Alles in einer Bowl anrichten.','Mit Dressing beträufeln.'] },
+      { id: 'curry-kichererbsen', name: 'Curry mit Kichererbsen', time: 35, tags: ['veggie','mealprep','onepot'], nutrition: { cal: 410, protein: 14, carbs: 52, fat: 12 }, ingredients: ['1 Dose Kichererbsen','1 Dose Kokosmilch','2 EL Currypaste','1 Zwiebel','Reis'], steps: ['Zwiebel anschwitzen.','Currypaste kurz mitbraten.','Kokosmilch und Kichererbsen zugeben.','20 Min köcheln lassen.','Mit Reis servieren.'] },
+      { id: 'ofenpizza', name: 'Ofenpizza selbstgemacht', time: 40, tags: ['datenight','veggie'], nutrition: null, ingredients: ['Pizzateig','Tomatensauce','Mozzarella','Belag nach Wahl'], steps: ['Ofen auf 250°C vorheizen.','Teig ausrollen, belegen.','12-15 Min backen.'] },
+      { id: 'lachs-ofengemuese', name: 'Lachs mit Ofengemüse', time: 30, tags: ['meat','onepot','datenight'], nutrition: { cal: 480, protein: 34, carbs: 22, fat: 24 }, ingredients: ['2 Lachsfilets','Brokkoli','Süßkartoffel','Olivenöl','Zitrone'], steps: ['Gemüse würfeln, ölen, würzen.','20 Min im Ofen vorgaren.','Lachs dazugeben, 12 Min fertig garen.'] },
+      { id: 'pad-thai', name: 'Pad Thai', time: 25, tags: ['quick','pasta','meat'], nutrition: null, ingredients: ['Reisnudeln','2 Eier','Tofu oder Hähnchen','Erdnüsse','Pad-Thai-Sauce'], steps: ['Nudeln einweichen.','Protein anbraten, Ei dazugeben.','Nudeln und Sauce zugeben, kurz braten.','Mit Erdnüssen servieren.'] },
+      { id: 'linsen-eintopf', name: 'Linsen-Eintopf', time: 45, tags: ['mealprep','veggie','onepot'], nutrition: { cal: 380, protein: 20, carbs: 48, fat: 8 }, ingredients: ['250g rote Linsen','Karotten','Sellerie','Gemüsebrühe','Lorbeer'], steps: ['Gemüse würfeln und anschwitzen.','Linsen und Brühe zugeben.','25 Min köcheln lassen.'] },
+      { id: 'sushi-abend', name: 'Sushi-Abend (Fakeaway)', time: 10, tags: ['fakeaway','datenight'], nutrition: null, ingredients: ['Lieferservice-Bestellung','Sojasauce','Wasabi'], steps: ['Lieblings-Sushi-Laden bestellen.','Tisch schön decken.','Genießen.'] }
+    ]
+  };
+
+  navItemsRaw = [
+    { key: 'dashboard', icon: '🏠', label: 'Start', color: 'oklch(0.60 0.14 280)', title: 'Dashboard' },
+    { key: 'haushalt', icon: '🧽', label: 'Haushalt', color: 'oklch(0.70 0.15 38)', title: 'Haushalt' },
+    { key: 'finanzen', icon: '💶', label: 'Finanzen', color: 'oklch(0.69 0.10 195)', title: 'Finanzen' },
+    { key: 'essen', icon: '🍽️', label: 'Essen', color: 'oklch(0.78 0.13 80)', title: 'Essen & Einkauf' }
+  ];
+  navSlotCenters = [62, 134, 206, 278];
+  dropletSeq = 0;
+
+  selectNav(key) {
+    if (key === this.state.navActive) return;
+    const oldIdx = this.navItemsRaw.findIndex(i => i.key === this.state.navActive);
+    const newIdx = this.navItemsRaw.findIndex(i => i.key === key);
+    const oldColor = this.navItemsRaw[oldIdx].color;
+    const x0 = this.navSlotCenters[oldIdx];
+    const x1 = this.navSlotCenters[newIdx];
+    const dropCount = 5;
+    const newDroplets = [];
+    for (let i = 1; i <= dropCount; i++) {
+      const t = i / (dropCount + 1);
+      this.dropletSeq++;
+      const id = this.dropletSeq;
+      newDroplets.push({
+        id,
+        x: x0 + (x1 - x0) * t + (Math.random() * 8 - 4),
+        y: 38 + Math.sin(t * Math.PI) * -10 + Math.random() * 6,
+        color: oldColor,
+        delay: t * 90
+      });
+    }
+    this.setState(s => ({
+      navActive: key,
+      navBounceParity: !s.navBounceParity,
+      droplets: [...s.droplets, ...newDroplets]
+    }));
+    newDroplets.forEach(d => {
+      setTimeout(() => {
+        this.setState(s2 => ({ droplets: s2.droplets.filter(x => x.id !== d.id) }));
+      }, 800 + d.delay);
+    });
+  }
+
+  tagMeta = {
+    quick: { emoji: '⏱️', label: 'Schnelle Nummer', color: 'oklch(0.78 0.13 80)' },
+    onepot: { emoji: '🧺', label: 'One-Pot', color: 'oklch(0.70 0.13 150)' },
+    mealprep: { emoji: '🔀', label: 'Meal Prep', color: 'oklch(0.66 0.12 255)' },
+    datenight: { emoji: '🕯️', label: 'Date Night', color: 'oklch(0.64 0.14 312)' },
+    veggie: { emoji: '🌱', label: 'Vegetarisch/Vegan', color: 'oklch(0.70 0.13 150)' },
+    meat: { emoji: '🥩', label: 'Fleisch/Fisch', color: 'oklch(0.66 0.15 25)' },
+    pasta: { emoji: '🍝', label: 'Pasta-Liebe', color: 'oklch(0.78 0.13 80)' },
+    fakeaway: { emoji: '🥡', label: 'Fakeaway', color: 'oklch(0.69 0.10 195)' }
+  };
 
   toggle(id) {
     this.setState(s => ({ done: { ...s.done, [id]: !s.done[id] } }));
+  }
+
+  setCookWho(who) { this.setState({ cookWho: who }); }
+
+  toggleIngredientCheck(recipeId, idx) {
+    const key = recipeId + '_' + idx;
+    this.setState(s => ({ ingredientChecks: { ...s.ingredientChecks, [key]: !s.ingredientChecks[key] } }));
+  }
+
+  openEssensplanModal(id) { this.setState({ essensplanModalId: id }); }
+  closeEssensplanModal() { this.setState({ essensplanModalId: null }); }
+  openWikiModal(id) { this.setState({ wikiModalId: id }); }
+  closeWikiModal() { this.setState({ wikiModalId: null }); }
+
+  toggleWikiTag(tag) {
+    this.setState(s => ({ wikiActiveTags: { ...s.wikiActiveTags, [tag]: !s.wikiActiveTags[tag] } }));
+  }
+  toggleWikiForm() { this.setState(s => ({ wikiShowForm: !s.wikiShowForm })); }
+  onWikiSearchChange(e) { this.setState({ wikiSearch: e.target.value }); }
+  onFormNameChange(e) { this.setState({ formName: e.target.value }); }
+  onFormDurationChange(e) { this.setState({ formDuration: e.target.value }); }
+
+  updateFormIngredient(idx, val) {
+    this.setState(s => { const arr = [...s.formIngredients]; arr[idx] = val; return { formIngredients: arr }; });
+  }
+  addFormIngredient() { this.setState(s => ({ formIngredients: [...s.formIngredients, ''] })); }
+  removeFormIngredient(idx) {
+    this.setState(s => { const arr = s.formIngredients.filter((_, i) => i !== idx); return { formIngredients: arr.length ? arr : [''] }; });
+  }
+  updateFormStep(idx, val) {
+    this.setState(s => { const arr = [...s.formSteps]; arr[idx] = val; return { formSteps: arr }; });
+  }
+  addFormStep() { this.setState(s => ({ formSteps: [...s.formSteps, ''] })); }
+  removeFormStep(idx) {
+    this.setState(s => { const arr = s.formSteps.filter((_, i) => i !== idx); return { formSteps: arr.length ? arr : [''] }; });
+  }
+  toggleFormTag(tag) {
+    this.setState(s => ({ formTags: { ...s.formTags, [tag]: !s.formTags[tag] } }));
+  }
+
+  saveRecipe() {
+    const s = this.state;
+    if (!s.formName.trim()) return;
+    const newRecipe = {
+      id: 'custom-' + Date.now(),
+      name: s.formName.trim(),
+      time: parseInt(s.formDuration, 10) || 0,
+      tags: Object.keys(s.formTags).filter(t => s.formTags[t]),
+      nutrition: null,
+      ingredients: s.formIngredients.map(x => x.trim()).filter(Boolean),
+      steps: s.formSteps.map(x => x.trim()).filter(Boolean)
+    };
+    this.setState(prev => ({
+      recipes: [...prev.recipes, newRecipe],
+      formName: '', formDuration: '', formIngredients: [''], formSteps: [''], formTags: {},
+      wikiShowForm: false
+    }));
+  }
+
+  buildModal(recipeId) {
+    if (!recipeId) return false;
+    const r = this.state.recipes.find(x => x.id === recipeId);
+    if (!r) return false;
+    const checks = this.state.ingredientChecks;
+    return {
+      name: r.name, time: r.time,
+      hasNutrition: !!r.nutrition,
+      cal: r.nutrition ? r.nutrition.cal : 0,
+      protein: r.nutrition ? r.nutrition.protein : 0,
+      carbs: r.nutrition ? r.nutrition.carbs : 0,
+      fat: r.nutrition ? r.nutrition.fat : 0,
+      ingredients: r.ingredients.map((name, idx) => {
+        const on = !!checks[r.id + '_' + idx];
+        return {
+          name, tick: on ? '✓' : '',
+          onToggle: () => this.toggleIngredientCheck(r.id, idx),
+          box: { width: '17px', height: '17px', borderRadius: '6px', border: '2px solid ' + (on ? 'oklch(0.66 0.15 25)' : '#d8d0c2'), background: on ? 'oklch(0.66 0.15 25)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '10px', flexShrink: 0, marginTop: '1px' },
+          txt: { font: '600 11.5px Nunito, sans-serif', color: on ? '#b8b1a7' : '#3a332c', textDecoration: on ? 'line-through' : 'none' }
+        };
+      }),
+      steps: r.steps.map((text, i) => ({ n: i + 1, text }))
+    };
   }
 
   avatarStyle(person) {
@@ -341,8 +732,22 @@ class Component extends DCLogic {
     };
   }
 
-  mealDay(day, date, hasRecipe, icon, recipe, meta) {
-    return { day, date, hasRecipe, hasRecipeNot: !hasRecipe, icon, recipe, meta };
+  mealDay(day, date, recipeId) {
+    const r = recipeId ? this.state.recipes.find(x => x.id === recipeId) : null;
+    if (!r) return { day, date, hasRecipe: false, hasRecipeNot: true };
+    const meta = r.time + ' Min · ' + (this.tagMeta[r.tags[0]] ? this.tagMeta[r.tags[0]].label : '');
+    return { day, date, hasRecipe: true, hasRecipeNot: false, icon: this.tagMeta[r.tags[0]] ? this.tagMeta[r.tags[0]].emoji : '🍽️', recipe: r.name, meta, onOpen: () => this.openEssensplanModal(r.id) };
+  }
+
+  tagPillStyle(tag, active) {
+    const meta = this.tagMeta[tag];
+    return {
+      padding: '6px 10px', borderRadius: '20px', font: '700 10.5px Nunito, sans-serif', cursor: 'pointer',
+      background: active ? meta.color : '#fff',
+      color: active ? '#fff' : '#6b6255',
+      border: '1px solid ' + (active ? meta.color : '#f0e8db'),
+      whiteSpace: 'nowrap'
+    };
   }
 
   renderVals() {
@@ -350,6 +755,142 @@ class Component extends DCLogic {
     const green = 'oklch(0.70 0.13 150)';
     const blue = 'oklch(0.66 0.12 255)';
     const amber = 'oklch(0.78 0.13 80)';
+
+    // --- Dashboard bento helpers ---
+    const chipStyle = (active, color) => ({
+      width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      font: '700 11px Nunito, sans-serif', cursor: 'pointer', flexShrink: 0,
+      background: active ? color : '#fff', color: active ? '#fff' : '#8c857b',
+      border: '1.5px solid ' + (active ? color : '#e8ded0')
+    });
+    const bothChipStyle = (active) => ({
+      padding: '5px 10px', borderRadius: '20px', font: '700 11px Nunito, sans-serif', cursor: 'pointer',
+      background: active ? 'oklch(0.66 0.15 25)' : '#fff', color: active ? '#fff' : '#8c857b',
+      border: '1.5px solid ' + (active ? 'oklch(0.66 0.15 25)' : '#e8ded0')
+    });
+    const cookChipL = chipStyle(this.state.cookWho === 'l', 'oklch(0.70 0.15 38)');
+    const cookChipJ = chipStyle(this.state.cookWho === 'j', 'oklch(0.69 0.10 195)');
+    const cookChipBoth = bothChipStyle(this.state.cookWho === 'both');
+    const setCookL = () => this.setCookWho('l');
+    const setCookJ = () => this.setCookWho('j');
+    const setCookBoth = () => this.setCookWho('both');
+
+    const shopAll = [
+      this.item('sh1', green, 'Bananen', '1 Bund', 'L'),
+      this.item('sh2', green, 'Avocado', '3 Stück', 'J'),
+      this.item('sh3', blue, 'Hafermilch', '2 Liter', 'J'),
+      this.item('sh4', blue, 'Joghurt', '500 g', 'L'),
+      this.item('sh5', amber, 'Pasta', '1 kg', 'L'),
+      this.item('sh6', amber, 'Kaffeebohnen', '1 kg', 'J')
+    ];
+    const nextShopItems = shopAll.filter(s => !s.tick).slice(0, 3).map(s => ({
+      name: s.name, tick: s.tick, onToggle: s.onToggle,
+      miniBox: { width: '18px', height: '18px', borderRadius: '6px', border: '2px solid #d8d0c2', background: '#fff', flexShrink: 0, cursor: 'pointer' },
+      miniTxt: { font: '600 11.5px Nunito, sans-serif', color: '#2c2823' }
+    }));
+
+    const choresAll = [
+      this.item('ch1', coral, 'Bad putzen', 'Lena · Montag', 'L'),
+      this.item('ch2', coral, 'Staubsaugen', 'Jonas · Dienstag', 'J'),
+      this.item('ch3', coral, 'Müll rausbringen', 'Lena · Mittwoch', 'L'),
+      this.item('ch4', coral, 'Küche wischen', 'Jonas · Donnerstag', 'J'),
+      this.item('ch5', coral, 'Bettwäsche wechseln', 'Lena · Freitag', 'L'),
+      this.item('ch6', coral, 'Pflanzen gießen', 'Jonas · Samstag', 'J')
+    ];
+    const nextChoreRaw = choresAll.find(c => !c.tick) || choresAll[0];
+    const nextChore = { name: nextChoreRaw.name, sub: nextChoreRaw.sub, onToggle: nextChoreRaw.onToggle };
+
+    const mealDays = [
+      this.mealDay('Mo', '13. Jul', 'pasta-limone'),
+      this.mealDay('Di', '14. Jul', 'bowl-halloumi'),
+      this.mealDay('Mi', '15. Jul', null),
+      this.mealDay('Do', '16. Jul', 'curry-kichererbsen'),
+      this.mealDay('Fr', '17. Jul', null),
+      this.mealDay('Sa', '18. Jul', 'ofenpizza'),
+      this.mealDay('So', '19. Jul', null)
+    ];
+
+    const essensplanModal = this.buildModal(this.state.essensplanModalId);
+    const wikiModal = this.buildModal(this.state.wikiModalId);
+
+    // --- Wiki ---
+    const allTagIds = Object.keys(this.tagMeta);
+    const wikiFilterBadges = allTagIds.map(t => ({
+      label: this.tagMeta[t].emoji + ' ' + this.tagMeta[t].label,
+      onToggle: () => this.toggleWikiTag(t),
+      style: this.tagPillStyle(t, !!this.state.wikiActiveTags[t])
+    }));
+    const formTagBadges = allTagIds.map(t => ({
+      label: this.tagMeta[t].emoji + ' ' + this.tagMeta[t].label,
+      onToggle: () => this.toggleFormTag(t),
+      style: this.tagPillStyle(t, !!this.state.formTags[t])
+    }));
+
+    const activeFilterTags = allTagIds.filter(t => this.state.wikiActiveTags[t]);
+    const search = this.state.wikiSearch.trim().toLowerCase();
+    const filteredRecipes = this.state.recipes.filter(r => {
+      const matchesSearch = !search || r.name.toLowerCase().includes(search);
+      const matchesTags = activeFilterTags.length === 0 || activeFilterTags.some(t => r.tags.includes(t));
+      return matchesSearch && matchesTags;
+    });
+    const wikiRecipeCards = filteredRecipes.map(r => ({
+      name: r.name, time: r.time,
+      emoji: this.tagMeta[r.tags[0]] ? this.tagMeta[r.tags[0]].emoji : '🍽️',
+      onOpen: () => this.openWikiModal(r.id),
+      tagPills: r.tags.slice(0, 3).map(t => ({
+        emoji: this.tagMeta[t].emoji,
+        style: { width: '20px', height: '20px', borderRadius: '50%', background: this.tagMeta[t].color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }
+      }))
+    }));
+
+    const formIngredients = this.state.formIngredients.map((value, idx) => ({
+      value, onChange: (e) => this.updateFormIngredient(idx, e.target.value), onRemove: () => this.removeFormIngredient(idx)
+    }));
+    const formSteps = this.state.formSteps.map((value, idx) => ({
+      value, n: idx + 1, onChange: (e) => this.updateFormStep(idx, e.target.value), onRemove: () => this.removeFormStep(idx)
+    }));
+
+    // --- Bottom navigation (bubble) ---
+    const activeIdx = this.navItemsRaw.findIndex(i => i.key === this.state.navActive);
+    const activeItem = this.navItemsRaw[activeIdx];
+    const activeCenter = this.navSlotCenters[activeIdx];
+    const navSlots = this.navItemsRaw.map((it, i) => {
+      const isActive = it.key === this.state.navActive;
+      return {
+        key: it.key,
+        icon: isActive ? '' : it.icon,
+        label: it.label,
+        onClick: () => this.selectNav(it.key),
+        iconStyle: { fontSize: '18px', lineHeight: '1', visibility: isActive ? 'hidden' : 'visible' },
+        labelStyle: { font: '700 9px Nunito, sans-serif', color: isActive ? it.color : '#b8b0a4' }
+      };
+    });
+    const bubbleStyle = {
+      position: 'absolute', left: (activeCenter - 29) + 'px', top: '7px', width: '58px', height: '58px',
+      borderRadius: '50%', background: activeItem.color, color: '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
+      boxShadow: '0 10px 20px rgba(30,20,10,.28)',
+      transition: 'left .55s cubic-bezier(.34,1.56,.64,1), background .3s',
+      animation: 'bubbleJump' + (this.state.navBounceParity ? '1' : '2') + ' .5s cubic-bezier(.34,1.56,.64,1)',
+      zIndex: 3, cursor: 'pointer'
+    };
+    const collarStyle = {
+      position: 'absolute', left: (activeCenter - 42) + 'px', top: '-6px', width: '84px', height: '84px',
+      borderRadius: '50%', background: '#fffdf9',
+      transition: 'left .55s cubic-bezier(.34,1.56,.64,1)', zIndex: 2
+    };
+    const droplets = this.state.droplets.map(d => ({
+      style: {
+        position: 'absolute', left: d.x + 'px', top: d.y + 'px', width: '9px', height: '9px',
+        borderRadius: '50%', background: d.color, animation: 'dropletFall .7s ease forwards',
+        animationDelay: d.delay + 'ms', zIndex: 1
+      }
+    }));
+    const navContentIconWrap = {
+      width: '64px', height: '64px', borderRadius: '22px', background: activeItem.color,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px',
+      boxShadow: '0 10px 22px rgba(30,20,10,.2)'
+    };
 
     const assignments = [
       this.assignment('🛁', 'Bad putzen', 'Wöchentlich · Lena', 'L', 'Lena', 'vor 4 Tagen', 0),
@@ -384,18 +925,30 @@ class Component extends DCLogic {
     ];
     const shopDone = [...shopObst, ...shopKuehl, ...shopVorrat].filter(s => s.tick).length;
 
-    const mealDays = [
-      this.mealDay('Mo', '13. Jul', true, '🍝', 'Pasta al limone', '25 Min · vegetarisch'),
-      this.mealDay('Di', '14. Jul', true, '🥗', 'Bowl mit Halloumi', '20 Min · vegetarisch'),
-      this.mealDay('Mi', '15. Jul', false),
-      this.mealDay('Do', '16. Jul', true, '🍛', 'Curry mit Kichererbsen', '35 Min · vegan'),
-      this.mealDay('Fr', '17. Jul', false),
-      this.mealDay('Sa', '18. Jul', true, '🍕', 'Ofenpizza selbstgemacht', '40 Min · gemeinsam kochen'),
-      this.mealDay('So', '19. Jul', false)
-    ];
-
     return {
-      assignments, mealDays,
+      assignments,
+      mealDays, essensplanModal, wikiModal,
+      closeEssensplanModal: () => this.closeEssensplanModal(),
+      closeWikiModal: () => this.closeWikiModal(),
+      cookChipL, cookChipJ, cookChipBoth, setCookL, setCookJ, setCookBoth,
+      nextShopItems, nextChore,
+      wikiSearch: this.state.wikiSearch,
+      onWikiSearch: (e) => this.onWikiSearchChange(e),
+      wikiFilterBadges, wikiRecipeCards,
+      wikiShowForm: this.state.wikiShowForm,
+      wikiFormToggleIcon: this.state.wikiShowForm ? '✕' : '+',
+      toggleWikiForm: () => this.toggleWikiForm(),
+      formName: this.state.formName, onFormName: (e) => this.onFormNameChange(e),
+      formDuration: this.state.formDuration, onFormDuration: (e) => this.onFormDurationChange(e),
+      formIngredients, addFormIngredient: () => this.addFormIngredient(),
+      formSteps, addFormStep: () => this.addFormStep(),
+      formTagBadges, saveRecipe: () => this.saveRecipe(),
+      navSlots, bubbleStyle, collarStyle, droplets,
+      navActiveIcon: activeItem.icon,
+      navContentIcon: activeItem.icon,
+      navContentIconWrap,
+      navContentTitle: activeItem.title,
+      noopNav: () => {},
       chores, choreDone, choreProg: Math.round(choreDone / 6 * 100) + '%',
       shopObst, shopKuehl, shopVorrat, shopDone,
       notesOn: this.props.showNotes !== false

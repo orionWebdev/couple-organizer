@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { Expense, Couple } from '@/types'
+import { resolveExpenseCategories, categoryMeta } from '@/utils/expenseCategories'
 
 const props = defineProps<{
   expense: Expense
@@ -12,26 +13,12 @@ const emit = defineEmits<{ delete: [id: string]; edit: [expense: Expense] }>()
 
 const expanded = ref(false)
 
-// Kategoriefarben aus der Nido-Referenz (Icon-Kacheln der Ausgaben-Liste)
-const tagColors: Record<string, string> = {
-  food:      'var(--einkauf)',
-  transport: 'oklch(0.66 0.12 255)',
-  home:      'var(--haushalt)',
-  leisure:   'oklch(0.64 0.14 312)',
-  other:     'var(--finanzen)',
-}
-
-const tagLabels: Record<string, string> = {
-  food: 'Lebensmittel', transport: 'Auto', home: 'Haushalt', leisure: 'Essen', other: 'Sonstiges'
-}
-
-const tagIcons: Record<string, string> = {
-  food: '🛒', transport: '🚗', home: '🏠', leisure: '🍽️', other: '📦'
-}
-
-const tagColor = computed(() => tagColors[props.expense.category] ?? 'var(--text-faint)')
-const categoryLabel = computed(() => tagLabels[props.expense.category] ?? props.expense.category)
-const categoryIcon = computed(() => tagIcons[props.expense.category] ?? '📦')
+// Kategorien kommen aus der Couple (frei editierbar in den Settings), mit
+// Fallback auf die bisherigen 5 Standard-Kategorien.
+const meta = computed(() => categoryMeta(resolveExpenseCategories(props.couple), props.expense.category))
+const tagColor = computed(() => meta.value.color)
+const categoryLabel = computed(() => meta.value.name)
+const categoryIcon = computed(() => meta.value.icon)
 
 const amountFormatted = computed(() => {
   const euros = props.expense.amount / 100

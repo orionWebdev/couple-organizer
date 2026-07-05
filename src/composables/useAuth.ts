@@ -5,9 +5,13 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   updateProfile,
+  deleteUser,
   type User as FirebaseAuthUser
 } from 'firebase/auth'
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
+import {
+  doc, setDoc, getDoc, deleteDoc, updateDoc, serverTimestamp,
+  arrayRemove, deleteField
+} from 'firebase/firestore'
 import { auth, db } from '@/services/firebase'
 import type { User } from '@/types'
 
@@ -152,6 +156,51 @@ export function useAuth() {
     await loadUserProfile(auth.currentUser)
   }
 
+  // Nie an den Aufrufer werfen — analog zu den anderen use*.ts-Composables.
+  async function updatePrefs(patch: Partial<Pick<User, 'notifyPush' | 'languageEnglish'>>): Promise<boolean> {
+    if (!user.value) return false
+    try {
+      await updateDoc(doc(db, 'users', user.value.uid), patch)
+      user.value = { ...user.value, ...patch }
+      error.value = null
+      return true
+    } catch (e: any) {
+      error.value = e.message
+      return false
+    }
+  }
+
+  // Entfernt den Account vollständig: Mitgliedschaft in der Couple (falls
+  // vorhanden), das Firestore-Profil, dann den Firebase-Auth-User selbst.
+  // Löscht NICHT die geteilten Couple-Daten (Chores/Ausgaben/...) — die
+  // gehören weiterhin dem verbleibenden Partner.
+  async function deleteAccount(): Promise<{ ok: boolean; message?: string }> {
+    const firebaseUser = auth.currentUser
+    if (!firebaseUser || !user.value) return { ok: false, message: 'Nicht angemeldet' }
+
+    try {
+      const coupleId = user.value.coupleId
+      if (coupleId) {
+        await updateDoc(doc(db, 'couples', coupleId), {
+          memberIds: arrayRemove(firebaseUser.uid),
+          [`memberNames.${firebaseUser.uid}`]: deleteField(),
+          [`memberIcons.${firebaseUser.uid}`]: deleteField()
+        })
+      }
+
+      await deleteDoc(doc(db, 'users', firebaseUser.uid))
+      await deleteUser(firebaseUser)
+      user.value = null
+      return { ok: true }
+    } catch (e: any) {
+      if (getFirebaseErrorCode(e) === 'auth/requires-recent-login') {
+        return { ok: false, message: 'Bitte einmal aus- und wieder einloggen und dann erneut versuchen.' }
+      }
+      error.value = e.message
+      return { ok: false, message: e.message }
+    }
+  }
+
   return {
     user: readonly(user),
     loading: readonly(loading),
@@ -160,6 +209,8 @@ export function useAuth() {
     login,
     register,
     logout,
-    refreshUser
+    refreshUser,
+    updatePrefs,
+    deleteAccount
   }
 }

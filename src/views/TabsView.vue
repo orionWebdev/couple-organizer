@@ -26,16 +26,22 @@ const showInvite = ref(false)
 interface NavItem { id: string; label: string; icon: string; color: string; href: string }
 
 // Bereichsfarbe + Icon je Tab (Nido-Referenz: Dashboard indigo, Haushalt
-// terrakotta, Finanzen türkis, Essen amber).
+// terrakotta, Finanzen türkis, Essen amber). Der 5. Slot ("Mehr") führt direkt
+// zu den Einstellungen — Bucket-List ist nur über eine Dashboard-Karte
+// erreichbar, Finanz-Coach ist ein Tab innerhalb von Finanzen.
 const NAV_ITEMS: readonly NavItem[] = [
   { id: 'dashboard', label: 'Start', icon: '🏠', color: 'var(--dashboard)', href: '/dashboard' },
   { id: 'haushalt', label: 'Haushalt', icon: '🧽', color: 'var(--haushalt)', href: '/haushalt' },
   { id: 'finanzen', label: 'Finanzen', icon: '💶', color: 'var(--finanzen)', href: '/finanzen' },
   { id: 'einkaufen', label: 'Essen', icon: '🍽️', color: 'var(--einkauf)', href: '/einkaufen' },
+  { id: 'settings', label: 'Mehr', icon: '⋯', color: 'oklch(0.55 0.05 80)', href: '/settings' },
 ]
 
+// Die Bucket-List ist nur über die Dashboard-Karte erreichbar und hat keinen
+// eigenen Nav-Slot — dort zeigt die Bubble weiterhin auf "Start".
 const activeId = computed(() => {
   const seg = route.path.split('/')[1] || 'dashboard'
+  if (seg === 'bucket-list') return 'dashboard'
   return NAV_ITEMS.find(i => i.id === seg)?.id ?? 'dashboard'
 })
 

@@ -4,6 +4,7 @@ import type { Couple, Expense } from '@/types'
 import type { ExpenseCategory } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import NumericKeypad from './NumericKeypad.vue'
+import { resolveExpenseCategories, categoryColor } from '@/utils/expenseCategories'
 
 const props = defineProps<{
   isOpen: boolean
@@ -42,7 +43,8 @@ const submitLabel = computed(() => (isEditing.value ? 'Speichern' : 'Hinzufügen
 const rawAmount = ref('')
 const title = ref('')
 const paidBy = ref(props.currentUserId)
-const tag = ref<ExpenseCategory>('food')
+const categories = computed(() => resolveExpenseCategories(props.couple))
+const tag = ref<ExpenseCategory>(categories.value[0]?.id ?? 'other')
 const splitMode = ref<'5050' | 'custom'>('5050')
 const customPct = ref(50)
 
@@ -52,14 +54,11 @@ const displayAmount = computed(() => {
   return isNaN(n) ? '0,00' : n.toFixed(2).replace('.', ',')
 })
 
-// Kategoriefarben aus der Nido-Referenz (Icon-Kacheln der Ausgaben-Liste)
-const tags: Array<{ value: ExpenseCategory; label: string; color: string }> = [
-  { value: 'food',      label: 'Lebensmittel', color: 'var(--einkauf)' },
-  { value: 'transport', label: 'Auto',         color: 'oklch(0.66 0.12 255)' },
-  { value: 'home',      label: 'Haushalt',     color: 'var(--haushalt)' },
-  { value: 'leisure',   label: 'Essen',        color: 'oklch(0.64 0.14 312)' },
-  { value: 'other',     label: 'Sonstiges',    color: 'var(--finanzen)' },
-]
+// Kategorien kommen jetzt aus der Couple (frei editierbar in den Settings),
+// mit den bisherigen 5 als Fallback für Couples ohne eigene Liste.
+const tags = computed(() =>
+  categories.value.map((c) => ({ value: c.id, label: c.name, color: categoryColor(categories.value, c.id) }))
+)
 
 const partnerUid = computed(() => {
   if (!props.couple) return null
@@ -118,7 +117,7 @@ function handleSubmit() {
   rawAmount.value = ''
   title.value = ''
   paidBy.value = props.currentUserId
-  tag.value = 'food'
+  tag.value = categories.value[0]?.id ?? 'other'
   splitMode.value = '5050'
   customPct.value = 50
 }

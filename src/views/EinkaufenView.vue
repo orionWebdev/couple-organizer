@@ -39,17 +39,20 @@ const {
 const { addExpense } = useExpenses(coupleId)
 
 type Tab = 'liste' | 'wochenplan' | 'rezepte'
+// Einkaufsliste bleibt der initiale Tab, sitzt jetzt aber optisch in der Mitte
+// (links Wochenplan, rechts Rezepte).
 const tab = ref<Tab>('liste')
 const tabOptions = [
-  { label: 'Einkaufsliste', value: 'liste' },
   { label: 'Wochenplan', value: 'wochenplan' },
+  { label: 'Einkaufsliste', value: 'liste' },
   { label: 'Rezepte', value: 'rezepte' },
 ]
 
 const rezeptWikiRef = ref<InstanceType<typeof RezeptWikiView> | null>(null)
 
 // ── Horizontaler Swipe zwischen den Tabs (gleiches Muster wie HaushaltView) ──
-const tabOrder: Tab[] = ['liste', 'wochenplan', 'rezepte']
+// Reihenfolge muss die sichtbare Tab-Reihenfolge widerspiegeln.
+const tabOrder: Tab[] = ['wochenplan', 'liste', 'rezepte']
 let swipeStartX = 0
 let swipeStartY = 0
 let swipeIgnore = false
@@ -210,57 +213,62 @@ function listItemsFor(listId: string) {
         <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
       </div>
 
+      <!-- touchstart/touchend sitzen auf .tab-area (nicht nur .tab-content),
+           weil die FabButtons als Geschwister-Elemente von .tab-content
+           gerendert werden (siehe Kommentar unten) — Touch-Events bubblen
+           nicht zwischen Geschwistern, ein auf dem FAB startender Swipe würde
+           sonst nicht erkannt. -->
       <div
-        class="tab-content"
+        class="tab-area"
         @touchstart.passive="onTouchStart"
         @touchend.passive="onTouchEnd"
       >
-        <Transition name="tab-fade" mode="out-in">
-          <div v-if="tab === 'liste'" key="liste" class="page-container">
-            <div v-if="loading" class="loading-msg">Laden…</div>
-            <div v-else class="lists-wrap">
-              <TransitionGroup tag="div" name="list-add" class="lists-grid">
-                <ShoppingListCard
-                  v-for="list in lists"
-                  :key="list.id"
-                  :list="list"
-                  :items="listItemsFor(list.id)"
-                  :menuOpen="menuOpenId === list.id"
-                  @select="selectList(list.id)"
-                  @toggleMenu="toggleListMenu(list.id)"
-                  @rename="handleRenameList(list.id, $event)"
-                  @delete="handleDeleteList(list.id)"
-                />
-              </TransitionGroup>
+        <div class="tab-content">
+          <Transition name="tab-fade" mode="out-in">
+            <div v-if="tab === 'liste'" key="liste" class="page-container">
+              <div v-if="loading" class="loading-msg">Laden…</div>
+              <div v-else class="lists-wrap">
+                <TransitionGroup tag="div" name="list-add" class="lists-grid">
+                  <ShoppingListCard
+                    v-for="list in lists"
+                    :key="list.id"
+                    :list="list"
+                    :items="listItemsFor(list.id)"
+                    :menuOpen="menuOpenId === list.id"
+                    @select="selectList(list.id)"
+                    @toggleMenu="toggleListMenu(list.id)"
+                    @rename="handleRenameList(list.id, $event)"
+                    @delete="handleDeleteList(list.id)"
+                  />
+                </TransitionGroup>
+              </div>
             </div>
-          </div>
 
-          <EssensplanView
-            v-else-if="tab === 'wochenplan'"
-            key="wochenplan"
-            :coupleId="coupleId"
-            :couple="couple"
-          />
+            <EssensplanView
+              v-else-if="tab === 'wochenplan'"
+              key="wochenplan"
+              :coupleId="coupleId"
+              :couple="couple"
+            />
 
-          <RezeptWikiView
-            v-else
-            key="rezepte"
-            ref="rezeptWikiRef"
-            :coupleId="coupleId"
-          />
-        </Transition>
+            <RezeptWikiView
+              v-else
+              key="rezepte"
+              ref="rezeptWikiRef"
+              :coupleId="coupleId"
+            />
+          </Transition>
+        </div>
+
+        <!-- Außerhalb der Transition (verhindert das FAB-Slow-Slide-Problem,
+             siehe unten), aber innerhalb der Swipe-Zone. -->
+        <FabButton v-if="tab === 'liste'" label="Neue Liste" @click="showNewList = true" />
+        <FabButton
+          v-else-if="tab === 'rezepte' && !rezeptWikiRef?.showForm"
+          label="Rezept hinzufügen"
+          @click="rezeptWikiRef?.openCreateForm()"
+        />
       </div>
-
-      <!-- Fixierte Add-Buttons leben hier außerhalb der Tab-Transition, nicht
-           in den einzelnen Tab-Panes — sonst würde das transform der
-           tab-fade-Transition sie kurzzeitig zum Containing Block für ihre
-           position:fixed-Kindelemente machen (sichtbares Reinrutschen). -->
-      <FabButton v-if="tab === 'liste'" label="Neue Liste" @click="showNewList = true" />
-      <FabButton
-        v-else-if="tab === 'rezepte' && !rezeptWikiRef?.showForm"
-        label="Rezept hinzufügen"
-        @click="rezeptWikiRef?.openCreateForm()"
-      />
     </template>
 
     <!-- New list sheet -->
@@ -314,12 +322,19 @@ function listItemsFor(listId: string) {
   font-size: 12px;
 }
 
-.tab-content {
+.tab-area {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   touch-action: pan-y;
+}
+
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Sanfter Übergang beim Tab-Wechsel (gleiches Muster wie HaushaltView) */

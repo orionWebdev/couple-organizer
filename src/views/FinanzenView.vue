@@ -4,11 +4,13 @@ import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useExpenses } from '@/composables/useExpenses'
 import { showToast } from '@/composables/useToast'
+import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import BalanceCard from '@/components/finance/BalanceCard.vue'
 import ExpenseRow from '@/components/finance/ExpenseRow.vue'
 import EventCard from '@/components/finance/EventCard.vue'
 import EventDetail from '@/components/finance/EventDetail.vue'
 import AddExpenseSheet from '@/components/finance/AddExpenseSheet.vue'
+import FinanzCoachView from '@/components/finance/FinanzCoachView.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { useJustAdded } from '@/composables/useJustAdded'
 import type { Expense } from '@/types'
@@ -23,6 +25,7 @@ const {
   loading,
   activeEventSummaries,
   eventSummaries,
+  categoryMonthlyComparison,
   addExpense,
   updateExpense,
   deleteExpense,
@@ -46,6 +49,43 @@ function openEvent(eventId: string) {
 function backToDashboard() {
   finView.value = 'dashboard'
   currentEventId.value = null
+}
+
+type Tab = 'uebersicht' | 'coach'
+const tab = ref<Tab>('uebersicht')
+const tabOptions = [
+  { label: 'Übersicht', value: 'uebersicht' },
+  { label: 'Finanz-Coach', value: 'coach' },
+]
+
+// ── Horizontaler Swipe zwischen den Tabs (gleiches Muster wie HaushaltView) ──
+const tabOrder: Tab[] = ['uebersicht', 'coach']
+let swipeStartX = 0
+let swipeStartY = 0
+let swipeIgnore = false
+
+function goTab(dir: 1 | -1) {
+  const i = tabOrder.indexOf(tab.value)
+  const next = i + dir
+  if (next < 0 || next >= tabOrder.length) return
+  tab.value = tabOrder[next]
+}
+
+function onTouchStart(e: TouchEvent) {
+  const t = e.touches[0]
+  swipeStartX = t.clientX
+  swipeStartY = t.clientY
+  swipeIgnore = !!(e.target as HTMLElement | null)?.closest?.('[data-hswipe-skip]')
+}
+
+function onTouchEnd(e: TouchEvent) {
+  if (swipeIgnore) return
+  const t = e.changedTouches[0]
+  const dx = t.clientX - swipeStartX
+  const dy = t.clientY - swipeStartY
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.7) {
+    goTab(dx < 0 ? 1 : -1)
+  }
 }
 
 const showAdd = ref(false)
@@ -156,49 +196,78 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
         <h1 class="page-title">Finanzen</h1>
       </div>
 
-      <!-- Balance card -->
-      <BalanceCard
-        :balanceInfo="balanceInfo"
-        :couple="couple"
-        :currentUserId="user?.uid ?? ''"
-        @settle="showSettle = true"
-      />
-
-      <!-- Events rail -->
-      <TransitionGroup v-if="!loading" tag="div" name="list-add" class="events-rail">
-        <EventCard
-          v-for="summary in activeEventSummaries"
-          :key="summary.event.id"
-          :summary="summary"
-          :couple="couple"
-          @click="openEvent(summary.event.id)"
-        />
-        <button key="new-event" class="new-event-card" @click="openNewEvent">
-          <span class="new-event-icon">+</span>
-          <span class="new-event-label">Neues Event</span>
-        </button>
-      </TransitionGroup>
-
-      <!-- Expense list -->
-      <div v-if="loading" class="loading-row">Laden…</div>
-      <div v-else-if="sortedExpenses.length === 0" class="empty-state">
-        Noch keine Ausgaben. Füge die erste hinzu.
+      <div class="tab-bar-wrap">
+        <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
       </div>
-      <TransitionGroup v-else tag="div" name="list-add" class="expense-list">
-        <ExpenseRow
-          v-for="exp in sortedExpenses"
-          :key="exp.id"
-          :expense="exp"
-          :couple="couple"
-          :currentUserId="user?.uid ?? ''"
-          :class="{ 'just-added': justAddedExpense.has(exp.id) }"
-          @delete="onDeleteExpense"
-          @edit="openEditExpense"
-        />
-      </TransitionGroup>
 
-      <!-- FAB -->
-      <button class="fab" @click="openAddExpense"><span class="fab-plus">+</span>Ausgabe erfassen</button>
+      <div
+        class="tab-area"
+        @touchstart.passive="onTouchStart"
+        @touchend.passive="onTouchEnd"
+      >
+        <div class="tab-content">
+          <Transition name="tab-fade" mode="out-in">
+            <div v-if="tab === 'uebersicht'" key="uebersicht" class="uebersicht-pane">
+              <!-- Balance card -->
+              <BalanceCard
+                :balanceInfo="balanceInfo"
+                :couple="couple"
+                :currentUserId="user?.uid ?? ''"
+                @settle="showSettle = true"
+              />
+
+              <!-- Events rail -->
+              <TransitionGroup v-if="!loading" tag="div" name="list-add" class="events-rail">
+                <EventCard
+                  v-for="summary in activeEventSummaries"
+                  :key="summary.event.id"
+                  :summary="summary"
+                  :couple="couple"
+                  @click="openEvent(summary.event.id)"
+                />
+                <button key="new-event" class="new-event-card" @click="openNewEvent">
+                  <span class="new-event-icon">+</span>
+                  <span class="new-event-label">Neues Event</span>
+                </button>
+              </TransitionGroup>
+
+              <!-- Expense list -->
+              <div v-if="loading" class="loading-row">Laden…</div>
+              <div v-else-if="sortedExpenses.length === 0" class="empty-state">
+                Noch keine Ausgaben. Füge die erste hinzu.
+              </div>
+              <TransitionGroup v-else tag="div" name="list-add" class="expense-list">
+                <ExpenseRow
+                  v-for="exp in sortedExpenses"
+                  :key="exp.id"
+                  :expense="exp"
+                  :couple="couple"
+                  :currentUserId="user?.uid ?? ''"
+                  :class="{ 'just-added': justAddedExpense.has(exp.id) }"
+                  @delete="onDeleteExpense"
+                  @edit="openEditExpense"
+                />
+              </TransitionGroup>
+            </div>
+
+            <FinanzCoachView
+              v-else
+              key="coach"
+              :couple="couple"
+              :categoryMonthlyComparison="categoryMonthlyComparison"
+              :loading="loading"
+            />
+          </Transition>
+        </div>
+
+        <!-- Außerhalb der Transition, aber innerhalb der Swipe-Zone — sonst
+             würde ein Swipe, der auf dem FAB beginnt, nicht erkannt (der FAB
+             läge sonst außerhalb von .tab-area und Touch-Events bubblen nicht
+             zwischen Geschwister-Elementen). -->
+        <button v-if="tab === 'uebersicht'" class="fab" @click="openAddExpense">
+          <span class="fab-plus">+</span>Ausgabe erfassen
+        </button>
+      </div>
     </template>
 
     <EventDetail
@@ -239,12 +308,13 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
 
 <style scoped>
 .finanzen-page {
-  min-height: 100%;
-  padding-bottom: 96px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
-  padding: calc(var(--safe-top) + 20px) var(--screen-pad) 20px;
+  padding: calc(var(--safe-top) + 20px) var(--screen-pad) 16px;
 }
 
 .page-title {
@@ -253,6 +323,63 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
   font-weight: 700;
   color: var(--text);
   margin: 0;
+}
+
+.tab-bar-wrap {
+  padding: 0 var(--screen-pad);
+  margin-bottom: 20px;
+}
+
+.tab-bar {
+  display: flex;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.tab-bar :deep(.seg-btn) {
+  padding: 9px 0;
+  font-size: 12px;
+}
+
+.tab-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  touch-action: pan-y;
+  padding-bottom: 96px;
+}
+
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.uebersicht-pane {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Sanfter Übergang beim Tab-Wechsel (auch per Swipe) */
+.tab-fade-enter-active {
+  transition: opacity 220ms var(--ease-standard), transform 220ms var(--ease-standard);
+}
+
+.tab-fade-leave-active {
+  transition: opacity 140ms var(--ease-in), transform 140ms var(--ease-in);
+}
+
+.tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.tab-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 .events-rail {

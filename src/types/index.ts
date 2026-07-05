@@ -5,15 +5,25 @@ export interface User {
   email: string
   displayName: string
   coupleId: string | null
+  notifyPush?: boolean // optional — absent on older user docs, defaults to true (see useAuth)
+  languageEnglish?: boolean // rein visuell/Beta, kein echtes i18n dahinter
   createdAt: Timestamp
+}
+
+export interface ExpenseCategoryDef {
+  id: string
+  name: string
+  icon: string
 }
 
 export interface Couple {
   id: string
   memberIds: string[]
   memberNames: Record<string, string> // { uid: displayName }
+  memberIcons?: Record<string, string> // { uid: emoji } — optional, absent = Initialen-Fallback
   inviteCode: string
   monthlyBudget?: number | null // cents; optional — absent on older couple docs
+  expenseCategories?: ExpenseCategoryDef[] // optional — absent = DEFAULT_EXPENSE_CATEGORIES (src/utils/expenseCategories.ts)
   createdAt: Timestamp
 }
 
@@ -133,7 +143,9 @@ export interface MealPlanEntry {
   updatedAt: Timestamp
 }
 
-export type ExpenseCategory = 'food' | 'transport' | 'home' | 'leisure' | 'other'
+// String statt festem Union: Kategorien sind jetzt pro Couple frei editierbar
+// (Couple.expenseCategories) — die bisherigen 5 Werte bleiben als IDs gültig.
+export type ExpenseCategory = string
 export type FinanceEventKind = 'event' | 'monthly'
 
 export interface FinanceEvent {
@@ -187,4 +199,25 @@ export interface FinanceEventSummary {
   total: number
   balances: Record<string, number>
   expenses: Expense[]
+}
+
+export interface CategoryMonthlyComparison {
+  categoryId: string
+  current: number // cents, aktueller Monat
+  previous: number // cents, Vormonat
+  deltaPct: number | null // null wenn Vormonat 0 war (Prozent nicht sinnvoll berechenbar)
+}
+
+export type BucketListCategory = 'ort' | 'restaurant'
+
+export interface BucketListItem {
+  id: string
+  coupleId: string
+  category: BucketListCategory
+  name: string
+  note: string
+  done: boolean
+  createdBy: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
 }

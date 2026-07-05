@@ -7,6 +7,7 @@ import { useChores } from '@/composables/useChores'
 import { useShopping } from '@/composables/useShopping'
 import { useMealPlan } from '@/composables/useMealPlan'
 import { useExpenses } from '@/composables/useExpenses'
+import { useBucketList } from '@/composables/useBucketList'
 import { showToast } from '@/composables/useToast'
 import { isDoneToday, personName, personVisual } from '@/utils/chores'
 import { roomOf, roomLabel } from '@/utils/rooms'
@@ -24,10 +25,25 @@ const { chores, loading: choresLoading, completeChore } = useChores(coupleId)
 const { items, loading: shoppingLoading, toggleChecked } = useShopping(coupleId)
 const { week, loading: mealPlanLoading, setCookAssignee } = useMealPlan(coupleId)
 const { monthlySummaries, balanceInfo, loading: expensesLoading } = useExpenses(coupleId)
+const { items: bucketItems, loading: bucketLoading } = useBucketList(coupleId)
 
 const loading = computed(() =>
-  choresLoading.value || shoppingLoading.value || mealPlanLoading.value || expensesLoading.value
+  choresLoading.value || shoppingLoading.value || mealPlanLoading.value || expensesLoading.value || bucketLoading.value
 )
+
+// ── Bucket-List (Teaser-Karte, einziger Zugang zur Bucket-List) ───
+const nextBucketItem = computed(() => bucketItems.value.find((b) => !b.done) ?? null)
+const openBucketCount = computed(() => bucketItems.value.filter((b) => !b.done).length)
+const bucketSub = computed(() => {
+  const item = nextBucketItem.value
+  if (!item) return ''
+  const kind = item.category === 'ort' ? '📍 Reiseziel' : '🍽️ Restaurant'
+  return `${kind} · ${openBucketCount.value} offen`
+})
+
+function goToBucketList() {
+  router.push('/bucket-list')
+}
 
 const dateLabel = computed(() =>
   new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
@@ -224,6 +240,20 @@ async function saveBudget() {
         <div v-else class="card-empty">Alles erledigt ✓</div>
       </div>
 
+      <!-- Bucket-List -->
+      <button type="button" class="bento-card bento-card--wide bucket-card" @click="goToBucketList">
+        <div class="card-head">
+          <span class="card-head-icon bucket-icon">🧳</span>
+          <span class="card-head-title">Bucket-List</span>
+        </div>
+        <template v-if="nextBucketItem">
+          <div class="bucket-name">{{ nextBucketItem.name }}</div>
+          <div class="bucket-sub">{{ bucketSub }}</div>
+        </template>
+        <div v-else class="card-empty">Noch nichts geplant</div>
+        <span class="card-link bucket-link">Zur Liste ›</span>
+      </button>
+
       <!-- Finanzen -->
       <div class="bento-card bento-card--wide finance-card">
         <div class="finance-head">
@@ -271,7 +301,7 @@ async function saveBudget() {
 
 .greeting {
   font-family: var(--font-headline);
-  font-size: 21px;
+  font-size: 25px;
   font-weight: 700;
   color: var(--text);
   margin: 0;
@@ -279,7 +309,7 @@ async function saveBudget() {
 
 .date-label {
   display: block;
-  font-size: 12.5px;
+  font-size: 16.5px;
   font-weight: 600;
   color: var(--text-secondary);
   margin-top: 2px;
@@ -295,7 +325,7 @@ async function saveBudget() {
 
 .loading-msg {
   padding: 40px var(--screen-pad);
-  font-size: 14px;
+  font-size: 18px;
   color: var(--text-faint);
   text-align: center;
 }
@@ -349,14 +379,14 @@ async function saveBudget() {
 }
 
 .meal-label {
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 600;
   color: #9a8272;
 }
 
 .meal-title {
   font-family: var(--font-headline);
-  font-size: 15.5px;
+  font-size: 19.5px;
   font-weight: 700;
   color: var(--text);
   margin-top: 1px;
@@ -364,7 +394,7 @@ async function saveBudget() {
 
 .meal-time {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--food);
 }
@@ -379,7 +409,7 @@ async function saveBudget() {
 }
 
 .cook-label {
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 600;
   color: #9a8272;
   margin-right: 2px;
@@ -392,7 +422,7 @@ async function saveBudget() {
   border-radius: 50%;
   border: 1.5px solid var(--border-softer);
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
@@ -413,7 +443,7 @@ async function saveBudget() {
 }
 
 .meal-empty-text {
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -424,7 +454,7 @@ async function saveBudget() {
   padding: 0;
   color: var(--food);
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: 16.5px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -462,13 +492,13 @@ async function saveBudget() {
 }
 
 .card-head-title {
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text);
 }
 
 .card-empty {
-  font-size: 12px;
+  font-size: 16px;
   color: var(--text-meta);
 }
 
@@ -496,7 +526,7 @@ async function saveBudget() {
 }
 
 .shop-name {
-  font-size: 11.5px;
+  font-size: 15.5px;
   font-weight: 600;
   color: var(--text);
   overflow: hidden;
@@ -510,7 +540,7 @@ async function saveBudget() {
   background: none;
   border: none;
   padding: 0;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   color: oklch(0.5 0.13 80);
   cursor: pointer;
@@ -518,13 +548,13 @@ async function saveBudget() {
 
 .chore-name {
   font-family: var(--font-headline);
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text);
 }
 
 .chore-sub {
-  font-size: 10.5px;
+  font-size: 14.5px;
   font-weight: 600;
   color: var(--text-meta);
   margin-top: 1px;
@@ -539,9 +569,45 @@ async function saveBudget() {
   border-radius: 10px;
   padding: 7px;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* Bucket-List (einziger Zugang: Dashboard-Karte) */
+.bucket-card {
+  background: var(--bucket-tint);
+  display: block;
+  width: 100%;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.bucket-icon {
+  background: var(--bucket);
+}
+
+.bucket-name {
+  font-family: var(--font-headline);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bucket-sub {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-meta);
+  margin-top: 1px;
+}
+
+.bucket-link {
+  color: var(--bucket);
 }
 
 /* Finanzen */
@@ -557,13 +623,14 @@ async function saveBudget() {
 }
 
 .finance-title {
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text);
 }
 
 .finance-amount {
-  font-size: 15px;
+  font-size: 19px;
+  font-weight: 700;
   color: var(--text);
   cursor: pointer;
 }
@@ -573,7 +640,7 @@ async function saveBudget() {
   border: none;
   padding: 0;
   font-family: var(--font-body);
-  font-size: 11.5px;
+  font-size: 15.5px;
   font-weight: 700;
   color: var(--finanzen);
   cursor: pointer;
@@ -596,7 +663,7 @@ async function saveBudget() {
 
 .debt-hint {
   margin-top: 9px;
-  font-size: 11.5px;
+  font-size: 15.5px;
   font-weight: 600;
   color: #5f7876;
 }

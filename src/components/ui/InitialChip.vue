@@ -10,6 +10,8 @@ const props = defineProps<{
 
 const size = computed(() => props.size ?? 28)
 
+const icon = computed(() => props.couple?.memberIcons?.[props.uid] ?? null)
+
 const initial = computed(() => {
   if (!props.couple) return '?'
   const name = props.couple.memberNames[props.uid]
@@ -26,13 +28,14 @@ const color = computed(() => {
 <template>
   <span
     class="chip"
+    :class="{ 'chip--icon': icon }"
     :style="{
       width: size + 'px',
       height: size + 'px',
-      fontSize: Math.round(size * 0.42) + 'px',
-      background: color,
+      fontSize: icon ? Math.round(size * 0.55) + 'px' : Math.round(size * 0.42) + 'px',
+      background: icon ? 'var(--surface-deep)' : color,
     }"
-  >{{ initial }}</span>
+  >{{ icon ?? initial }}</span>
 </template>
 
 <style scoped>

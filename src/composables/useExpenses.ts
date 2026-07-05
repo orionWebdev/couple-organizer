@@ -15,6 +15,7 @@ import {
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
 import type {
+  CategoryMonthlyComparison,
   Expense,
   ExpenseBalanceSummary,
   ExpenseCategory,
@@ -276,6 +277,38 @@ export function useExpenses(coupleId: Ref<string | null>) {
       })
   })
 
+  // Kategorie-Ausgaben dieser Monat vs. Vormonat, für den Finanz-Coach.
+  // Zählt ALLE aktiven Monats-Ausgaben (nicht nur unbezahlte) — isPaid
+  // beschreibt den Ausgleich zwischen Partnern, nicht ob Geld ausgegeben wurde.
+  const categoryMonthlyComparison = computed<CategoryMonthlyComparison[]>(() => {
+    const now = new Date()
+    const currentKey = createMonthKey(now)
+    const previousKey = createMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))
+
+    const currentTotals = new Map<string, number>()
+    const previousTotals = new Map<string, number>()
+
+    for (const expense of activeExpenses.value) {
+      if (getExpenseScope(expense) !== 'monthly') continue
+      if (expense.monthKey === currentKey) {
+        currentTotals.set(expense.category, (currentTotals.get(expense.category) ?? 0) + expense.amount)
+      } else if (expense.monthKey === previousKey) {
+        previousTotals.set(expense.category, (previousTotals.get(expense.category) ?? 0) + expense.amount)
+      }
+    }
+
+    const categoryIds = new Set([...currentTotals.keys(), ...previousTotals.keys()])
+
+    return [...categoryIds]
+      .map((categoryId) => {
+        const current = currentTotals.get(categoryId) ?? 0
+        const previous = previousTotals.get(categoryId) ?? 0
+        const deltaPct = previous > 0 ? Math.round(((current - previous) / previous) * 100) : null
+        return { categoryId, current, previous, deltaPct }
+      })
+      .sort((a, b) => b.current - a.current)
+  })
+
   const activeEventSummaries = computed(() => eventSummaries.value.filter((entry) => !entry.event.archived))
   const archivedEventSummaries = computed(() => eventSummaries.value.filter((entry) => entry.event.archived))
   const activeEvents = computed(() => events.value.filter((event) => event.kind === 'event' && !event.archived))
@@ -467,6 +500,7 @@ export function useExpenses(coupleId: Ref<string | null>) {
     balanceInfo,
     recentExpenses,
     monthlySummaries,
+    categoryMonthlyComparison,
     eventSummaries,
     activeEventSummaries,
     archivedEventSummaries,

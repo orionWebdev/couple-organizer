@@ -86,10 +86,15 @@ export function useChores(coupleId: Ref<string | null>) {
   }
 
   watch(coupleId, (id) => {
-    if (id) {
-      startListeningToChores(id)
-      startListeningToHistory(id)
+    if (!id) {
+      chores.value = []
+      history.value = []
+      loadingChores.value = false
+      loadingHistory.value = false
+      return
     }
+    startListeningToChores(id)
+    startListeningToHistory(id)
   }, { immediate: true })
 
   async function addChore(input: AddChoreInput): Promise<boolean> {

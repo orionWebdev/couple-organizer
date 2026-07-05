@@ -116,20 +116,61 @@
           <div onClick="{{ nextChore.onToggle }}" style="margin-top:10px;background:oklch(0.70 0.15 38);color:#fff;text-align:center;border-radius:10px;padding:7px;font:700 11px Nunito,sans-serif;cursor:pointer">✓ Erledigt</div>
         </div>
 
+        <div style="background:oklch(0.97 0.035 312);border-radius:20px;padding:13px;border:1px solid rgba(255,255,255,.5)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px"><div style="width:30px;height:30px;border-radius:11px;background:oklch(0.64 0.14 312);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🧳</div><div style="font:700 13px Nunito,sans-serif">Bucket-List</div></div>
+          <div style="font:700 13px Fredoka,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ bucketTeaser.name }}</div>
+          <div style="font:600 10.5px Nunito,sans-serif;color:#9a8a82;margin-top:1px">{{ bucketTeaser.sub }}</div>
+          <div style="margin-top:10px;font:700 11px Nunito,sans-serif;color:oklch(0.5 0.14 312)">Zur Liste ›</div>
+        </div>
+
+        <div style="background:oklch(0.955 0.045 150);border-radius:20px;padding:13px;border:1px solid rgba(255,255,255,.5)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px"><div style="width:30px;height:30px;border-radius:11px;background:oklch(0.70 0.13 150);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">♻️</div><div style="font:700 13px Nunito,sans-serif">Reste da?</div></div>
+          <div style="font:700 13px Fredoka,sans-serif">Gemini fragen</div>
+          <div style="font:600 10.5px Nunito,sans-serif;color:#9a8a82;margin-top:1px">Rezept aus dem, was übrig ist</div>
+          <div style="margin-top:10px;background:oklch(0.70 0.13 150);color:#fff;text-align:center;border-radius:10px;padding:7px;font:700 11px Nunito,sans-serif;cursor:pointer">✨ Loslegen</div>
+        </div>
+
         <div style="grid-column:span 2;background:oklch(0.95 0.03 195);border-radius:20px;padding:15px 16px;border:1px solid rgba(255,255,255,.55)">
           <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:700 13px Nunito,sans-serif">Finanzen · Juni</div><div style="font:700 15px Fredoka,sans-serif">612 € / 800 €</div></div>
           <div style="height:8px;border-radius:5px;background:#fff;margin-top:9px;overflow:hidden"><div style="width:76%;height:100%;background:oklch(0.69 0.10 195);border-radius:5px"></div></div>
           <div style="margin-top:9px;font:600 11.5px Nunito,sans-serif;color:#5f7876">Lena bekommt noch <span style="font-weight:700;color:#2c2823">34 €</span> von Jonas</div>
         </div>
+
+        <div style="grid-column:span 2;background:oklch(0.97 0.03 300);border-radius:20px;padding:15px 16px;border:1px solid rgba(255,255,255,.55)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:30px;height:30px;border-radius:11px;background:oklch(0.64 0.14 312);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">💭</div><div style="font:700 13px Nunito,sans-serif">Stimmungs-Barometer</div></div>
+          <div style="display:flex;align-items:flex-start;gap:9px;background:#fff;border-radius:14px;padding:10px 12px;border:1px solid rgba(255,255,255,.6)">
+            <div style="width:26px;height:26px;border-radius:50%;background:oklch(0.69 0.10 195);color:#fff;display:flex;align-items:center;justify-content:center;font:700 11px Nunito,sans-serif;flex-shrink:0">J</div>
+            <div style="flex:1"><div style="font:700 12px Nunito,sans-serif">Jonas {{ moodPartner.emoji }}</div><div style="font:600 11px Nunito,sans-serif;color:#8c857b;margin-top:1px">{{ moodPartner.text }}</div></div>
+          </div>
+          <div style="margin-top:11px;font:700 11px Nunito,sans-serif;color:#8c857b">Wie geht's dir gerade?</div>
+          <div style="display:flex;gap:6px;margin-top:7px">
+            <sc-for list="{{ moodPicker }}" as="m" hint-placeholder-count="5">
+              <div onClick="{{ m.onClick }}" style="{{ m.style }}">{{ m.emoji }}</div>
+            </sc-for>
+          </div>
+          <input value="{{ moodMineText }}" onChange="{{ onMoodTextChange }}" placeholder="Kurzer Satz dazu … (optional)" style="width:100%;height:34px;border-radius:10px;border:1px solid #e6d9ee;background:#fff;padding:0 11px;font:600 11.5px Nunito,sans-serif;color:#2c2823;outline:none;box-sizing:border-box;margin-top:8px"/>
+        </div>
       </div>
     </div>
-    <div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:#fffdf9;border-top:1px solid #efe7da;display:flex;align-items:center;justify-content:space-around;padding:0 16px">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:oklch(0.70 0.15 38)"><div style="font-size:18px;line-height:1">🏠</div><div style="font:700 9px Nunito,sans-serif">Start</div></div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#b8b0a4"><div style="font-size:18px;line-height:1">🧽</div><div style="font:700 9px Nunito,sans-serif">Haushalt</div></div>
-      <div style="width:50px;height:50px;border-radius:18px;background:oklch(0.70 0.15 38);display:flex;align-items:center;justify-content:center;margin-top:-24px;box-shadow:0 8px 18px oklch(0.70 0.15 38 / .45);color:#fff;font:300 28px Nunito,sans-serif">+</div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#b8b0a4"><div style="font-size:18px;line-height:1">🛒</div><div style="font:700 9px Nunito,sans-serif">Einkauf</div></div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#b8b0a4"><div style="font-size:18px;line-height:1">💶</div><div style="font:700 9px Nunito,sans-serif">Finanzen</div></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:68px;background:#fffdf9;border-top:1px solid #efe7da">
+      <div style="position:absolute;left:50%;top:-24px;transform:translateX(-50%);width:50px;height:50px;border-radius:18px;background:oklch(0.70 0.15 38);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px oklch(0.70 0.15 38 / .45);color:#fff;font:300 28px Nunito,sans-serif;cursor:pointer">+</div>
+      <div style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:space-around;padding:0 8px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:oklch(0.70 0.15 38)"><div style="font-size:16px;line-height:1">🏠</div><div style="font:700 8.5px Nunito,sans-serif">Start</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#b8b0a4"><div style="font-size:16px;line-height:1">🧽</div><div style="font:700 8.5px Nunito,sans-serif">Haushalt</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#b8b0a4"><div style="font-size:16px;line-height:1">🛒</div><div style="font:700 8.5px Nunito,sans-serif">Einkauf</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#b8b0a4"><div style="font-size:16px;line-height:1">💶</div><div style="font:700 8.5px Nunito,sans-serif">Finanzen</div></div>
+        <div onClick="{{ toggleMoreMenu }}" style="{{ moreTabStyle }}"><div style="font-size:16px;line-height:1">⋯</div><div style="font:700 8.5px Nunito,sans-serif">Mehr</div></div>
+      </div>
     </div>
+
+    <sc-if value="{{ moreMenuOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:18px;right:18px;bottom:80px;background:#fff;border-radius:18px;box-shadow:0 14px 30px rgba(60,45,30,.18);border:1px solid #f0e8db;padding:8px;z-index:15">
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer"><div style="font-size:17px">🧳</div><div style="font:700 12.5px Nunito,sans-serif;flex:1">Bucket-List</div><div style="color:#c9bfae">›</div></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer"><div style="font-size:17px">🧠</div><div style="font:700 12.5px Nunito,sans-serif;flex:1">Finanz-Coach</div><div style="color:#c9bfae">›</div></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer"><div style="font-size:17px">💌</div><div style="font:700 12.5px Nunito,sans-serif;flex:1">Charm-Push senden</div><div style="color:#c9bfae">›</div></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer"><div style="font-size:17px">⚙️</div><div style="font:700 12.5px Nunito,sans-serif;flex:1">Einstellungen</div><div style="color:#c9bfae">›</div></div>
+      </div>
+    </sc-if>
   </div>
 </div>
 
@@ -497,7 +538,7 @@
 
     <div style="position:absolute;left:0;right:0;bottom:0;height:100px">
       <div style="position:absolute;left:16px;right:16px;top:36px;height:64px;background:#fffdf9;border-radius:26px;box-shadow:0 10px 26px rgba(60,45,30,.14);display:flex;align-items:center;justify-content:space-around;padding:0 10px">
-        <sc-for list="{{ navSlots }}" as="n" hint-placeholder-count="4">
+        <sc-for list="{{ navSlots }}" as="n" hint-placeholder-count="5">
           <div onClick="{{ n.onClick }}" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;width:60px">
             <div style="{{ n.iconStyle }}">{{ n.icon }}</div>
             <div style="{{ n.labelStyle }}">{{ n.label }}</div>
@@ -511,6 +552,309 @@
 
       <div style="{{ collarStyle }}"></div>
       <div onClick="{{ noopNav }}" style="{{ bubbleStyle }}">{{ navActiveIcon }}</div>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:80px;top:1756px;font:700 16px Fredoka,sans-serif;color:rgba(60,50,40,.75)">3 · Neue Features — Stimmungen, Bucket-List, Resteverwertung, Finanz-Coach, Settings, Charm-Push</div>
+
+<!-- ============ FRAME 11 · SETTINGS ============ -->
+<div style="position:absolute;left:80px;top:1810px;width:340px">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:6px;font:700 12px Nunito,sans-serif;color:rgba(70,58,46,.6)">Detail — Einstellungen</div>
+  <div style="width:340px;height:724px;background:#fdfaf5;border-radius:38px;box-shadow:0 14px 40px rgba(60,45,30,.16);border:1px solid #efe7da;overflow:hidden;position:relative;font-family:Nunito,system-ui,sans-serif;color:#2c2823">
+    <div style="height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px">
+      <div style="font:700 13px Nunito,sans-serif">9:41</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="display:flex;align-items:flex-end;gap:2px;height:11px"><div style="width:3px;height:5px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:7px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:9px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:11px;background:#cdc6ba;border-radius:1px"></div></div><div style="width:21px;height:11px;border:1.5px solid #2c2823;border-radius:3px;padding:1.5px"><div style="width:70%;height:100%;background:#2c2823;border-radius:1px"></div></div></div>
+    </div>
+    <div style="padding:8px 18px 0;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:12px;background:#fff;box-shadow:0 3px 10px rgba(60,45,30,.08);display:flex;align-items:center;justify-content:center;font:400 20px Nunito,sans-serif;color:#2c2823">←</div>
+      <div><div style="font:700 19px Fredoka,sans-serif">Einstellungen</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b">Konto · Haushalt · App</div></div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:82px;bottom:0;overflow-y:auto;padding-bottom:26px">
+
+      <div style="padding:12px 18px 0">
+        <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Profil</div>
+        <div style="background:#fff;border-radius:16px;padding:13px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div onClick="{{ toggleAvatarPicker }}" style="width:48px;height:48px;border-radius:16px;background:oklch(0.955 0.05 80);display:flex;align-items:center;justify-content:center;font-size:23px;cursor:pointer;flex-shrink:0">{{ avatarMine }}</div>
+            <div style="flex:1"><div style="font:700 13.5px Nunito,sans-serif">Lena</div><div style="font:600 11px Nunito,sans-serif;color:#9a9286">Tippe auf das Symbol, um es zu ändern</div></div>
+          </div>
+          <sc-if value="{{ avatarShowPicker }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:12px">
+              <sc-for list="{{ avatarGrid }}" as="av" hint-placeholder-count="16">
+                <div onClick="{{ av.onClick }}" style="{{ av.style }}">{{ av.icon }}</div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="padding:16px 18px 0">
+        <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Einladung</div>
+        <div style="background:#fff;border-radius:16px;padding:13px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;display:flex;align-items:center;gap:12px">
+          <div style="flex:1"><div style="font:600 10.5px Nunito,sans-serif;color:#9a9286">Einladungscode</div><div style="font:700 16px Fredoka,sans-serif;letter-spacing:1px;margin-top:2px">{{ inviteCode }}</div></div>
+          <div onClick="{{ regenerateInviteCode }}" style="background:oklch(0.955 0.05 80);border-radius:11px;padding:9px 12px;font:700 11px Nunito,sans-serif;color:oklch(0.55 0.13 80);cursor:pointer;white-space:nowrap">Neu erstellen</div>
+        </div>
+      </div>
+
+      <div style="padding:16px 18px 0">
+        <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Benachrichtigungen</div>
+        <div style="background:#fff;border-radius:16px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 13px;border-bottom:1px solid #f3ede1">
+            <div style="flex:1"><div style="font:700 12.5px Nunito,sans-serif">Push-Benachrichtigungen</div><div style="font:600 10.5px Nunito,sans-serif;color:#9a9286">Erledigte Aufgaben &amp; Erinnerungen</div></div>
+            <div onClick="{{ toggleNotifPush }}" style="{{ pushSwitchTrack }}"><div style="{{ pushSwitchKnob }}"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 13px">
+            <div style="flex:1"><div style="font:700 12.5px Nunito,sans-serif">Charm-Nachrichten 🥖</div><div style="font:600 10.5px Nunito,sans-serif;color:#9a9286">Liebevolle Push-Notizen vom Partner</div></div>
+            <div onClick="{{ toggleNotifCharm }}" style="{{ charmSwitchTrack }}"><div style="{{ charmSwitchKnob }}"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:16px 18px 0">
+        <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Finanzen</div>
+        <div style="background:#fff;border-radius:16px;padding:13px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db">
+          <div style="font:600 10.5px Nunito,sans-serif;color:#9a9286">Monatsbudget</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:5px">
+            <input value="{{ financeBudget }}" onChange="{{ onFinanceBudgetChange }}" style="width:90px;height:34px;border-radius:10px;border:1px solid #f0e8db;padding:0 10px;font:700 13px Fredoka,sans-serif;box-sizing:border-box"/>
+            <div style="font:700 13px Nunito,sans-serif;color:#9a9286">€ / Monat</div>
+          </div>
+          <div style="font:700 10.5px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px;margin-top:14px;margin-bottom:8px">Kategorien</div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <sc-for list="{{ financeCategoryRows }}" as="fc" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:9px;background:#faf6ee;border-radius:11px;padding:8px 10px">
+                <div style="font-size:16px">{{ fc.icon }}</div>
+                <div style="flex:1;font:700 12px Nunito,sans-serif">{{ fc.name }}</div>
+                <div onClick="{{ fc.onRemove }}" style="width:24px;height:24px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;color:#b09a86;font:700 13px Nunito,sans-serif;cursor:pointer">–</div>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ financeCatShowForm }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f3ede1">
+              <input value="{{ financeCatFormName }}" onChange="{{ onFinanceCatFormName }}" placeholder="Kategoriename" style="width:100%;height:34px;border-radius:10px;border:1px solid #f0e8db;padding:0 11px;font:600 12px Nunito,sans-serif;box-sizing:border-box"/>
+              <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px">
+                <sc-for list="{{ catIconGrid }}" as="ci" hint-placeholder-count="16">
+                  <div onClick="{{ ci.onClick }}" style="{{ ci.style }}">{{ ci.icon }}</div>
+                </sc-for>
+              </div>
+              <div onClick="{{ saveFinanceCategory }}" style="margin-top:9px;background:oklch(0.69 0.10 195);color:#fff;text-align:center;border-radius:10px;padding:9px;font:700 12px Nunito,sans-serif;cursor:pointer">Kategorie speichern</div>
+            </div>
+          </sc-if>
+          <div onClick="{{ toggleFinanceCatForm }}" style="margin-top:10px;text-align:center;font:700 11.5px Nunito,sans-serif;color:oklch(0.55 0.13 195);cursor:pointer">{{ financeCatFormToggleLabel }}</div>
+        </div>
+      </div>
+
+      <div style="padding:16px 18px 0">
+        <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Sprache</div>
+        <div style="background:#fff;border-radius:16px;padding:13px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;display:flex;align-items:center;gap:10px">
+          <div style="flex:1"><div style="font:700 12.5px Nunito,sans-serif">App auf Englisch</div><div style="font:600 10.5px Nunito,sans-serif;color:#9a9286">Automatische Übersetzung · Beta</div></div>
+          <div onClick="{{ toggleLangEnglish }}" style="{{ langSwitchTrack }}"><div style="{{ langSwitchKnob }}"></div></div>
+        </div>
+      </div>
+
+      <div style="padding:16px 18px 0">
+        <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Konto</div>
+        <div style="background:#fff;border-radius:16px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;overflow:hidden">
+          <div style="padding:12px 13px;border-bottom:1px solid #f3ede1;font:700 12.5px Nunito,sans-serif;cursor:pointer">Abmelden</div>
+          <div style="padding:12px 13px;font:700 12.5px Nunito,sans-serif;color:oklch(0.55 0.18 25);cursor:pointer">Konto löschen</div>
+        </div>
+      </div>
+
+      <div style="padding:16px 18px 0">
+        <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Gefahrenzone</div>
+        <sc-if value="{{ settingsResetConfirm }}" hint-placeholder-val="{{ false }}">
+          <div style="background:oklch(0.96 0.03 25);border:1.5px solid oklch(0.7 0.12 25);border-radius:16px;padding:13px">
+            <div style="font:700 12.5px Nunito,sans-serif;color:oklch(0.45 0.16 25)">Wirklich alles zurücksetzen?</div>
+            <div style="font:600 11px Nunito,sans-serif;color:#8c6a5c;margin-top:4px">Haushalt, Einkauf, Finanzen und Rezepte werden für diese Gruppe komplett gelöscht.</div>
+            <div style="display:flex;gap:8px;margin-top:11px">
+              <div onClick="{{ toggleResetConfirm }}" style="flex:1;text-align:center;background:#fff;border-radius:10px;padding:9px;font:700 12px Nunito,sans-serif;cursor:pointer">Abbrechen</div>
+              <div style="flex:1;text-align:center;background:oklch(0.55 0.18 25);color:#fff;border-radius:10px;padding:9px;font:700 12px Nunito,sans-serif;cursor:pointer">Ja, zurücksetzen</div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ settingsResetConfirmNot }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ toggleResetConfirm }}" style="background:#fff;border:1.5px solid oklch(0.7 0.12 25 / .4);border-radius:16px;padding:13px;font:700 12.5px Nunito,sans-serif;color:oklch(0.55 0.18 25);cursor:pointer;text-align:center">App komplett zurücksetzen</div>
+        </sc-if>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME 12 · BUCKET-LIST ============ -->
+<div style="position:absolute;left:510px;top:1810px;width:340px">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:6px;font:700 12px Nunito,sans-serif;color:rgba(70,58,46,.6)">Detail — Gemeinsame Bucket-List</div>
+  <div style="width:340px;height:724px;background:#fdfaf5;border-radius:38px;box-shadow:0 14px 40px rgba(60,45,30,.16);border:1px solid #efe7da;overflow:hidden;position:relative;font-family:Nunito,system-ui,sans-serif;color:#2c2823">
+    <div style="height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px">
+      <div style="font:700 13px Nunito,sans-serif">9:41</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="display:flex;align-items:flex-end;gap:2px;height:11px"><div style="width:3px;height:5px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:7px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:9px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:11px;background:#cdc6ba;border-radius:1px"></div></div><div style="width:21px;height:11px;border:1.5px solid #2c2823;border-radius:3px;padding:1.5px"><div style="width:70%;height:100%;background:#2c2823;border-radius:1px"></div></div></div>
+    </div>
+    <div style="padding:8px 18px 0;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:12px;background:#fff;box-shadow:0 3px 10px rgba(60,45,30,.08);display:flex;align-items:center;justify-content:center;font:400 20px Nunito,sans-serif;color:#2c2823">←</div>
+      <div><div style="font:700 19px Fredoka,sans-serif">Bucket-List</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b">Schöne Dinge · Lena &amp; Jonas</div></div>
+    </div>
+    <div style="padding:14px 18px 0;display:flex;gap:6px">
+      <sc-for list="{{ bucketTabs }}" as="t" hint-placeholder-count="3">
+        <div onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</div>
+      </sc-for>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:130px;bottom:84px;overflow-y:auto;padding-bottom:10px">
+      <div style="padding:14px 18px 0;display:flex;flex-direction:column;gap:9px">
+        <sc-for list="{{ bucketCards }}" as="b" hint-placeholder-count="4">
+          <div style="background:#fff;border-radius:16px;padding:12px 13px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db;display:flex;align-items:flex-start;gap:11px">
+            <div onClick="{{ b.onToggle }}" style="{{ b.box }}">{{ b.tick }}</div>
+            <div style="flex:1;min-width:0"><div style="font-size:14px;margin-bottom:1px">{{ b.icon }}<span style="{{ b.txt }}"> {{ b.name }}</span></div><div style="font:600 11px Nunito,sans-serif;color:#9a9286">{{ b.note }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ bucketShowForm }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:14px 18px 0;background:#fff;border-radius:18px;padding:14px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db">
+          <div style="font:700 13.5px Nunito,sans-serif;margin-bottom:10px">Neuer Eintrag</div>
+          <div style="display:flex;gap:6px;margin-bottom:9px">
+            <sc-for list="{{ bucketFormCategoryChips }}" as="bc" hint-placeholder-count="2">
+              <div onClick="{{ bc.onClick }}" style="{{ bc.style }}">{{ bc.label }}</div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input value="{{ bucketFormName }}" onChange="{{ onBucketFormName }}" placeholder="Name (Ort oder Restaurant)" style="height:36px;border-radius:10px;border:1px solid #f0e8db;padding:0 11px;font:600 12px Nunito,sans-serif;box-sizing:border-box"/>
+            <input value="{{ bucketFormNote }}" onChange="{{ onBucketFormNote }}" placeholder="Notiz (optional)" style="height:36px;border-radius:10px;border:1px solid #f0e8db;padding:0 11px;font:600 12px Nunito,sans-serif;box-sizing:border-box"/>
+            <div onClick="{{ saveBucketItem }}" style="margin-top:2px;background:oklch(0.64 0.14 312);color:#fff;text-align:center;border-radius:12px;padding:11px;font:700 13px Nunito,sans-serif;cursor:pointer">Eintrag speichern</div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    <div onClick="{{ toggleBucketForm }}" style="position:absolute;left:18px;right:18px;bottom:18px;height:50px;border-radius:16px;background:oklch(0.64 0.14 312);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font:700 14px Nunito,sans-serif;box-shadow:0 10px 22px oklch(0.64 0.14 312 / .35);cursor:pointer"><span style="font-size:18px;font-weight:300">{{ bucketFormToggleIcon }}</span>{{ bucketFormToggleLabel }}</div>
+  </div>
+</div>
+
+<!-- ============ FRAME 13 · KÜHLSCHRANK-RESTEVERWERTUNG ============ -->
+<div style="position:absolute;left:940px;top:1810px;width:340px">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:6px;font:700 12px Nunito,sans-serif;color:rgba(70,58,46,.6)">Detail — Was haben wir noch da? (Gemini-Rezept)</div>
+  <div style="width:340px;height:724px;background:#fdfaf5;border-radius:38px;box-shadow:0 14px 40px rgba(60,45,30,.16);border:1px solid #efe7da;overflow:hidden;position:relative;font-family:Nunito,system-ui,sans-serif;color:#2c2823">
+    <div style="height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px">
+      <div style="font:700 13px Nunito,sans-serif">9:41</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="display:flex;align-items:flex-end;gap:2px;height:11px"><div style="width:3px;height:5px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:7px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:9px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:11px;background:#cdc6ba;border-radius:1px"></div></div><div style="width:21px;height:11px;border:1.5px solid #2c2823;border-radius:3px;padding:1.5px"><div style="width:70%;height:100%;background:#2c2823;border-radius:1px"></div></div></div>
+    </div>
+    <div style="padding:8px 18px 0;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:12px;background:#fff;box-shadow:0 3px 10px rgba(60,45,30,.08);display:flex;align-items:center;justify-content:center;font:400 20px Nunito,sans-serif;color:#2c2823">←</div>
+      <div><div style="font:700 19px Fredoka,sans-serif">Was haben wir noch da?</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b">Reste verwerten mit Gemini ✨</div></div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:82px;bottom:0;overflow-y:auto;padding-bottom:24px">
+      <div style="padding:10px 18px 0">
+        <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Was ist noch da?</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px">
+          <sc-for list="{{ restChips }}" as="ri" hint-placeholder-count="6">
+            <div onClick="{{ ri.onToggle }}" style="{{ ri.style }}">{{ ri.name }}</div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:11px">
+          <input value="{{ restCustomInput }}" onChange="{{ onRestCustomInput }}" placeholder="Eigene Zutat eintippen …" style="flex:1;height:36px;border-radius:10px;border:1px solid #f0e8db;padding:0 11px;font:600 12px Nunito,sans-serif;box-sizing:border-box"/>
+          <div onClick="{{ addRestCustomIngredient }}" style="width:36px;height:36px;border-radius:10px;background:oklch(0.70 0.13 150);color:#fff;display:flex;align-items:center;justify-content:center;font:300 20px Nunito,sans-serif;cursor:pointer;flex-shrink:0">+</div>
+        </div>
+        <div onClick="{{ generateRestRecipe }}" style="{{ restGenBtnStyle }}">✨ Rezept vorschlagen lassen</div>
+
+        <sc-if value="{{ restGenerated }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;background:#fff;border-radius:18px;padding:14px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:38px;height:38px;border-radius:13px;background:oklch(0.955 0.05 80);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">♻️</div>
+              <div><div style="font:700 14.5px Fredoka,sans-serif">{{ restGenerated.name }}</div><div style="font:600 10.5px Nunito,sans-serif;color:#9a9286">⏱ {{ restGenerated.time }} Min · von Gemini</div></div>
+            </div>
+            <div style="font:700 10.5px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px;margin-top:12px;margin-bottom:7px">Zutaten</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <sc-for list="{{ restGeneratedIngredients }}" as="gi" hint-placeholder-count="4">
+                <div style="background:#faf6ee;border-radius:9px;padding:5px 9px;font:600 11px Nunito,sans-serif">{{ gi.name }}</div>
+              </sc-for>
+            </div>
+            <div style="font:700 10.5px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.5px;margin-top:12px;margin-bottom:7px">Zubereitung</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ restGeneratedSteps }}" as="gs" hint-placeholder-count="4">
+                <div style="display:flex;gap:7px">
+                  <div style="width:17px;height:17px;border-radius:50%;background:oklch(0.70 0.13 150);color:#fff;font:700 9px Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">{{ gs.n }}</div>
+                  <div style="font:600 11.5px/1.4 Nunito,sans-serif;color:#4a413a">{{ gs.text }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div onClick="{{ addRestRecipeToPlan }}" style="margin-top:13px;background:oklch(0.70 0.13 150);color:#fff;text-align:center;border-radius:12px;padding:11px;font:700 13px Nunito,sans-serif;cursor:pointer">In den Essensplan übernehmen</div>
+            <sc-if value="{{ restAddedInfo }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:9px;text-align:center;font:700 11.5px Nunito,sans-serif;color:oklch(0.55 0.13 150)">{{ restAddedInfo }}</div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME 14 · KI-FINANZ-COACH ============ -->
+<div style="position:absolute;left:1370px;top:1810px;width:340px">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:6px;font:700 12px Nunito,sans-serif;color:rgba(70,58,46,.6)">Detail — KI-Finanz-Coach (Monatsbericht)</div>
+  <div style="width:340px;height:724px;background:#fdfaf5;border-radius:38px;box-shadow:0 14px 40px rgba(60,45,30,.16);border:1px solid #efe7da;overflow:hidden;position:relative;font-family:Nunito,system-ui,sans-serif;color:#2c2823">
+    <div style="height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px">
+      <div style="font:700 13px Nunito,sans-serif">9:41</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="display:flex;align-items:flex-end;gap:2px;height:11px"><div style="width:3px;height:5px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:7px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:9px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:11px;background:#cdc6ba;border-radius:1px"></div></div><div style="width:21px;height:11px;border:1.5px solid #2c2823;border-radius:3px;padding:1.5px"><div style="width:70%;height:100%;background:#2c2823;border-radius:1px"></div></div></div>
+    </div>
+    <div style="padding:8px 18px 0;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:12px;background:#fff;box-shadow:0 3px 10px rgba(60,45,30,.08);display:flex;align-items:center;justify-content:center;font:400 20px Nunito,sans-serif;color:#2c2823">←</div>
+      <div><div style="font:700 19px Fredoka,sans-serif">Finanz-Coach</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b">Juli-Bericht · von Gemini</div></div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:82px;bottom:0;overflow-y:auto;padding-bottom:24px">
+      <div style="margin:8px 18px 0;background:oklch(0.95 0.03 195);border-radius:20px;padding:15px 16px;border:1px solid rgba(255,255,255,.55);display:flex;gap:11px">
+        <div style="width:36px;height:36px;border-radius:12px;background:oklch(0.69 0.10 195);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;color:#fff">✨</div>
+        <div style="font:600 12.5px/1.5 Nunito,sans-serif;color:#4a5a59">Ihr habt diesen Monat <b>15% mehr</b> für Lieferdienste ausgegeben als sonst. Wie wäre es nächsten Monat mit 2 Fakeaway-Abenden mehr?</div>
+      </div>
+
+      <div style="padding:16px 18px 0">
+        <div style="font:700 11px Nunito,sans-serif;color:#9a9286;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Kategorien im Vergleich</div>
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <sc-for list="{{ financeCategoriesReport }}" as="fr" hint-placeholder-count="4">
+            <div>
+              <div style="display:flex;justify-content:space-between;font:700 12px Nunito,sans-serif;margin-bottom:5px"><div>{{ fr.label }}</div><div style="{{ fr.deltaStyle }}">{{ fr.delta }}</div></div>
+              <div style="height:8px;border-radius:5px;background:#fff;overflow:hidden"><div style="{{ fr.barStyle }}"></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="margin:18px 18px 0;background:#fff;border-radius:18px;padding:15px;box-shadow:0 4px 12px rgba(60,45,30,.05);border:1px solid #f0e8db">
+        <div style="font:700 13.5px Nunito,sans-serif">🥡 Vorschlag</div>
+        <div style="font:600 12px/1.5 Nunito,sans-serif;color:#8c857b;margin-top:5px">Plant einen entspannten Fakeaway-Abend statt Lieferdienst — spart Geld und schmeckt trotzdem gut.</div>
+        <div onClick="{{ addFakeawayToPlan }}" style="margin-top:11px;background:oklch(0.69 0.10 195);color:#fff;text-align:center;border-radius:12px;padding:11px;font:700 13px Nunito,sans-serif;cursor:pointer">Fakeaway in Essensplan einplanen</div>
+        <sc-if value="{{ financeAddedInfo }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:9px;text-align:center;font:700 11.5px Nunito,sans-serif;color:oklch(0.5 0.13 195)">{{ financeAddedInfo }}</div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FRAME 15 · CHARM-PUSH-NOTIFICATIONS ============ -->
+<div style="position:absolute;left:1800px;top:1810px;width:340px">
+  <div data-drags-parent="1" style="position:absolute;top:-26px;left:6px;font:700 12px Nunito,sans-serif;color:rgba(70,58,46,.6)">Detail — Charm-Push-Benachrichtigungen</div>
+  <div style="width:340px;height:724px;background:#fdfaf5;border-radius:38px;box-shadow:0 14px 40px rgba(60,45,30,.16);border:1px solid #efe7da;overflow:hidden;position:relative;font-family:Nunito,system-ui,sans-serif;color:#2c2823">
+    <div style="height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px">
+      <div style="font:700 13px Nunito,sans-serif">9:41</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="display:flex;align-items:flex-end;gap:2px;height:11px"><div style="width:3px;height:5px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:7px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:9px;background:#2c2823;border-radius:1px"></div><div style="width:3px;height:11px;background:#cdc6ba;border-radius:1px"></div></div><div style="width:21px;height:11px;border:1.5px solid #2c2823;border-radius:3px;padding:1.5px"><div style="width:70%;height:100%;background:#2c2823;border-radius:1px"></div></div></div>
+    </div>
+    <div style="padding:8px 18px 0;display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;border-radius:12px;background:#fff;box-shadow:0 3px 10px rgba(60,45,30,.08);display:flex;align-items:center;justify-content:center;font:400 20px Nunito,sans-serif;color:#2c2823">←</div>
+      <div><div style="font:700 19px Fredoka,sans-serif">Charm-Notiz senden</div><div style="font:600 11.5px Nunito,sans-serif;color:#8c857b">Ein Klick, eine liebe Nachricht</div></div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:82px;bottom:0;overflow-y:auto;padding-bottom:100px">
+      <div style="padding:10px 18px 0;display:flex;flex-direction:column;gap:9px">
+        <sc-for list="{{ charmMessageCards }}" as="cm" hint-placeholder-count="4">
+          <div onClick="{{ cm.onClick }}" style="{{ cm.style }}">{{ cm.text }}</div>
+        </sc-for>
+      </div>
+      <div style="padding:14px 18px 0">
+        <input value="{{ charmCustomText }}" onChange="{{ onCharmCustomText }}" placeholder="Eigene Nachricht schreiben …" style="width:100%;height:38px;border-radius:12px;border:1px solid #f0e8db;background:#fff;padding:0 13px;font:600 12.5px Nunito,sans-serif;color:#2c2823;outline:none;box-sizing:border-box"/>
+      </div>
+    </div>
+    <div onClick="{{ sendCharmNotif }}" style="position:absolute;left:18px;right:18px;bottom:18px;height:50px;border-radius:16px;background:oklch(0.70 0.15 38);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font:700 14px Nunito,sans-serif;box-shadow:0 10px 22px oklch(0.70 0.15 38 / .35);cursor:pointer">📨 Senden</div>
+
+    <div onClick="{{ dismissCharmNotif }}" style="{{ charmNotifStyle }}">
+      <div style="width:34px;height:34px;border-radius:11px;background:oklch(0.70 0.15 38);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">💌</div>
+      <div style="flex:1"><div style="font:700 11px Nunito,sans-serif;color:#9a9286">Nido · jetzt</div><div style="font:700 13px Nunito,sans-serif;margin-top:1px">{{ charmNotifText }}</div></div>
     </div>
   </div>
 </div>
@@ -529,6 +873,50 @@ class Component extends DCLogic {
   state = {
     done: { ch1: true, ch2: true, sh3: true, sh6: true },
     cookWho: 'both',
+    moodMineEmoji: null,
+    moodMineText: '',
+    bucketItems: [
+      { id: 'b1', category: 'ort', name: 'Lissabon', note: 'Langes Wochenende im Frühling', done: false },
+      { id: 'b2', category: 'ort', name: 'Wanderung Allgäu', note: 'Hütte buchen', done: false },
+      { id: 'b3', category: 'restaurant', name: 'Sushi-Laden am Kanal', note: 'Tipp von Jonas Kollegen', done: false },
+      { id: 'b4', category: 'restaurant', name: 'Vegan-Brunch sonntags', note: '', done: true }
+    ],
+    moreMenuOpen: false,
+    bucketFilter: 'all',
+    bucketShowForm: false,
+    bucketFormName: '', bucketFormCategory: 'ort', bucketFormNote: '',
+    restSelected: {},
+    restCustomInput: '',
+    restGenerated: null,
+    restAddedInfo: null,
+    mealPlanMap: { 0: 'pasta-limone', 1: 'bowl-halloumi', 2: null, 3: 'curry-kichererbsen', 4: null, 5: 'ofenpizza', 6: null },
+    financeAddedInfo: null,
+    avatarMine: '🦊',
+    avatarShowPicker: false,
+    notifPush: true,
+    notifCharm: true,
+    langEnglish: false,
+    financeBudget: 800,
+    financeCategories: [
+      { id: 'lebensmittel', name: 'Lebensmittel', icon: '🛒' },
+      { id: 'restaurants', name: 'Restaurants', icon: '🍽️' },
+      { id: 'miete', name: 'Miete & Wohnen', icon: '🏠' },
+      { id: 'energie', name: 'Energie', icon: '⚡' }
+    ],
+    financeCatShowForm: false,
+    financeCatFormName: '', financeCatFormIcon: '🛒',
+    inviteCode: 'NIDO-7F3K9',
+    settingsResetConfirm: false,
+    charmMessages: [
+      { id: 'm1', text: 'Der Kühlschrank ist voll! 🥖🧀' },
+      { id: 'm2', text: 'Wäsche ist fertig, alles duftet 🧺✨' },
+      { id: 'm3', text: 'Hab an dich gedacht ❤️' },
+      { id: 'm4', text: 'Die Spülmaschine wartet auf dich 🍽️😉' }
+    ],
+    charmSelectedId: 'm1',
+    charmCustomText: '',
+    charmShowNotif: false,
+    charmNotifText: '',
     ingredientChecks: {},
     essensplanModalId: null,
     wikiModalId: null,
@@ -557,9 +945,10 @@ class Component extends DCLogic {
     { key: 'dashboard', icon: '🏠', label: 'Start', color: 'oklch(0.60 0.14 280)', title: 'Dashboard' },
     { key: 'haushalt', icon: '🧽', label: 'Haushalt', color: 'oklch(0.70 0.15 38)', title: 'Haushalt' },
     { key: 'finanzen', icon: '💶', label: 'Finanzen', color: 'oklch(0.69 0.10 195)', title: 'Finanzen' },
-    { key: 'essen', icon: '🍽️', label: 'Essen', color: 'oklch(0.78 0.13 80)', title: 'Essen & Einkauf' }
+    { key: 'essen', icon: '🍽️', label: 'Essen', color: 'oklch(0.78 0.13 80)', title: 'Essen & Einkauf' },
+    { key: 'mehr', icon: '⋯', label: 'Mehr', color: 'oklch(0.55 0.05 80)', title: 'Mehr — Bucket-List, Finanz-Coach, Settings' }
   ];
-  navSlotCenters = [62, 134, 206, 278];
+  navSlotCenters = [45, 108, 170, 233, 295];
   dropletSeq = 0;
 
   selectNav(key) {
@@ -603,8 +992,13 @@ class Component extends DCLogic {
     veggie: { emoji: '🌱', label: 'Vegetarisch/Vegan', color: 'oklch(0.70 0.13 150)' },
     meat: { emoji: '🥩', label: 'Fleisch/Fisch', color: 'oklch(0.66 0.15 25)' },
     pasta: { emoji: '🍝', label: 'Pasta-Liebe', color: 'oklch(0.78 0.13 80)' },
-    fakeaway: { emoji: '🥡', label: 'Fakeaway', color: 'oklch(0.69 0.10 195)' }
+    fakeaway: { emoji: '🥡', label: 'Fakeaway', color: 'oklch(0.69 0.10 195)' },
+    reste: { emoji: '♻️', label: 'Resteverwertung', color: 'oklch(0.70 0.13 150)' }
   };
+
+  avatarIconOptions = ['🦊','🦉','🐻','🐨','🐢','🦄','🐸','🐙','🌵','🍩','🌟','🔥','🎧','🎨','⚡','🌈'];
+  categoryIconOptions = ['🛒','🍽️','🏠','⚡','🚗','🎉','💊','👕','🎮','📱','🐾','✈️','🎬','📚','☕','🎁'];
+  dayMeta = [['Mo','13. Jul'],['Di','14. Jul'],['Mi','15. Jul'],['Do','16. Jul'],['Fr','17. Jul'],['Sa','18. Jul'],['So','19. Jul']];
 
   toggle(id) {
     this.setState(s => ({ done: { ...s.done, [id]: !s.done[id] } }));
@@ -667,6 +1061,93 @@ class Component extends DCLogic {
     }));
   }
 
+  setMood(emoji) { this.setState({ moodMineEmoji: emoji }); }
+  onMoodTextChange(e) { this.setState({ moodMineText: e.target.value }); }
+
+  toggleMoreMenu() { this.setState(s => ({ moreMenuOpen: !s.moreMenuOpen })); }
+  toggleBucketFilter(f) { this.setState({ bucketFilter: f }); }
+  toggleBucketDone(id) { this.setState(s => ({ bucketItems: s.bucketItems.map(b => b.id === id ? { ...b, done: !b.done } : b) })); }
+  toggleBucketForm() { this.setState(s => ({ bucketShowForm: !s.bucketShowForm })); }
+  onBucketFormName(e) { this.setState({ bucketFormName: e.target.value }); }
+  onBucketFormNote(e) { this.setState({ bucketFormNote: e.target.value }); }
+  setBucketFormCategory(cat) { this.setState({ bucketFormCategory: cat }); }
+  saveBucketItem() {
+    const s = this.state;
+    if (!s.bucketFormName.trim()) return;
+    const item = { id: 'b' + Date.now(), category: s.bucketFormCategory, name: s.bucketFormName.trim(), note: s.bucketFormNote.trim(), done: false };
+    this.setState(prev => ({ bucketItems: [...prev.bucketItems, item], bucketFormName: '', bucketFormNote: '', bucketFormCategory: 'ort', bucketShowForm: false }));
+  }
+
+  toggleRestIngredient(name) { this.setState(s => ({ restSelected: { ...s.restSelected, [name]: !s.restSelected[name] } })); }
+  onRestCustomInput(e) { this.setState({ restCustomInput: e.target.value }); }
+  addRestCustomIngredient() {
+    const val = this.state.restCustomInput.trim();
+    if (!val) return;
+    this.setState(prev => ({ restSelected: { ...prev.restSelected, [val]: true }, restCustomInput: '' }));
+  }
+  generateRestRecipe() {
+    const selected = Object.keys(this.state.restSelected).filter(k => this.state.restSelected[k]);
+    if (selected.length === 0) return;
+    const name = 'Resteküche: ' + selected.slice(0, 2).join(' & ') + (selected.length > 2 ? ' & mehr' : '');
+    const steps = [
+      'Alle ausgewählten Zutaten bereitlegen, waschen und schneiden.',
+      'In einer Pfanne mit etwas Öl anbraten.',
+      'Mit Gewürzen nach Geschmack abschmecken.',
+      'Warm servieren.'
+    ];
+    const recipe = { id: 'reste-' + Date.now(), name, time: 20, tags: ['reste'], nutrition: null, ingredients: selected, steps };
+    this.setState(prev => ({ recipes: [...prev.recipes, recipe], restGenerated: recipe, restAddedInfo: null }));
+  }
+  addRestRecipeToPlan() {
+    const recipe = this.state.restGenerated;
+    if (!recipe) return;
+    const idx = this.dayMeta.findIndex((d, i) => !this.state.mealPlanMap[i]);
+    if (idx === -1) { this.setState({ restAddedInfo: 'Alle Tage sind schon verplant 🎉' }); return; }
+    this.setState(prev => ({ mealPlanMap: { ...prev.mealPlanMap, [idx]: recipe.id }, restAddedInfo: 'Landet im Essensplan am ' + this.dayMeta[idx][0] + ', ' + this.dayMeta[idx][1] + ' 🎉' }));
+  }
+
+  addFakeawayToPlan() {
+    const idx = this.dayMeta.findIndex((d, i) => !this.state.mealPlanMap[i]);
+    if (idx === -1) { this.setState({ financeAddedInfo: 'Alle Tage sind schon verplant 🎉' }); return; }
+    this.setState(prev => ({ mealPlanMap: { ...prev.mealPlanMap, [idx]: 'sushi-abend' }, financeAddedInfo: 'Fakeaway-Abend eingeplant für ' + this.dayMeta[idx][0] + ', ' + this.dayMeta[idx][1] + ' 🥡' }));
+  }
+
+  toggleAvatarPicker() { this.setState(s => ({ avatarShowPicker: !s.avatarShowPicker })); }
+  setAvatar(icon) { this.setState({ avatarMine: icon, avatarShowPicker: false }); }
+  toggleNotifPush() { this.setState(s => ({ notifPush: !s.notifPush })); }
+  toggleNotifCharm() { this.setState(s => ({ notifCharm: !s.notifCharm })); }
+  toggleLangEnglish() { this.setState(s => ({ langEnglish: !s.langEnglish })); }
+  onFinanceBudgetChange(e) { const v = parseInt(e.target.value, 10); this.setState({ financeBudget: isNaN(v) ? 0 : v }); }
+  regenerateInviteCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'NIDO-';
+    for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    this.setState({ inviteCode: code });
+  }
+  toggleFinanceCatForm() { this.setState(s => ({ financeCatShowForm: !s.financeCatShowForm })); }
+  onFinanceCatFormName(e) { this.setState({ financeCatFormName: e.target.value }); }
+  setFinanceCatFormIcon(icon) { this.setState({ financeCatFormIcon: icon }); }
+  saveFinanceCategory() {
+    const s = this.state;
+    if (!s.financeCatFormName.trim()) return;
+    const cat = { id: 'cat-' + Date.now(), name: s.financeCatFormName.trim(), icon: s.financeCatFormIcon };
+    this.setState(prev => ({ financeCategories: [...prev.financeCategories, cat], financeCatFormName: '', financeCatFormIcon: '🛒', financeCatShowForm: false }));
+  }
+  removeFinanceCategory(id) { this.setState(s => ({ financeCategories: s.financeCategories.filter(c => c.id !== id) })); }
+  toggleResetConfirm() { this.setState(s => ({ settingsResetConfirm: !s.settingsResetConfirm })); }
+
+  selectCharmMessage(id) { this.setState({ charmSelectedId: id, charmCustomText: '' }); }
+  onCharmCustomText(e) { this.setState({ charmCustomText: e.target.value, charmSelectedId: null }); }
+  sendCharmNotif() {
+    const s = this.state;
+    let text = s.charmCustomText.trim();
+    if (!text && s.charmSelectedId) { const m = s.charmMessages.find(x => x.id === s.charmSelectedId); text = m ? m.text : ''; }
+    if (!text) return;
+    this.setState({ charmShowNotif: true, charmNotifText: text });
+    setTimeout(() => { this.setState({ charmShowNotif: false }); }, 3500);
+  }
+  dismissCharmNotif() { this.setState({ charmShowNotif: false }); }
+
   buildModal(recipeId) {
     if (!recipeId) return false;
     const r = this.state.recipes.find(x => x.id === recipeId);
@@ -695,6 +1176,13 @@ class Component extends DCLogic {
   avatarStyle(person) {
     const bg = person === 'J' ? 'oklch(0.69 0.10 195)' : 'oklch(0.70 0.15 38)';
     return { width: '30px', height: '30px', borderRadius: '50%', background: bg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Nunito, sans-serif', fontWeight: '700', fontSize: '12px', flexShrink: 0, border: '2px solid #fff', boxShadow: '0 2px 6px rgba(60,45,30,.12)' };
+  }
+
+  switchStyle(active, color) {
+    return {
+      track: { width: '44px', height: '26px', borderRadius: '20px', background: active ? color : '#e4dccb', position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background .2s' },
+      knob: { position: 'absolute', top: '3px', left: active ? '21px' : '3px', width: '20px', height: '20px', borderRadius: '50%', background: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,.2)', transition: 'left .2s' }
+    };
   }
 
   item(id, color, name, sub, person) {
@@ -800,15 +1288,7 @@ class Component extends DCLogic {
     const nextChoreRaw = choresAll.find(c => !c.tick) || choresAll[0];
     const nextChore = { name: nextChoreRaw.name, sub: nextChoreRaw.sub, onToggle: nextChoreRaw.onToggle };
 
-    const mealDays = [
-      this.mealDay('Mo', '13. Jul', 'pasta-limone'),
-      this.mealDay('Di', '14. Jul', 'bowl-halloumi'),
-      this.mealDay('Mi', '15. Jul', null),
-      this.mealDay('Do', '16. Jul', 'curry-kichererbsen'),
-      this.mealDay('Fr', '17. Jul', null),
-      this.mealDay('Sa', '18. Jul', 'ofenpizza'),
-      this.mealDay('So', '19. Jul', null)
-    ];
+    const mealDays = this.dayMeta.map((d, i) => this.mealDay(d[0], d[1], this.state.mealPlanMap[i]));
 
     const essensplanModal = this.buildModal(this.state.essensplanModalId);
     const wikiModal = this.buildModal(this.state.wikiModalId);
@@ -925,6 +1405,117 @@ class Component extends DCLogic {
     ];
     const shopDone = [...shopObst, ...shopKuehl, ...shopVorrat].filter(s => s.tick).length;
 
+    // --- Mood barometer ---
+    const moodOptions = ['😊','😐','😩','😍','😴'];
+    const moodPicker = moodOptions.map(e => ({
+      emoji: e,
+      onClick: () => this.setMood(e),
+      style: { width: '34px', height: '34px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', cursor: 'pointer',
+        background: this.state.moodMineEmoji === e ? 'oklch(0.955 0.05 80)' : 'transparent',
+        border: '2px solid ' + (this.state.moodMineEmoji === e ? 'oklch(0.78 0.13 80)' : 'transparent') }
+    }));
+    const moodPartner = { emoji: '😩', text: 'Gestresst von der Arbeit, brauche Ruhe heute' };
+
+    // --- Bucket-List ---
+    const bucketFiltered = this.state.bucketItems.filter(b => this.state.bucketFilter === 'all' || b.category === this.state.bucketFilter);
+    const bucketCards = bucketFiltered.map(b => ({
+      icon: b.category === 'ort' ? '📍' : '🍽️',
+      name: b.name,
+      note: b.note || (b.category === 'ort' ? 'Reiseziel' : 'Restaurant'),
+      onToggle: () => this.toggleBucketDone(b.id),
+      box: { width: '24px', height: '24px', borderRadius: '8px', border: '2px solid ' + (b.done ? 'oklch(0.70 0.13 150)' : '#d8d0c2'), background: b.done ? 'oklch(0.70 0.13 150)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '13px', cursor: 'pointer', flexShrink: 0, marginTop: '2px' },
+      tick: b.done ? '✓' : '',
+      txt: { fontFamily: 'Fredoka, sans-serif', fontWeight: '700', fontSize: '14px', textDecoration: b.done ? 'line-through' : 'none', color: b.done ? '#b8b1a7' : '#2c2823' }
+    }));
+    const bucketTabs = [{ key: 'all', label: 'Alle' }, { key: 'ort', label: 'Orte' }, { key: 'restaurant', label: 'Restaurants' }].map(t => ({
+      label: t.label, onClick: () => this.toggleBucketFilter(t.key),
+      style: { flex: 1, textAlign: 'center', padding: '9px 4px', borderRadius: '12px', font: '700 12px Nunito, sans-serif', cursor: 'pointer',
+        background: this.state.bucketFilter === t.key ? 'oklch(0.64 0.14 312)' : 'transparent',
+        color: this.state.bucketFilter === t.key ? '#fff' : '#9a9286' }
+    }));
+    const bucketFormCategoryChips = ['ort', 'restaurant'].map(c => ({
+      label: c === 'ort' ? '📍 Ort' : '🍽️ Restaurant',
+      onClick: () => this.setBucketFormCategory(c),
+      style: { padding: '7px 12px', borderRadius: '20px', font: '700 11.5px Nunito, sans-serif', cursor: 'pointer',
+        background: this.state.bucketFormCategory === c ? 'oklch(0.64 0.14 312)' : '#fff',
+        color: this.state.bucketFormCategory === c ? '#fff' : '#6b6255',
+        border: '1px solid ' + (this.state.bucketFormCategory === c ? 'oklch(0.64 0.14 312)' : '#f0e8db') }
+    }));
+    const bucketFormToggleIcon = this.state.bucketShowForm ? '✕' : '+';
+    const bucketFormToggleLabel = this.state.bucketShowForm ? 'Schließen' : 'Eintrag hinzufügen';
+    const nextBucket = this.state.bucketItems.find(b => !b.done);
+    const openBucketCount = this.state.bucketItems.filter(b => !b.done).length;
+    const bucketTeaser = nextBucket
+      ? { name: nextBucket.name, sub: (nextBucket.category === 'ort' ? '📍 Reiseziel' : '🍽️ Restaurant') + ' · ' + openBucketCount + ' offen' }
+      : { name: 'Alles abgehakt 🎉', sub: 'Neue Idee sammeln?' };
+    const moreTabStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', cursor: 'pointer', color: this.state.moreMenuOpen ? 'oklch(0.70 0.15 38)' : '#b8b0a4' };
+
+    // --- Resteverwertung ---
+    const restBaseIngredients = ['Bananen','Avocado','Hafermilch','Joghurt','Pasta','Kaffeebohnen'];
+    const restAllIngredients = Array.from(new Set([...restBaseIngredients, ...Object.keys(this.state.restSelected)]));
+    const restChips = restAllIngredients.map(name => ({
+      name, onToggle: () => this.toggleRestIngredient(name),
+      style: { padding: '8px 13px', borderRadius: '20px', font: '700 12px Nunito, sans-serif', cursor: 'pointer',
+        background: this.state.restSelected[name] ? 'oklch(0.70 0.13 150)' : '#fff',
+        color: this.state.restSelected[name] ? '#fff' : '#6b6255',
+        border: '1px solid ' + (this.state.restSelected[name] ? 'oklch(0.70 0.13 150)' : '#f0e8db') }
+    }));
+    const restSelectedCount = Object.values(this.state.restSelected).filter(Boolean).length;
+    const restGenBtnStyle = {
+      marginTop: '13px', textAlign: 'center', borderRadius: '14px', padding: '12px', font: '700 13px Nunito, sans-serif', color: '#fff',
+      background: 'oklch(0.70 0.13 150)', cursor: restSelectedCount > 0 ? 'pointer' : 'not-allowed',
+      opacity: restSelectedCount > 0 ? 1 : 0.45
+    };
+    const restGenerated = this.state.restGenerated;
+    const restGeneratedIngredients = restGenerated ? restGenerated.ingredients.map(i => ({ name: i })) : [];
+    const restGeneratedSteps = restGenerated ? restGenerated.steps.map((t, i) => ({ n: i + 1, text: t })) : [];
+
+    // --- Finanz-Coach ---
+    const financeCategoriesReport = [
+      { label: 'Lieferdienste', pct: 78, delta: '+15%', color: 'oklch(0.66 0.15 25)' },
+      { label: 'Restaurants', pct: 56, delta: '+4%', color: 'oklch(0.64 0.14 312)' },
+      { label: 'Lebensmittel', pct: 90, delta: '-2%', color: 'oklch(0.70 0.13 150)' },
+      { label: 'Sonstiges', pct: 34, delta: '+1%', color: 'oklch(0.66 0.12 255)' }
+    ].map(c => ({
+      label: c.label, delta: c.delta,
+      deltaStyle: { color: c.delta.startsWith('+') ? 'oklch(0.55 0.16 25)' : 'oklch(0.55 0.13 150)' },
+      barStyle: { width: c.pct + '%', height: '100%', background: c.color, borderRadius: '5px' }
+    }));
+
+    // --- Settings ---
+    const avatarGrid = this.avatarIconOptions.map(icon => ({
+      icon, onClick: () => this.setAvatar(icon),
+      style: { width: '38px', height: '38px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', cursor: 'pointer',
+        background: this.state.avatarMine === icon ? 'oklch(0.955 0.05 80)' : '#fff',
+        border: '2px solid ' + (this.state.avatarMine === icon ? 'oklch(0.78 0.13 80)' : '#f0e8db') }
+    }));
+    const catIconGrid = this.categoryIconOptions.map(icon => ({
+      icon, onClick: () => this.setFinanceCatFormIcon(icon),
+      style: { width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', cursor: 'pointer',
+        background: this.state.financeCatFormIcon === icon ? 'oklch(0.955 0.05 80)' : '#fff',
+        border: '2px solid ' + (this.state.financeCatFormIcon === icon ? 'oklch(0.78 0.13 80)' : '#f0e8db') }
+    }));
+    const financeCategoryRows = this.state.financeCategories.map(c => ({ id: c.id, name: c.name, icon: c.icon, onRemove: () => this.removeFinanceCategory(c.id) }));
+    const pushSwitch = this.switchStyle(this.state.notifPush, 'oklch(0.70 0.15 38)');
+    const charmSwitch = this.switchStyle(this.state.notifCharm, 'oklch(0.70 0.15 38)');
+    const langSwitch = this.switchStyle(this.state.langEnglish, 'oklch(0.69 0.10 195)');
+    const financeCatFormToggleLabel = this.state.financeCatShowForm ? 'Abbrechen' : '+ Kategorie hinzufügen';
+    const settingsResetConfirmNot = !this.state.settingsResetConfirm;
+
+    // --- Charm push ---
+    const charmMessageCards = this.state.charmMessages.map(m => ({
+      text: m.text, onClick: () => this.selectCharmMessage(m.id),
+      style: { padding: '12px 14px', borderRadius: '16px', cursor: 'pointer', font: '700 13px Nunito, sans-serif',
+        background: this.state.charmSelectedId === m.id ? 'oklch(0.955 0.05 80)' : '#fff',
+        border: '1.5px solid ' + (this.state.charmSelectedId === m.id ? 'oklch(0.78 0.13 80)' : '#f0e8db'),
+        boxShadow: '0 4px 12px rgba(60,45,30,.05)' }
+    }));
+    const charmNotifStyle = {
+      position: 'absolute', left: '10px', right: '10px', top: this.state.charmShowNotif ? '8px' : '-90px',
+      background: '#fff', borderRadius: '18px', boxShadow: '0 10px 30px rgba(0,0,0,.25)', padding: '12px 14px',
+      display: 'flex', alignItems: 'center', gap: '10px', transition: 'top .4s cubic-bezier(.34,1.56,.64,1)', zIndex: 20, cursor: 'pointer'
+    };
+
     return {
       assignments,
       mealDays, essensplanModal, wikiModal,
@@ -951,6 +1542,36 @@ class Component extends DCLogic {
       noopNav: () => {},
       chores, choreDone, choreProg: Math.round(choreDone / 6 * 100) + '%',
       shopObst, shopKuehl, shopVorrat, shopDone,
+      moodPicker, moodPartner,
+      moodMineText: this.state.moodMineText, onMoodTextChange: (e) => this.onMoodTextChange(e),
+      bucketCards, bucketTabs, bucketFormCategoryChips, bucketFormToggleIcon, bucketFormToggleLabel,
+      bucketShowForm: this.state.bucketShowForm, toggleBucketForm: () => this.toggleBucketForm(),
+      bucketFormName: this.state.bucketFormName, onBucketFormName: (e) => this.onBucketFormName(e),
+      bucketFormNote: this.state.bucketFormNote, onBucketFormNote: (e) => this.onBucketFormNote(e),
+      saveBucketItem: () => this.saveBucketItem(),
+      restChips, restGenBtnStyle, generateRestRecipe: () => this.generateRestRecipe(),
+      restCustomInput: this.state.restCustomInput, onRestCustomInput: (e) => this.onRestCustomInput(e),
+      addRestCustomIngredient: () => this.addRestCustomIngredient(),
+      restGenerated, restGeneratedIngredients, restGeneratedSteps,
+      addRestRecipeToPlan: () => this.addRestRecipeToPlan(), restAddedInfo: this.state.restAddedInfo,
+      financeCategoriesReport, addFakeawayToPlan: () => this.addFakeawayToPlan(), financeAddedInfo: this.state.financeAddedInfo,
+      avatarMine: this.state.avatarMine, toggleAvatarPicker: () => this.toggleAvatarPicker(),
+      avatarShowPicker: this.state.avatarShowPicker, avatarGrid,
+      inviteCode: this.state.inviteCode, regenerateInviteCode: () => this.regenerateInviteCode(),
+      pushSwitchTrack: pushSwitch.track, pushSwitchKnob: pushSwitch.knob, toggleNotifPush: () => this.toggleNotifPush(),
+      charmSwitchTrack: charmSwitch.track, charmSwitchKnob: charmSwitch.knob, toggleNotifCharm: () => this.toggleNotifCharm(),
+      langSwitchTrack: langSwitch.track, langSwitchKnob: langSwitch.knob, toggleLangEnglish: () => this.toggleLangEnglish(),
+      financeBudget: this.state.financeBudget, onFinanceBudgetChange: (e) => this.onFinanceBudgetChange(e),
+      financeCategoryRows, catIconGrid,
+      financeCatShowForm: this.state.financeCatShowForm, toggleFinanceCatForm: () => this.toggleFinanceCatForm(),
+      financeCatFormName: this.state.financeCatFormName, onFinanceCatFormName: (e) => this.onFinanceCatFormName(e),
+      financeCatFormIcon: this.state.financeCatFormIcon, saveFinanceCategory: () => this.saveFinanceCategory(),
+      financeCatFormToggleLabel,
+      settingsResetConfirm: this.state.settingsResetConfirm, settingsResetConfirmNot, toggleResetConfirm: () => this.toggleResetConfirm(),
+      charmMessageCards, charmCustomText: this.state.charmCustomText, onCharmCustomText: (e) => this.onCharmCustomText(e),
+      sendCharmNotif: () => this.sendCharmNotif(), dismissCharmNotif: () => this.dismissCharmNotif(),
+      charmNotifStyle, charmNotifText: this.state.charmNotifText,
+      bucketTeaser, moreMenuOpen: this.state.moreMenuOpen, toggleMoreMenu: () => this.toggleMoreMenu(), moreTabStyle,
       notesOn: this.props.showNotes !== false
     };
   }

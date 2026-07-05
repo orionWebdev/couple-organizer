@@ -6,6 +6,7 @@ import { useShopping } from '@/composables/useShopping'
 import { showToast } from '@/composables/useToast'
 import MealPlanDayRow from './MealPlanDayRow.vue'
 import RecipeSuggestSheet from './RecipeSuggestSheet.vue'
+import AiRecipeSheet from './AiRecipeSheet.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
 
 const props = defineProps<{
@@ -13,17 +14,21 @@ const props = defineProps<{
   couple: Couple | null
 }>()
 
-const emit = defineEmits<{ back: [] }>()
-
 const coupleIdRef = computed(() => props.coupleId)
 
-const { week, loading, suggestRecipes, assignRecipe, removeAssignment } = useMealPlan(coupleIdRef)
+const { week, recipes, loading, suggestRecipes, assignRecipe, assignExistingRecipe, removeAssignment } = useMealPlan(coupleIdRef)
 const { activeListId, addItem: addShoppingItem } = useShopping(coupleIdRef)
 
 const hasAnyRecipe = computed(() => week.value.some((d) => d.recipe))
 
+// Tages-Schnellzuweisung (Klick auf einen leeren Tag): reiner Text oder
+// Auswahl aus der bestehenden Rezept-Sammlung — keine KI hier.
 const showSheet = ref(false)
 const suggestDateKey = ref<string | null>(null)
+
+// Separates KI-Modal ("Rezept vorschlagen lassen"): freie Beschreibung,
+// eigener animierter Ladezustand — bewusst getrennt von der Tages-Sheet oben.
+const showAiModal = ref(false)
 
 const detailRecipe = ref<Recipe | null>(null)
 const showDetail = ref(false)
@@ -39,9 +44,17 @@ const weekForSheet = computed(() => week.value.map((d) => ({
   recipeTitle: d.recipe?.title ?? null,
 })))
 
-function openSuggest(dateKey?: string) {
-  suggestDateKey.value = dateKey ?? week.value.find((d) => !d.recipe)?.dateKey ?? week.value[0]?.dateKey ?? null
+const defaultSuggestDateKey = computed(() =>
+  week.value.find((d) => !d.recipe)?.dateKey ?? week.value[0]?.dateKey ?? null
+)
+
+function openDaySuggest(dateKey: string) {
+  suggestDateKey.value = dateKey
   showSheet.value = true
+}
+
+function openAiModal() {
+  showAiModal.value = true
 }
 
 async function handleRemove(entryId: string) {
@@ -51,6 +64,7 @@ async function handleRemove(entryId: string) {
 
 function onAssigned(success: boolean) {
   showSheet.value = false
+  showAiModal.value = false
   showToast(success ? 'Rezept eingeplant' : 'Fehler beim Einplanen')
 }
 
@@ -89,16 +103,8 @@ async function handleCreateShoppingList() {
 
 <template>
   <div class="essensplan">
-    <div class="detail-nav">
-      <button class="back-caret" type="button" @click="emit('back')" aria-label="Zurück">‹</button>
-      <div class="nav-title-block">
-        <h2 class="detail-title">Essensplan</h2>
-        <span class="detail-sub">Diese Woche · Gemeinsam</span>
-      </div>
-    </div>
-
     <div class="essensplan-scroll">
-      <button class="suggest-card" type="button" @click="openSuggest()">
+      <button class="suggest-card" type="button" @click="openAiModal">
         <span class="suggest-icon">✨</span>
         <div class="suggest-text">
           <span class="suggest-title">Rezept vorschlagen lassen</span>
@@ -116,7 +122,7 @@ async function handleCreateShoppingList() {
           :dateKey="day.dateKey"
           :entry="day.entry"
           :recipe="day.recipe"
-          @addRecipe="openSuggest"
+          @addRecipe="openDaySuggest"
           @remove="handleRemove"
           @open="openDetail"
         />
@@ -133,9 +139,20 @@ async function handleCreateShoppingList() {
       :isOpen="showSheet"
       :week="weekForSheet"
       :initialDateKey="suggestDateKey"
+      :recipes="recipes"
+      :assign="assignRecipe"
+      :assignExisting="assignExistingRecipe"
+      @close="showSheet = false"
+      @assigned="onAssigned"
+    />
+
+    <AiRecipeSheet
+      :isOpen="showAiModal"
+      :week="weekForSheet"
+      :initialDateKey="defaultSuggestDateKey"
       :suggest="suggestRecipes"
       :assign="assignRecipe"
-      @close="showSheet = false"
+      @close="showAiModal = false"
       @assigned="onAssigned"
     />
 
@@ -154,75 +171,42 @@ async function handleCreateShoppingList() {
   flex-direction: column;
 }
 
-.detail-nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: calc(var(--safe-top) + 16px) var(--screen-pad) 16px;
-}
-
-.back-caret {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: transparent;
-  border: none;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-faint);
-  cursor: pointer;
-}
-
-.back-caret:active {
-  color: var(--text);
-}
-
-.nav-title-block {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.detail-title {
-  font-family: var(--font-headline);
-  font-size: 19px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.detail-sub {
-  font-size: 12px;
-  color: var(--text-meta);
-}
-
 .essensplan-scroll {
   flex: 1;
   overflow-y: auto;
   padding: 0 var(--screen-pad);
 }
 
+/* KI-Look angelehnt an Gemini: wandernder Regenbogen-Gradient + weicher Glow. */
 .suggest-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   padding: 14px 16px;
   margin-bottom: 16px;
-  background: var(--einkauf-tint);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: linear-gradient(120deg, #4285f4 0%, #9b72cb 35%, #d96570 65%, #f6b73c 100%);
+  background-size: 220% 220%;
+  border: none;
   border-radius: var(--radius-card-lg);
   cursor: pointer;
   text-align: left;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.28) inset,
+    0 6px 20px -4px rgba(155, 114, 203, 0.55),
+    0 0 22px rgba(66, 133, 244, 0.35);
+  animation: suggestGradientShift 6s ease-in-out infinite;
+  transition: transform 0.12s ease;
+}
+
+.suggest-card:active {
+  transform: scale(0.98);
+}
+
+@keyframes suggestGradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .suggest-icon {
@@ -230,11 +214,12 @@ async function handleCreateShoppingList() {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--einkauf);
+  background: rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 15px;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.55);
 }
 
 .suggest-text {
@@ -248,17 +233,18 @@ async function handleCreateShoppingList() {
 .suggest-title {
   font-size: 14px;
   font-weight: 700;
-  color: var(--text);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 
 .suggest-sub {
   font-size: 11.5px;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .suggest-chevron {
   font-size: 20px;
-  color: var(--text-faint);
+  color: rgba(255, 255, 255, 0.85);
   flex-shrink: 0;
 }
 

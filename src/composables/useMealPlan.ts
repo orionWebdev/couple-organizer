@@ -54,7 +54,20 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     unsubscribeRecipes = onSnapshot(
       q,
       (snap) => {
-        recipes.value = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Recipe))
+        // Altbestand: Rezepte von vor der steps/nutrition-Erweiterung haben
+        // diese Felder nicht in Firestore — ohne Default würde z. B.
+        // recipe.steps.length im Detail-Modal auf undefined crashen.
+        recipes.value = snap.docs.map((d) => {
+          const data = d.data()
+          return {
+            id: d.id,
+            ...data,
+            tags: data.tags ?? [],
+            ingredients: data.ingredients ?? [],
+            steps: data.steps ?? [],
+            nutrition: data.nutrition ?? null,
+          } as Recipe
+        })
         loadingRecipes.value = false
       },
       (err) => {
@@ -195,6 +208,43 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     }
   }
 
+  async function updateRecipe(id: string, input: AssignRecipeInput): Promise<boolean> {
+    const cleanTitle = input.title.trim()
+    if (!cleanTitle) return false
+
+    try {
+      await updateDoc(doc(db, 'recipes', id), {
+        title: cleanTitle,
+        description: input.description?.trim() ?? '',
+        minutes: input.minutes ?? null,
+        servings: input.servings ?? null,
+        tags: input.tags ?? [],
+        ingredients: input.ingredients ?? [],
+        steps: input.steps ?? [],
+        nutrition: input.nutrition ?? null,
+        updatedAt: serverTimestamp()
+      })
+      error.value = null
+      return true
+    } catch (err: any) {
+      console.error('Failed to update recipe:', err)
+      error.value = err.message
+      return false
+    }
+  }
+
+  async function deleteRecipe(id: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(db, 'recipes', id))
+      error.value = null
+      return true
+    } catch (err: any) {
+      console.error('Failed to delete recipe:', err)
+      error.value = err.message
+      return false
+    }
+  }
+
   async function removeAssignment(entryId: string): Promise<boolean> {
     try {
       await deleteDoc(doc(db, 'mealPlans', entryId))
@@ -232,6 +282,8 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     suggestRecipes,
     assignRecipe,
     createRecipe,
+    updateRecipe,
+    deleteRecipe,
     removeAssignment,
     setCookAssignee
   }

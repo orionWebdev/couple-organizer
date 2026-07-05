@@ -90,7 +90,7 @@ async function handleCreateShoppingList() {
 <template>
   <div class="essensplan">
     <div class="detail-nav">
-      <button class="back-btn" @click="emit('back')">‹ Zurück</button>
+      <button class="back-caret" type="button" @click="emit('back')" aria-label="Zurück">‹</button>
       <div class="nav-title-block">
         <h2 class="detail-title">Essensplan</h2>
         <span class="detail-sub">Diese Woche · Gemeinsam</span>
@@ -161,18 +161,24 @@ async function handleCreateShoppingList() {
   padding: calc(var(--safe-top) + 16px) var(--screen-pad) 16px;
 }
 
-.back-btn {
-  background: var(--surface);
-  border: none;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 8px 14px;
-  border-radius: 12px;
-  box-shadow: var(--shadow-float);
+.back-caret {
   flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.back-caret:active {
+  color: var(--text);
 }
 
 .nav-title-block {

@@ -5,6 +5,7 @@ import { useMealPlan } from '@/composables/useMealPlan'
 import { showToast } from '@/composables/useToast'
 import { RECIPE_TAGS, primaryTagMeta, recipeTagDef, type RecipeTagId } from '@/utils/recipeTags'
 import RecipeDetailModal from './RecipeDetailModal.vue'
+import FabButton from '@/components/ui/FabButton.vue'
 
 const props = defineProps<{
   coupleId: string | null
@@ -13,7 +14,7 @@ const props = defineProps<{
 const emit = defineEmits<{ back: [] }>()
 
 const coupleIdRef = computed(() => props.coupleId)
-const { recipes, createRecipe } = useMealPlan(coupleIdRef)
+const { recipes, createRecipe, updateRecipe, deleteRecipe } = useMealPlan(coupleIdRef)
 
 const search = ref('')
 const activeTags = ref<Set<RecipeTagId>>(new Set())
@@ -34,17 +35,14 @@ const filteredRecipes = computed(() => {
   })
 })
 
-// ── Neues Rezept ──────────────────────────────────────────────
+// ── Rezept anlegen/bearbeiten (ein Formular für beides) ───────
 const showForm = ref(false)
+const editingId = ref<string | null>(null)
 const formName = ref('')
 const formDuration = ref('')
 const formIngredients = ref<string[]>([''])
 const formSteps = ref<string[]>([''])
 const formTags = ref<Set<RecipeTagId>>(new Set())
-
-function toggleForm() {
-  showForm.value = !showForm.value
-}
 
 function toggleFormTag(tag: RecipeTagId) {
   const next = new Set(formTags.value)
@@ -74,20 +72,41 @@ function resetForm() {
   formIngredients.value = ['']
   formSteps.value = ['']
   formTags.value = new Set()
+  editingId.value = null
   showForm.value = false
+}
+
+function openCreateForm() {
+  resetForm()
+  showForm.value = true
+}
+
+function startEdit(recipe: Recipe) {
+  formName.value = recipe.title
+  formDuration.value = recipe.minutes != null ? String(recipe.minutes) : ''
+  formIngredients.value = recipe.ingredients.length ? recipe.ingredients.map((i) => i.name) : ['']
+  formSteps.value = recipe.steps.length ? [...recipe.steps] : ['']
+  formTags.value = new Set(recipe.tags as RecipeTagId[])
+  editingId.value = recipe.id
+  showDetail.value = false
+  showForm.value = true
 }
 
 async function saveRecipe() {
   if (!formName.value.trim()) return
-  const ok = await createRecipe({
+  const payload = {
     title: formName.value.trim(),
     minutes: formDuration.value.trim() ? parseInt(formDuration.value, 10) || null : null,
     tags: [...formTags.value],
     ingredients: formIngredients.value.map((v) => v.trim()).filter(Boolean).map((name) => ({ name })),
     steps: formSteps.value.map((v) => v.trim()).filter(Boolean),
-    source: 'manual',
-  })
-  showToast(ok ? 'Rezept gespeichert' : 'Fehler beim Speichern')
+    source: 'manual' as const,
+  }
+  const wasEditing = !!editingId.value
+  const ok = wasEditing
+    ? await updateRecipe(editingId.value!, payload)
+    : await createRecipe(payload)
+  showToast(ok ? (wasEditing ? 'Rezept aktualisiert' : 'Rezept gespeichert') : 'Fehler beim Speichern')
   if (ok) resetForm()
 }
 
@@ -99,17 +118,19 @@ function openDetail(recipe: Recipe) {
   detailRecipe.value = recipe
   showDetail.value = true
 }
+
+async function handleDeleteRecipe(recipe: Recipe) {
+  const ok = await deleteRecipe(recipe.id)
+  showToast(ok ? 'Rezept gelöscht' : 'Fehler beim Löschen')
+  if (ok) showDetail.value = false
+}
 </script>
 
 <template>
   <div class="wiki">
-    <div class="detail-nav">
-      <button class="back-btn" @click="emit('back')">‹ Zurück</button>
-      <div class="nav-title-block">
-        <h2 class="detail-title">Rezepte</h2>
-        <span class="detail-sub">Eure gemeinsame Sammlung</span>
-      </div>
-      <button class="add-btn" type="button" @click="toggleForm">{{ showForm ? '✕' : '+' }}</button>
+    <div class="page-header">
+      <button class="back-caret" type="button" @click="emit('back')" aria-label="Zurück">‹</button>
+      <h1 class="page-title">Rezepte</h1>
     </div>
 
     <div class="wiki-scroll">
@@ -135,7 +156,10 @@ function openDetail(recipe: Recipe) {
       </div>
 
       <div v-if="showForm" class="form-card">
-        <div class="form-title">Neues Rezept</div>
+        <div class="form-card-head">
+          <div class="form-title">{{ editingId ? 'Rezept bearbeiten' : 'Neues Rezept' }}</div>
+          <button class="form-cancel" type="button" @click="resetForm">Abbrechen</button>
+        </div>
         <input v-model="formName" class="app-field form-field" type="text" placeholder="Name" />
         <input v-model="formDuration" class="app-field form-field" type="number" inputmode="numeric" placeholder="Dauer (Min.)" />
 
@@ -169,7 +193,7 @@ function openDetail(recipe: Recipe) {
         </div>
 
         <button class="btn-primary save-btn" :disabled="!formName.trim()" @click="saveRecipe">
-          Rezept speichern
+          {{ editingId ? 'Änderungen speichern' : 'Rezept speichern' }}
         </button>
       </div>
 
@@ -185,21 +209,35 @@ function openDetail(recipe: Recipe) {
           @click="openDetail(r)"
         >
           <span class="card-icon" :style="{ background: primaryTagMeta(r.tags).color }">{{ primaryTagMeta(r.tags).emoji }}</span>
-          <div class="card-name">{{ r.title }}</div>
-          <div v-if="r.minutes" class="card-time">⏱ {{ r.minutes }} Min</div>
-          <div v-if="r.tags.length" class="card-tags">
-            <span
-              v-for="t in r.tags.slice(0, 3)"
-              :key="t"
-              class="tag-dot"
-              :style="{ background: recipeTagDef(t)?.color }"
-            >{{ recipeTagDef(t)?.emoji }}</span>
+          <div class="card-body">
+            <div class="card-name">{{ r.title }}</div>
+            <div class="card-meta">
+              <span v-if="r.minutes" class="card-time">⏱ {{ r.minutes }} Min</span>
+              <span v-if="r.tags.length" class="card-tags">
+                <span
+                  v-for="t in r.tags.slice(0, 3)"
+                  :key="t"
+                  class="tag-dot"
+                  :style="{ background: recipeTagDef(t)?.color }"
+                >{{ recipeTagDef(t)?.emoji }}</span>
+              </span>
+            </div>
           </div>
+          <span class="card-chevron">›</span>
         </button>
       </div>
     </div>
 
-    <RecipeDetailModal :isOpen="showDetail" :recipe="detailRecipe" @close="showDetail = false" />
+    <FabButton v-if="!showForm" label="Rezept hinzufügen" @click="openCreateForm" />
+
+    <RecipeDetailModal
+      :isOpen="showDetail"
+      :recipe="detailRecipe"
+      manageable
+      @close="showDetail = false"
+      @edit="startEdit"
+      @delete="handleDeleteRecipe"
+    />
   </div>
 </template>
 
@@ -210,69 +248,51 @@ function openDetail(recipe: Recipe) {
   flex-direction: column;
 }
 
-.detail-nav {
+.page-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: calc(var(--safe-top) + 16px) var(--screen-pad) 16px;
+  gap: 8px;
+  padding: calc(var(--safe-top) + 20px) var(--screen-pad) 20px;
 }
 
-.back-btn {
-  background: var(--surface);
-  border: none;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 8px 14px;
-  border-radius: 12px;
-  box-shadow: var(--shadow-float);
+.back-caret {
   flex-shrink: 0;
-}
-
-.nav-title-block {
-  flex: 1;
-  min-width: 0;
+  width: 32px;
+  height: 32px;
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-faint);
+  cursor: pointer;
 }
 
-.detail-title {
+.back-caret:active {
+  color: var(--text);
+}
+
+.page-title {
   font-family: var(--font-headline);
-  font-size: 19px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text);
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.detail-sub {
-  font-size: 12px;
-  color: var(--text-meta);
-}
-
-.add-btn {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  background: var(--einkauf);
-  color: #fff;
-  border: none;
-  font-size: 20px;
-  font-weight: 300;
-  cursor: pointer;
-  box-shadow: 0 5px 12px color-mix(in srgb, var(--einkauf) 35%, transparent);
-}
-
+/* Responsiver Container, damit das Karten-Grid auf breiten Screens nicht
+   randlos aus dem Layout läuft (siehe .recipe-card min-width Fix unten). */
 .wiki-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 0 var(--screen-pad) 24px;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 var(--screen-pad) 100px;
 }
 
 .search-field {
@@ -312,11 +332,34 @@ function openDetail(recipe: Recipe) {
   border: 1px solid var(--border-softer);
 }
 
+.form-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
 .form-title {
   font-size: 13.5px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 10px;
+}
+
+.form-cancel {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.form-cancel:active {
+  color: var(--text);
 }
 
 .form-field {
@@ -382,16 +425,24 @@ function openDetail(recipe: Recipe) {
   line-height: 1.5;
 }
 
+/* Karten untereinander (Spalte), keine Grid-Kacheln — min-width:0 bleibt
+   als Absicherung gegen unkürzbaren Button-Inhalt, der die Karte sonst
+   über den Container hinaus aufziehen könnte. */
 .card-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
 .recipe-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
   background: var(--surface);
   border-radius: 16px;
-  padding: 12px;
+  padding: 12px 14px;
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-softer);
   cursor: pointer;
@@ -399,45 +450,66 @@ function openDetail(recipe: Recipe) {
 }
 
 .card-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 18px;
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .card-name {
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
-  margin-top: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .card-time {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-meta);
-  margin-top: 1px;
+  flex-shrink: 0;
 }
 
 .card-tags {
   display: flex;
-  flex-wrap: wrap;
   gap: 4px;
-  margin-top: 7px;
+  flex-shrink: 0;
 }
 
 .tag-dot {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+.card-chevron {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--text-faint);
 }
 </style>

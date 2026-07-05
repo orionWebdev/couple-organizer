@@ -4,8 +4,11 @@ import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useShopping } from '@/composables/useShopping'
 import { useExpenses } from '@/composables/useExpenses'
+import { useMealPlan } from '@/composables/useMealPlan'
 import { showToast } from '@/composables/useToast'
+import { dateKey } from '@/utils/mealplan'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import FabButton from '@/components/ui/FabButton.vue'
 import ShoppingListCard from '@/components/shopping/ShoppingListCard.vue'
 import ShoppingListDetail from '@/components/shopping/ShoppingListDetail.vue'
 import ShoppingModeView from '@/components/shopping/ShoppingModeView.vue'
@@ -35,6 +38,22 @@ const {
 } = useShopping(coupleId)
 
 const { addExpense } = useExpenses(coupleId)
+
+// Vorschau-Werte für die beiden Link-Cards (Essensplan/Rezepte)
+const { week, recipes } = useMealPlan(coupleId)
+
+const todayRecipeTitle = computed(() => {
+  const today = dateKey(new Date())
+  return week.value.find((d) => d.dateKey === today)?.recipe?.title ?? null
+})
+
+const planPreviewText = computed(() =>
+  todayRecipeTitle.value ? `Heute: ${todayRecipeTitle.value}` : 'Diese Woche planen'
+)
+
+const wikiPreviewText = computed(() =>
+  recipes.value.length > 0 ? `${recipes.value.length} Rezept${recipes.value.length === 1 ? '' : 'e'} gespeichert` : 'Eure Sammlung starten'
+)
 
 type View = 'lists' | 'detail' | 'shopping-mode' | 'essensplan' | 'wiki'
 const view = ref<View>('lists')
@@ -178,33 +197,45 @@ function listItemsFor(listId: string) {
     <template v-else>
       <div class="page-header">
         <h1 class="page-title">Einkaufen</h1>
-        <div class="header-actions">
-          <button class="essensplan-btn" @click="view = 'essensplan'">🍽️ Essensplan</button>
-          <button class="essensplan-btn" @click="view = 'wiki'">📖 Rezepte</button>
+      </div>
+
+      <div class="page-container">
+        <div class="link-cards">
+          <button class="link-card" @click="view = 'essensplan'">
+            <span class="link-card-icon">🍽️</span>
+            <div class="link-card-text">
+              <span class="link-card-title">Essensplan <span class="link-card-chevron">›</span></span>
+              <span class="link-card-sub">{{ planPreviewText }}</span>
+            </div>
+          </button>
+          <button class="link-card" @click="view = 'wiki'">
+            <span class="link-card-icon">📖</span>
+            <div class="link-card-text">
+              <span class="link-card-title">Rezepte <span class="link-card-chevron">›</span></span>
+              <span class="link-card-sub">{{ wikiPreviewText }}</span>
+            </div>
+          </button>
+        </div>
+
+        <div v-if="loading" class="loading-msg">Laden…</div>
+        <div v-else class="lists-wrap">
+          <TransitionGroup tag="div" name="list-add" class="lists-grid">
+            <ShoppingListCard
+              v-for="list in lists"
+              :key="list.id"
+              :list="list"
+              :items="listItemsFor(list.id)"
+              :menuOpen="menuOpenId === list.id"
+              @select="selectList(list.id)"
+              @toggleMenu="toggleListMenu(list.id)"
+              @rename="handleRenameList(list.id, $event)"
+              @delete="handleDeleteList(list.id)"
+            />
+          </TransitionGroup>
         </div>
       </div>
 
-      <div v-if="loading" class="loading-msg">Laden…</div>
-      <div v-else class="lists-wrap">
-        <TransitionGroup tag="div" name="list-add" class="lists-grid">
-          <ShoppingListCard
-            v-for="list in lists"
-            :key="list.id"
-            :list="list"
-            :items="listItemsFor(list.id)"
-            :menuOpen="menuOpenId === list.id"
-            @select="selectList(list.id)"
-            @toggleMenu="toggleListMenu(list.id)"
-            @rename="handleRenameList(list.id, $event)"
-            @delete="handleDeleteList(list.id)"
-          />
-
-          <!-- New list card -->
-          <button key="new-list" class="new-list-card" @click="showNewList = true">
-            + Neue Liste
-          </button>
-        </TransitionGroup>
-      </div>
+      <FabButton label="Neue Liste" @click="showNewList = true" />
     </template>
 
     <!-- New list sheet -->
@@ -231,18 +262,7 @@ function listItemsFor(listId: string) {
 }
 
 .page-header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 10px;
   padding: calc(var(--safe-top) + 20px) var(--screen-pad) 20px;
-}
-
-.header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .page-title {
@@ -253,25 +273,86 @@ function listItemsFor(listId: string) {
   margin: 0;
 }
 
-.essensplan-btn {
-  flex-shrink: 0;
+/* Responsiver Container für alles unterhalb des Headers, damit die
+   50/50-Cards auf breiten Screens nicht randlos auseinanderlaufen. */
+.page-container {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  flex: 1;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border-softer);
-  border-radius: 100px;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: var(--shadow-card);
+  flex-direction: column;
 }
 
-.essensplan-btn:active {
-  background: var(--surface-deep);
+.link-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 var(--screen-pad) 16px;
+}
+
+.link-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
+  background: var(--einkauf-tint-strong);
+  border: 1px solid color-mix(in srgb, var(--einkauf) 30%, transparent);
+  border-radius: var(--radius-card-lg);
+  cursor: pointer;
+  text-align: left;
+}
+
+.link-card:active {
+  background: var(--einkauf-tint);
+}
+
+.link-card-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--einkauf);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.link-card-text {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.link-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.link-card-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.link-card-chevron {
+  font-size: 18px;
+  color: color-mix(in srgb, var(--einkauf) 70%, var(--text-faint));
+  flex-shrink: 0;
 }
 
 .loading-msg {
@@ -284,34 +365,12 @@ function listItemsFor(listId: string) {
 .lists-wrap {
   flex: 1;
   overflow-y: auto;
-  padding: 0 var(--screen-pad) 24px;
+  padding: 0 var(--screen-pad) 100px;
 }
 
 .lists-grid {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.new-list-card {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 20px;
-  background: transparent;
-  border: 1.5px dashed var(--border);
-  border-radius: var(--radius-card);
-  color: var(--text-faint);
-  font-family: var(--font-body);
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-
-.new-list-card:active {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 </style>

@@ -33,7 +33,7 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
         <div class="name">{{ entry.choreName }}</div>
         <div class="meta">
           <span class="chips">
-            <span v-for="(chip, i) in chips" :key="i" class="chip" :style="{ background: chip.bg }">{{ chip.ch }}</span>
+            <span v-for="(chip, i) in chips" :key="i" class="chip" :class="{ 'chip--icon': chip.icon }" :style="{ background: chip.bg }">{{ chip.icon ?? chip.ch }}</span>
           </span>
           <span class="who">{{ whoLabel }} · {{ timeLabel }}</span>
         </div>
@@ -130,6 +130,10 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 
 .chip:first-child {
   margin-left: 0;
+}
+
+.chip--icon {
+  font-size: 11px;
 }
 
 .who {

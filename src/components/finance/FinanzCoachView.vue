@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import type { CategoryMonthlyComparison, Couple } from '@/types'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import type { Couple, FinanceMonthComparison } from '@/types'
 import { resolveExpenseCategories, categoryMeta } from '@/utils/expenseCategories'
 import { suggestFinanceInsight, type FinanceCategoryDelta } from '@/services/geminiFinance'
 
@@ -10,15 +9,9 @@ import { suggestFinanceInsight, type FinanceCategoryDelta } from '@/services/gem
 // Instanz für dieselbe Seite zu starten.
 const props = defineProps<{
   couple: Couple | null
-  categoryMonthlyComparison: readonly CategoryMonthlyComparison[]
+  months: readonly FinanceMonthComparison[]
   loading: boolean
 }>()
-
-const router = useRouter()
-
-const monthLabel = computed(() =>
-  new Intl.DateTimeFormat('de-DE', { month: 'long' }).format(new Date())
-)
 
 const categories = computed(() => resolveExpenseCategories(props.couple))
 
@@ -26,99 +19,168 @@ function formatEuros(cents: number): string {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €'
 }
 
-const bars = computed(() =>
-  props.categoryMonthlyComparison.map((d) => {
-    const meta = categoryMeta(categories.value, d.categoryId)
-    const maxCents = Math.max(d.current, d.previous, 1)
+// ── Monatsfilter ─────────────────────────────────────────────
+// months ist absteigend sortiert (neuester zuerst). Ohne aktive Auswahl fällt
+// activeMonth auf den ersten Eintrag zurück — also den aktuellen Monat beim
+// Öffnen der Seite (Komponente wird beim Tab-Wechsel neu erstellt).
+const selectedMonthKey = ref<string | null>(null)
+
+const activeMonth = computed<FinanceMonthComparison | null>(() =>
+  props.months.find((m) => m.monthKey === selectedMonthKey.value) ?? props.months[0] ?? null
+)
+
+// ── Balken-Animation (wie Haushalt-Punktestand) ──────────────
+const anim = ref(0)
+let raf = 0
+
+function runAnim() {
+  if (raf) cancelAnimationFrame(raf)
+  anim.value = 0
+  const start = performance.now()
+  const duration = 900
+  const tick = (now: number) => {
+    const t = Math.min(1, (now - start) / duration)
+    anim.value = 1 - Math.pow(1 - t, 3) // easeOutCubic
+    if (t < 1) raf = requestAnimationFrame(tick)
+  }
+  raf = requestAnimationFrame(tick)
+}
+
+onMounted(() => {
+  requestAnimationFrame(runAnim)
+})
+
+onBeforeUnmount(() => {
+  if (raf) cancelAnimationFrame(raf)
+})
+
+// Beim Monatswechsel Balken erneut hochwachsen lassen.
+watch(() => activeMonth.value?.monthKey, () => runAnim())
+
+const bars = computed(() => {
+  const month = activeMonth.value
+  if (!month) return []
+  const maxCents = Math.max(...month.categories.map((c) => c.current), 1)
+  return month.categories.map((c) => {
+    const meta = categoryMeta(categories.value, c.categoryId)
     return {
-      ...d,
+      ...c,
       name: meta.name,
       icon: meta.icon,
       color: meta.color,
-      widthPct: Math.round((d.current / maxCents) * 100),
+      widthPct: Math.round((c.current / maxCents) * 100),
     }
   })
-)
+})
 
-const insightText = ref('')
+const animatedTotal = computed(() => Math.round((activeMonth.value?.total ?? 0) * anim.value))
+
+// ── AI-Insight pro Monat (einmalig geladen, danach gecacht) ──
+interface InsightState { text: string; error: boolean }
+const insightCache = ref<Record<string, InsightState>>({})
 const insightLoading = ref(false)
-const insightError = ref(false)
+let insightToken = 0
 
-async function loadInsight() {
-  if (props.categoryMonthlyComparison.length === 0) return
+async function loadInsightFor(month: FinanceMonthComparison | null) {
+  if (!month || month.categories.length === 0) return
+  if (insightCache.value[month.monthKey]) return // schon geladen
+
+  const token = ++insightToken
   insightLoading.value = true
-  insightError.value = false
   try {
-    const deltas: FinanceCategoryDelta[] = props.categoryMonthlyComparison.map((d) => ({
-      name: categoryMeta(categories.value, d.categoryId).name,
-      currentEuros: d.current / 100,
-      previousEuros: d.previous / 100,
-      deltaPct: d.deltaPct,
+    const deltas: FinanceCategoryDelta[] = month.categories.map((c) => ({
+      name: categoryMeta(categories.value, c.categoryId).name,
+      currentEuros: c.current / 100,
+      previousEuros: c.previous / 100,
+      deltaPct: c.deltaPct,
     }))
-    insightText.value = await suggestFinanceInsight(deltas, monthLabel.value)
+    const text = await suggestFinanceInsight(deltas, month.label)
+    if (token === insightToken) insightCache.value[month.monthKey] = { text, error: false }
   } catch (err) {
     console.error('Failed to load finance insight:', err)
-    insightError.value = true
+    if (token === insightToken) insightCache.value[month.monthKey] = { text: '', error: true }
   } finally {
-    insightLoading.value = false
+    if (token === insightToken) insightLoading.value = false
   }
 }
 
-// Ausgaben laden asynchron per onSnapshot — sobald sie da sind, einmalig den
-// Insight abrufen (Guard verhindert Mehrfachaufruf bei späteren Änderungen).
-let insightRequested = false
-watch(() => props.loading, (stillLoading) => {
-  if (stillLoading || insightRequested) return
-  insightRequested = true
-  loadInsight()
-}, { immediate: true })
+// Ausgaben laden asynchron per onSnapshot — sobald sie da sind bzw. der Monat
+// wechselt, den passenden Insight (nach)laden.
+watch(
+  [() => props.loading, () => activeMonth.value?.monthKey],
+  ([stillLoading]) => {
+    if (stillLoading) return
+    loadInsightFor(activeMonth.value)
+  },
+  { immediate: true }
+)
 
-function goToEssensplan() {
-  router.push('/einkaufen')
-}
+const activeInsight = computed<InsightState | null>(() =>
+  activeMonth.value ? insightCache.value[activeMonth.value.monthKey] ?? null : null
+)
 </script>
 
 <template>
   <div class="coach-pane">
-    <div class="insight-card">
-      <span class="insight-icon">✨</span>
-      <p v-if="insightLoading" class="insight-text insight-text--loading">Analysiere eure Ausgaben …</p>
-      <p v-else-if="insightError" class="insight-text">
-        Insight konnte gerade nicht geladen werden — die Zahlen unten stimmen trotzdem.
-      </p>
-      <p v-else-if="insightText" class="insight-text">{{ insightText }}</p>
-      <p v-else class="insight-text">Noch nicht genug Daten für einen Bericht.</p>
+    <div v-if="props.loading" class="empty-msg">Laden…</div>
+
+    <div v-else-if="months.length === 0" class="empty-msg">
+      Noch keine Ausgaben erfasst — sobald ihr welche eintragt, entsteht hier eine Auswertung.
     </div>
 
-    <div class="section-label bars-label">Kategorien im Vergleich · {{ monthLabel }}</div>
-    <div v-if="bars.length === 0" class="empty-msg">Noch keine Ausgaben in diesem oder letztem Monat.</div>
-    <div v-else class="bars-list">
-      <div v-for="b in bars" :key="b.categoryId" class="bar-row">
-        <div class="bar-head">
-          <span class="bar-icon" :style="{ background: b.color }">{{ b.icon }}</span>
-          <span class="bar-name">{{ b.name }}</span>
-          <span class="bar-amount mono">{{ formatEuros(b.current) }}</span>
-          <span
-            v-if="b.deltaPct !== null"
-            class="bar-delta"
-            :class="b.deltaPct > 0 ? 'bar-delta--up' : b.deltaPct < 0 ? 'bar-delta--down' : ''"
-          >{{ b.deltaPct > 0 ? '+' : '' }}{{ b.deltaPct }}%</span>
-          <span v-else class="bar-delta bar-delta--new">neu</span>
-        </div>
-        <div class="bar-track">
-          <div class="bar-fill" :style="{ width: b.widthPct + '%', background: b.color }" />
+    <template v-else>
+      <!-- Monatsfilter -->
+      <div class="month-row">
+        <button
+          v-for="m in months"
+          :key="m.monthKey"
+          class="month-chip"
+          :class="{ 'month-chip--active': m.monthKey === activeMonth?.monthKey }"
+          @click="selectedMonthKey = m.monthKey"
+        >
+          {{ m.label }}
+        </button>
+      </div>
+
+      <!-- AI-Insight -->
+      <div class="insight-card">
+        <span class="insight-icon">✨</span>
+        <p v-if="!activeInsight && insightLoading" class="insight-text insight-text--loading">Analysiere eure Ausgaben …</p>
+        <p v-else-if="activeInsight?.error" class="insight-text">
+          Insight konnte gerade nicht geladen werden — die Zahlen unten stimmen trotzdem.
+        </p>
+        <p v-else-if="activeInsight?.text" class="insight-text">{{ activeInsight.text }}</p>
+        <p v-else class="insight-text">Noch nicht genug Daten für einen Bericht.</p>
+      </div>
+
+      <!-- Monatssumme -->
+      <div class="total-card">
+        <span class="total-label">Ausgaben im {{ activeMonth?.label }}</span>
+        <span class="total-value mono">{{ formatEuros(animatedTotal) }}</span>
+      </div>
+
+      <!-- Kategorien -->
+      <div class="section-label bars-label">Nach Kategorie</div>
+      <div v-if="bars.length === 0" class="empty-msg">Keine Ausgaben in diesem Monat.</div>
+      <div v-else class="bars-list">
+        <div v-for="b in bars" :key="b.categoryId" class="bar-row">
+          <div class="bar-head">
+            <span class="bar-icon" :style="{ background: b.color }">{{ b.icon }}</span>
+            <span class="bar-name">{{ b.name }}</span>
+            <span class="bar-amount mono">{{ formatEuros(Math.round(b.current * anim)) }}</span>
+            <span
+              v-if="b.deltaPct !== null"
+              class="bar-delta"
+              :class="b.deltaPct > 0 ? 'bar-delta--up' : b.deltaPct < 0 ? 'bar-delta--down' : ''"
+            >{{ b.deltaPct > 0 ? '+' : '' }}{{ b.deltaPct }}%</span>
+            <span v-else class="bar-delta bar-delta--new">neu</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" :style="{ width: (b.widthPct * anim) + '%', background: b.color }" />
+          </div>
         </div>
       </div>
-    </div>
-
-    <div class="suggestion-card">
-      <p class="suggestion-text">
-        Wenn eine Kategorie diesen Monat stark gestiegen ist, hilft manchmal ein günstiges Rezept im Essensplan.
-      </p>
-      <button class="btn-primary suggestion-cta" type="button" @click="goToEssensplan">
-        Günstiges Rezept vorschlagen lassen
-      </button>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -130,26 +192,58 @@ function goToEssensplan() {
   padding: 4px var(--screen-pad) 32px;
 }
 
+/* ── Monatsfilter (Muster wie Haushalt-Verlauf) ──────────── */
+.month-row {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 18px;
+  overflow-x: auto;
+}
+
+.month-chip {
+  padding: 7px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: 10px;
+  color: var(--text-meta);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-card);
+  transition: all 0.15s ease;
+  text-transform: capitalize;
+}
+
+.month-chip--active {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* ── AI-Insight ──────────────────────────────────────────── */
 .insight-card {
   display: flex;
   gap: 12px;
   background: var(--accent-tint);
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: var(--radius-card-lg);
-  padding: 16px;
-  margin-bottom: 20px;
+  padding: 18px;
+  margin-bottom: 16px;
 }
 
 .insight-icon {
   flex-shrink: 0;
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .insight-text {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
-  line-height: 1.5;
+  line-height: 1.55;
   margin: 0;
 }
 
@@ -157,50 +251,82 @@ function goToEssensplan() {
   color: var(--text-secondary);
 }
 
+/* ── Monatssumme ─────────────────────────────────────────── */
+.total-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: var(--radius-card-lg);
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+
+.total-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-meta);
+  text-transform: capitalize;
+}
+
+.total-value {
+  font-family: var(--font-headline);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+/* ── Kategorie-Balken (größer + animiert) ────────────────── */
 .bars-label {
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 
 .empty-msg {
-  padding: 24px var(--screen-pad);
+  padding: 32px var(--screen-pad);
   font-size: 13px;
   color: var(--text-faint);
   text-align: center;
+  line-height: 1.5;
 }
 
 .bars-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
 }
 
 .bar-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 9px;
 }
 
 .bar-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .bar-icon {
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 16px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 
 .bar-name {
   flex: 1;
   min-width: 0;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
   overflow: hidden;
@@ -209,16 +335,17 @@ function goToEssensplan() {
 }
 
 .bar-amount {
-  font-size: 12.5px;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text);
   flex-shrink: 0;
 }
 
 .bar-delta {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  min-width: 38px;
+  min-width: 42px;
   text-align: right;
   color: var(--text-meta);
 }
@@ -236,35 +363,16 @@ function goToEssensplan() {
 }
 
 .bar-track {
-  height: 8px;
-  border-radius: 5px;
+  height: 14px;
+  border-radius: 8px;
   background: var(--surface-deep);
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  border-radius: 5px;
-  transition: width 0.4s var(--ease-standard);
-}
-
-.suggestion-card {
-  margin-top: 24px;
-  background: var(--surface);
-  border: 1px solid var(--border-softer);
-  border-radius: var(--radius-card-lg);
-  box-shadow: var(--shadow-card);
-  padding: 16px;
-}
-
-.suggestion-text {
-  font-size: 12.5px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin: 0 0 12px;
-}
-
-.suggestion-cta {
-  margin: 0;
+  border-radius: 8px;
+  /* Breite wird per JS animiert; leichte CSS-Transition für Datenupdates */
+  transition: width 0.35s var(--ease-standard);
 }
 </style>

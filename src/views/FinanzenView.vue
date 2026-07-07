@@ -25,7 +25,7 @@ const {
   loading,
   activeEventSummaries,
   eventSummaries,
-  categoryMonthlyComparison,
+  financeMonths,
   addExpense,
   updateExpense,
   deleteExpense,
@@ -254,7 +254,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
               v-else
               key="coach"
               :couple="couple"
-              :categoryMonthlyComparison="categoryMonthlyComparison"
+              :months="financeMonths"
               :loading="loading"
             />
           </Transition>

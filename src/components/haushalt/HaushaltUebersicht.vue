@@ -50,6 +50,7 @@ const leaderboard = computed(() => {
       name: props.couple?.memberNames[uid] ?? 'Partner',
       init: visual.init,
       color: visual.color,
+      icon: visual.icon,
       points: pointsFor(props.history, uid),
       tasks: countFor(props.history, uid),
     }
@@ -140,7 +141,11 @@ const statRows = computed(() => {
           :key="row.uid"
           class="lead-row"
         >
-          <span class="lead-avatar" :style="{ background: row.color }">{{ row.init }}</span>
+          <span
+            class="lead-avatar"
+            :class="{ 'lead-avatar--icon': row.icon }"
+            :style="{ background: row.icon ? 'var(--surface-deep)' : row.color }"
+          >{{ row.icon ?? row.init }}</span>
           <div class="lead-body">
             <div class="lead-name-line">
               <span class="lead-name">
@@ -250,6 +255,10 @@ const statRows = computed(() => {
   flex-shrink: 0;
   border: 2px solid #fff;
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
+}
+
+.lead-avatar--icon {
+  font-size: 21px;
 }
 
 .lead-body {

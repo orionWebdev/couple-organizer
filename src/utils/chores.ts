@@ -63,6 +63,7 @@ interface PersonVisual {
   init: string
   color: string
   tint: string
+  icon: string | null
 }
 
 export function personVisual(uid: string, couple: Couple | null): PersonVisual {
@@ -71,26 +72,33 @@ export function personVisual(uid: string, couple: Couple | null): PersonVisual {
   return {
     init: name ? name.charAt(0).toUpperCase() : '?',
     color: idx === 0 ? 'var(--chris)' : 'var(--sarah)',
-    tint: idx === 0 ? 'var(--chris-tint)' : 'var(--sarah-tint)'
+    tint: idx === 0 ? 'var(--chris-tint)' : 'var(--sarah-tint)',
+    icon: couple?.memberIcons?.[uid] ?? null
   }
 }
 
 export interface AssigneeChip {
   ch: string
   bg: string
+  icon: string | null
+}
+
+// Icon (falls gesetzt) auf neutralem Grund — wie InitialChip; sonst Initiale
+// auf Personenfarbe.
+function chipFor(uid: string, couple: Couple | null): AssigneeChip {
+  const v = personVisual(uid, couple)
+  return v.icon
+    ? { ch: v.init, bg: 'var(--surface-deep)', icon: v.icon }
+    : { ch: v.init, bg: v.color, icon: null }
 }
 
 export function assigneeChips(assignee: ChoreAssignee, couple: Couple | null): AssigneeChip[] {
   if (assignee === 'both') {
     const [a, b] = couple?.memberIds ?? []
-    return [a, b].filter(Boolean).map((uid) => {
-      const v = personVisual(uid as string, couple)
-      return { ch: v.init, bg: v.color }
-    })
+    return [a, b].filter(Boolean).map((uid) => chipFor(uid as string, couple))
   }
   if (!assignee) return []
-  const v = personVisual(assignee, couple)
-  return [{ ch: v.init, bg: v.color }]
+  return [chipFor(assignee, couple)]
 }
 
 export interface AssigneeAvatarVisual {
@@ -98,6 +106,7 @@ export interface AssigneeAvatarVisual {
   bg: string
   border: string
   color: string
+  icon: string | null
 }
 
 export function assigneeAvatarVisual(assignee: ChoreAssignee, couple: Couple | null): AssigneeAvatarVisual {
@@ -106,12 +115,18 @@ export function assigneeAvatarVisual(assignee: ChoreAssignee, couple: Couple | n
       init: 'CS',
       bg: 'linear-gradient(90deg, var(--chris) 50%, var(--sarah) 50%)',
       border: 'none',
-      color: 'var(--on-accent)'
+      color: 'var(--on-accent)',
+      icon: null
     }
   }
   if (!assignee) {
-    return { init: '–', bg: 'transparent', border: '1px dashed var(--text-faint)', color: 'var(--accent)' }
+    return { init: '–', bg: 'transparent', border: '1px dashed var(--text-faint)', color: 'var(--accent)', icon: null }
   }
   const v = personVisual(assignee, couple)
-  return { init: v.init, bg: v.color, border: 'none', color: 'var(--on-accent)' }
+  // Eigenes Avatar-Emoji (falls gesetzt) auf neutralem Grund — wie InitialChip
+  // im Dashboard. Ohne Icon: Initiale auf Personenfarbe.
+  if (v.icon) {
+    return { init: v.init, bg: 'var(--surface-deep)', border: 'none', color: 'var(--text)', icon: v.icon }
+  }
+  return { init: v.init, bg: v.color, border: 'none', color: 'var(--on-accent)', icon: null }
 }

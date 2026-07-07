@@ -52,6 +52,7 @@ const summary = computed(() => {
       init: visual.init,
       color: visual.color,
       tint: visual.tint,
+      icon: visual.icon,
       count: countFor(uid),
     }
   })
@@ -80,7 +81,11 @@ function lastEntryFor(choreId: string): ChoreHistoryEntry | null {
         :style="{ background: filterUid === person.uid ? person.color : person.tint }"
         @click="toggleFilter(person.uid)"
       >
-        <span class="summary-avatar" :style="{ background: person.color }">{{ person.init }}</span>
+        <span
+          class="summary-avatar"
+          :class="{ 'summary-avatar--icon': person.icon }"
+          :style="{ background: person.icon ? 'var(--surface-deep)' : person.color }"
+        >{{ person.icon ?? person.init }}</span>
         <div class="summary-text">
           <span class="summary-name">{{ person.name }}</span>
           <span class="summary-count">{{ person.count }} Aufgabe{{ person.count === 1 ? '' : 'n' }}</span>
@@ -155,6 +160,10 @@ function lastEntryFor(choreId: string): ChoreHistoryEntry | null {
   border: 2px solid #fff;
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
   flex-shrink: 0;
+}
+
+.summary-avatar--icon {
+  font-size: 19px;
 }
 
 .summary-text {

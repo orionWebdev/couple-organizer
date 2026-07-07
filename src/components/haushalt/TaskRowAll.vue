@@ -43,8 +43,9 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
           </div>
           <span
             class="assignee-avatar"
+            :class="{ 'assignee-avatar--icon': avatar.icon }"
             :style="{ background: avatar.bg, border: avatar.border, color: avatar.color }"
-          >{{ avatar.init }}</span>
+          >{{ avatar.icon ?? avatar.init }}</span>
           <button class="menu-btn" @click="emit('toggleMenu')">⋯</button>
         </div>
         <div class="row-actions">
@@ -172,6 +173,10 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
+}
+
+.assignee-avatar--icon {
+  font-size: 16px;
 }
 
 .menu-btn {

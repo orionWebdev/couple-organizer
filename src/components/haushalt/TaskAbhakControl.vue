@@ -22,14 +22,16 @@ const done = computed(() => isDoneToday(props.chore))
 const chips = computed(() => assigneeChips(props.chore.completedBy, props.couple))
 const nameA = computed(() => props.couple?.memberNames[props.couple?.memberIds[0] ?? ''] ?? 'Person A')
 const nameB = computed(() => props.couple?.memberNames[props.couple?.memberIds[1] ?? ''] ?? 'Person B')
+const iconA = computed(() => props.couple?.memberIcons?.[props.couple?.memberIds[0] ?? ''] ?? null)
+const iconB = computed(() => props.couple?.memberIcons?.[props.couple?.memberIds[1] ?? ''] ?? null)
 </script>
 
 <template>
   <!-- Recurring: buttons always available + count badge for repeat logging -->
   <div v-if="repeatable" class="switch switch--repeat">
     <div class="cluster actions actions--static">
-      <button class="pick pick--chris" :title="nameA" @click="emit('pick', couple?.memberIds[0] ?? null)">{{ nameA.charAt(0).toUpperCase() }}</button>
-      <button class="pick pick--sarah" :title="nameB" @click="emit('pick', couple?.memberIds[1] ?? null)">{{ nameB.charAt(0).toUpperCase() }}</button>
+      <button class="pick pick--chris" :class="{ 'pick--icon': iconA }" :title="nameA" @click="emit('pick', couple?.memberIds[0] ?? null)">{{ iconA ?? nameA.charAt(0).toUpperCase() }}</button>
+      <button class="pick pick--sarah" :class="{ 'pick--icon': iconB }" :title="nameB" @click="emit('pick', couple?.memberIds[1] ?? null)">{{ iconB ?? nameB.charAt(0).toUpperCase() }}</button>
       <button class="pick pick--both" title="Beide" @click="emit('pick', 'both')">Beide</button>
     </div>
     <Transition name="count-pop">
@@ -39,7 +41,7 @@ const nameB = computed(() => props.couple?.memberNames[props.couple?.memberIds[1
         title="Letzte Erledigung zurücknehmen"
         @click="emit('undo')"
       >
-        <span v-for="(chip, i) in chips" :key="i" class="chip-ini" :style="{ background: chip.bg }">{{ chip.ch }}</span>
+        <span v-for="(chip, i) in chips" :key="i" class="chip-ini" :class="{ 'chip-ini--icon': chip.icon }" :style="{ background: chip.bg }">{{ chip.icon ?? chip.ch }}</span>
         <span class="count-num">{{ todayCount }}×</span>
       </button>
     </Transition>
@@ -54,7 +56,7 @@ const nameB = computed(() => props.couple?.memberNames[props.couple?.memberIds[1
         <button class="pick pick--both" title="Beide" @click="emit('pick', 'both')">Beide</button>
       </div>
       <button v-else class="chips chip" key="chip" @click="emit('undo')">
-        <span v-for="(chip, i) in chips" :key="i" class="chip-ini" :style="{ background: chip.bg }">{{ chip.ch }}</span>
+        <span v-for="(chip, i) in chips" :key="i" class="chip-ini" :class="{ 'chip-ini--icon': chip.icon }" :style="{ background: chip.bg }">{{ chip.icon ?? chip.ch }}</span>
         <span class="chip-done-label">Erledigt · zurücknehmen</span>
       </button>
     </Transition>
@@ -189,6 +191,11 @@ const nameB = computed(() => props.couple?.memberNames[props.couple?.memberIds[1
   color: var(--text);
 }
 
+/* Avatar-Emoji statt Initiale: etwas größer, Rand bleibt in Personenfarbe */
+.pick--icon {
+  font-size: 20px;
+}
+
 .chips {
   position: absolute;
   top: 0;
@@ -230,6 +237,14 @@ const nameB = computed(() => props.couple?.memberNames[props.couple?.memberIds[1
 
 .chip-ini:first-child {
   margin-left: 0;
+}
+
+.chip-ini--icon {
+  font-size: 15px;
+}
+
+.count-badge .chip-ini--icon {
+  font-size: 12px;
 }
 
 /* ── Spring Pop ────────────────────────────────────────────

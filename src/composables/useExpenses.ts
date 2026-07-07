@@ -22,6 +22,7 @@ import type {
   FinanceEvent,
   FinanceEventKind,
   FinanceEventSummary,
+  FinanceMonthComparison,
   MonthlyExpenseSummary
 } from '@/types'
 
@@ -49,6 +50,17 @@ interface UpdateExpenseInput {
 function createMonthKey(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   return `${date.getFullYear()}-${month}`
+}
+
+// Vorheriger Kalendermonat als "YYYY-MM" (monthKey ist 1-basiert im Monatsteil).
+function previousMonthKey(monthKey: string): string {
+  const [year, month] = monthKey.split('-').map(Number)
+  return createMonthKey(new Date(year, month - 2, 1))
+}
+
+function monthLabelFromKey(monthKey: string): string {
+  const [year, month] = monthKey.split('-').map(Number)
+  return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1))
 }
 
 function toMillis(timestamp: unknown): number {
@@ -277,36 +289,47 @@ export function useExpenses(coupleId: Ref<string | null>) {
       })
   })
 
-  // Kategorie-Ausgaben dieser Monat vs. Vormonat, für den Finanz-Coach.
-  // Zählt ALLE aktiven Monats-Ausgaben (nicht nur unbezahlte) — isPaid
-  // beschreibt den Ausgleich zwischen Partnern, nicht ob Geld ausgegeben wurde.
-  const categoryMonthlyComparison = computed<CategoryMonthlyComparison[]>(() => {
-    const now = new Date()
-    const currentKey = createMonthKey(now)
-    const previousKey = createMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1))
-
-    const currentTotals = new Map<string, number>()
-    const previousTotals = new Map<string, number>()
+  // Alle Monate mit (Monats-)Ausgaben für den Finanz-Coach, je Kategorie
+  // verglichen zum jeweils vorigen Kalendermonat. Zählt ALLE aktiven Monats-
+  // Ausgaben (nicht nur unbezahlte) — isPaid beschreibt den Ausgleich zwischen
+  // Partnern, nicht ob Geld ausgegeben wurde. Absteigend sortiert (neuester
+  // Monat zuerst), damit der Coach standardmäßig den aktuellen Monat zeigt.
+  const financeMonths = computed<FinanceMonthComparison[]>(() => {
+    // monthKey → (categoryId → cents)
+    const totalsByMonth = new Map<string, Map<string, number>>()
 
     for (const expense of activeExpenses.value) {
       if (getExpenseScope(expense) !== 'monthly') continue
-      if (expense.monthKey === currentKey) {
-        currentTotals.set(expense.category, (currentTotals.get(expense.category) ?? 0) + expense.amount)
-      } else if (expense.monthKey === previousKey) {
-        previousTotals.set(expense.category, (previousTotals.get(expense.category) ?? 0) + expense.amount)
+      let categoryTotals = totalsByMonth.get(expense.monthKey)
+      if (!categoryTotals) {
+        categoryTotals = new Map<string, number>()
+        totalsByMonth.set(expense.monthKey, categoryTotals)
       }
+      categoryTotals.set(expense.category, (categoryTotals.get(expense.category) ?? 0) + expense.amount)
     }
 
-    const categoryIds = new Set([...currentTotals.keys(), ...previousTotals.keys()])
+    return [...totalsByMonth.keys()]
+      .sort((a, b) => (a < b ? 1 : -1))
+      .map((monthKey) => {
+        const currentTotals = totalsByMonth.get(monthKey)!
+        const previousTotals = totalsByMonth.get(previousMonthKey(monthKey))
 
-    return [...categoryIds]
-      .map((categoryId) => {
-        const current = currentTotals.get(categoryId) ?? 0
-        const previous = previousTotals.get(categoryId) ?? 0
-        const deltaPct = previous > 0 ? Math.round(((current - previous) / previous) * 100) : null
-        return { categoryId, current, previous, deltaPct }
+        const categories: CategoryMonthlyComparison[] = [...currentTotals.keys()]
+          .map((categoryId) => {
+            const current = currentTotals.get(categoryId) ?? 0
+            const previous = previousTotals?.get(categoryId) ?? 0
+            const deltaPct = previous > 0 ? Math.round(((current - previous) / previous) * 100) : null
+            return { categoryId, current, previous, deltaPct }
+          })
+          .sort((a, b) => b.current - a.current)
+
+        return {
+          monthKey,
+          label: monthLabelFromKey(monthKey),
+          total: [...currentTotals.values()].reduce((sum, cents) => sum + cents, 0),
+          categories,
+        }
       })
-      .sort((a, b) => b.current - a.current)
   })
 
   const activeEventSummaries = computed(() => eventSummaries.value.filter((entry) => !entry.event.archived))
@@ -500,7 +523,7 @@ export function useExpenses(coupleId: Ref<string | null>) {
     balanceInfo,
     recentExpenses,
     monthlySummaries,
-    categoryMonthlyComparison,
+    financeMonths,
     eventSummaries,
     activeEventSummaries,
     archivedEventSummaries,

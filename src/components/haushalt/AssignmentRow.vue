@@ -49,7 +49,7 @@ const whoLabel = computed(() => {
 <template>
   <div class="row-wrap" :class="{ 'row-wrap--expanded': expanded }">
     <div class="row" @click="toggle">
-      <span class="row-avatar" :style="{ background: avatar.bg, border: avatar.border, color: avatar.color }">{{ avatar.init }}</span>
+      <span class="row-avatar" :class="{ 'row-avatar--icon': avatar.icon }" :style="{ background: avatar.bg, border: avatar.border, color: avatar.color }">{{ avatar.icon ?? avatar.init }}</span>
       <div class="row-text">
         <span class="row-name">{{ chore.name }}</span>
         <span class="row-meta">{{ metaLabel }}</span>
@@ -111,6 +111,10 @@ const whoLabel = computed(() => {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
+}
+
+.row-avatar--icon {
+  font-size: 16px;
 }
 
 .row-text {

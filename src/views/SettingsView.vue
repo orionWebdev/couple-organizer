@@ -23,10 +23,18 @@ function goBack() {
 // ── Profil ────────────────────────────────────────────────────
 const showAvatarSheet = ref(false)
 const myIcon = computed(() => (user.value ? couple.value?.memberIcons?.[user.value.uid] ?? '' : ''))
+const myInitial = computed(() => user.value?.displayName?.charAt(0).toUpperCase() || '🙂')
 
 async function pickAvatar(icon: string) {
   const ok = await updateMyIcon(icon)
   showToast(ok ? 'Avatar gespeichert' : 'Fehler beim Speichern')
+  if (ok) showAvatarSheet.value = false
+}
+
+// Emoji entfernen → zurück zur Initiale des eigenen Namens.
+async function resetAvatar() {
+  const ok = await updateMyIcon(null)
+  showToast(ok ? 'Zurück zu Initialen' : 'Fehler beim Speichern')
   if (ok) showAvatarSheet.value = false
 }
 
@@ -133,7 +141,7 @@ async function confirmDanger() {
       <!-- Profil -->
       <div class="section-label section-gap">Profil</div>
       <div class="card profile-card" @click="showAvatarSheet = true">
-        <span class="avatar-badge">{{ myIcon || '🙂' }}</span>
+        <span class="avatar-badge" :class="{ 'avatar-badge--initial': !myIcon }">{{ myIcon || myInitial }}</span>
         <div class="profile-text">
           <span class="profile-name">{{ user?.displayName }}</span>
           <span class="profile-hint">Avatar ändern</span>
@@ -233,6 +241,10 @@ async function confirmDanger() {
 
     <BottomSheet :isOpen="showAvatarSheet" title="Avatar wählen" @close="showAvatarSheet = false">
       <IconGridPicker :modelValue="myIcon" :icons="AVATAR_ICONS" @update:modelValue="pickAvatar" />
+      <button v-if="myIcon" class="reset-avatar-btn" type="button" @click="resetAvatar">
+        <span class="reset-avatar-badge">{{ myInitial }}</span>
+        Zurück zu Initialen
+      </button>
     </BottomSheet>
 
     <BottomSheet :isOpen="!!pendingDanger" title="Bist du sicher?" @close="pendingDanger = null">
@@ -328,6 +340,14 @@ async function confirmDanger() {
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 
+/* Ohne Avatar-Emoji: Initiale auf Personenfarbe statt neutralem Grund */
+.avatar-badge--initial {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+}
+
 .profile-text {
   flex: 1;
   min-width: 0;
@@ -364,6 +384,39 @@ async function confirmDanger() {
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.reset-avatar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 0;
+  background: var(--surface-deep);
+  border: 1px solid var(--border-softer);
+  border-radius: var(--radius-card);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reset-avatar-badge {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #fff;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 
 .toggle-row {

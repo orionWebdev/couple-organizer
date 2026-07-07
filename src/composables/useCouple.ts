@@ -1,6 +1,6 @@
 import { ref, onScopeDispose, readonly } from 'vue'
 import {
-  doc, collection, addDoc, updateDoc,
+  doc, collection, addDoc, updateDoc, deleteField,
   query, where, getDocs, onSnapshot, serverTimestamp, arrayUnion, writeBatch
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
@@ -147,10 +147,13 @@ export function useCouple() {
     }
   }
 
-  async function updateMyIcon(icon: string): Promise<boolean> {
+  // Leerer/`null`-Wert entfernt das Icon-Feld wieder → Fallback auf Initialen.
+  async function updateMyIcon(icon: string | null): Promise<boolean> {
     if (!couple.value || !user.value) return false
     try {
-      await updateDoc(doc(db, 'couples', couple.value.id), { [`memberIcons.${user.value.uid}`]: icon })
+      await updateDoc(doc(db, 'couples', couple.value.id), {
+        [`memberIcons.${user.value.uid}`]: icon ? icon : deleteField()
+      })
       error.value = null
       return true
     } catch (e: any) {

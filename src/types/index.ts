@@ -208,6 +208,16 @@ export interface CategoryMonthlyComparison {
   deltaPct: number | null // null wenn Vormonat 0 war (Prozent nicht sinnvoll berechenbar)
 }
 
+// Ein Monat im Finanz-Coach: alle Kategorie-Ausgaben dieses Monats plus
+// Vergleich zum jeweils vorigen Kalendermonat. Es gibt einen Eintrag pro
+// Monat, in dem überhaupt (Monats-)Ausgaben erfasst wurden.
+export interface FinanceMonthComparison {
+  monthKey: string // "YYYY-MM"
+  label: string // z. B. "März 2026"
+  total: number // cents, Summe aller Kategorien dieses Monats
+  categories: CategoryMonthlyComparison[]
+}
+
 export type BucketListCategory = 'ort' | 'restaurant'
 
 export interface BucketListItem {

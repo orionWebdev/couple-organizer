@@ -19,6 +19,13 @@ Skript liegt im Scratchpad (`dl_fonts.py` lädt die Fonts). Bundle-Layout:
 `styles.css` (Einstieg) → `@import` von `fonts/fonts.css` + `tokens/tokens.css`;
 Vorschau-Karten unter `guidelines/*.html` mit `@dsCard`-Markern.
 
+## Screen-Referenzkarten
+Gruppe „Screens" im Projekt = die 11 Mockups aus `reference/*.png` (01–11), als HTML-Karten
+mit `@dsCard`-Marker gewrappt (Bilder unter `screens/img/`). Es sind Design-Mockups, keine
+Live-Bausteine — reine visuelle Layout-Referenz. `reference/bug.png` bewusst ausgelassen.
+Hinweis: `01-onboarding.png` trägt noch das alte „NIDO"-Branding.
+
 ## Ziel-Projekt
-Claude Design: „Couple Organizer Design" (ID in config.json). Erststand: Fundament ohne
-Komponenten. Karten in der Design-System-Ansicht: „Farbpalette", „Typografie" (Gruppe „Fundament").
+Claude Design: „Couple Organizer Design" (ID in config.json). Erststand: Fundament + Screen-
+Referenzkarten, keine Komponenten. Karten-Gruppen: „Fundament" (Farbpalette, Typografie),
+„Screens" (11 Mockups).

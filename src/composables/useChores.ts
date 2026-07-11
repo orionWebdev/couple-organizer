@@ -283,7 +283,26 @@ export function useChores(coupleId: Ref<string | null>) {
 
   async function deleteHistoryEntry(entryId: string): Promise<boolean> {
     try {
+      const entry = history.value.find((h) => h.id === entryId) ?? null
       await deleteDoc(doc(db, 'choreHistory', entryId))
+
+      // Eine erledigte einmalige Aufgabe ist nur noch über ihren Verlaufs-
+      // Eintrag erreichbar (aus dem Pool ist sie raus). Wird dieser gelöscht,
+      // muss sie zurück in den Pool — sonst bliebe sie für immer unsichtbar.
+      const chore = entry ? chores.value.find((c) => c.id === entry.choreId) ?? null : null
+      if (chore && chore.type === 'once' && chore.done) {
+        const previousEntry = history.value
+          .filter((h) => h.choreId === chore.id && h.id !== entryId)
+          .sort((a, b) => toMillis(b.completedAt) - toMillis(a.completedAt))[0] ?? null
+
+        await updateDoc(doc(db, 'chores', chore.id), {
+          done: false,
+          completedAt: previousEntry ? previousEntry.completedAt : null,
+          completedBy: previousEntry ? previousEntry.completedBy : null,
+          updatedAt: serverTimestamp()
+        })
+      }
+
       error.value = null
       return true
     } catch (err: any) {

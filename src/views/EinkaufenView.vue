@@ -4,6 +4,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useShopping } from '@/composables/useShopping'
 import { useExpenses } from '@/composables/useExpenses'
+import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import FabButton from '@/components/ui/FabButton.vue'
@@ -39,47 +40,19 @@ const {
 const { addExpense } = useExpenses(coupleId)
 
 type Tab = 'liste' | 'wochenplan' | 'rezepte'
-// Einkaufsliste bleibt der initiale Tab, sitzt jetzt aber optisch in der Mitte
-// (links Wochenplan, rechts Rezepte).
+// Einkaufsliste ist der initiale Tab und sitzt ganz links.
 const tab = ref<Tab>('liste')
 const tabOptions = [
-  { label: 'Wochenplan', value: 'wochenplan' },
   { label: 'Einkaufsliste', value: 'liste' },
+  { label: 'Wochenplan', value: 'wochenplan' },
   { label: 'Rezepte', value: 'rezepte' },
 ]
 
 const rezeptWikiRef = ref<InstanceType<typeof RezeptWikiView> | null>(null)
 
-// ── Horizontaler Swipe zwischen den Tabs (gleiches Muster wie HaushaltView) ──
 // Reihenfolge muss die sichtbare Tab-Reihenfolge widerspiegeln.
-const tabOrder: Tab[] = ['wochenplan', 'liste', 'rezepte']
-let swipeStartX = 0
-let swipeStartY = 0
-let swipeIgnore = false
-
-function goTab(dir: 1 | -1) {
-  const i = tabOrder.indexOf(tab.value)
-  const next = i + dir
-  if (next < 0 || next >= tabOrder.length) return
-  tab.value = tabOrder[next]
-}
-
-function onTouchStart(e: TouchEvent) {
-  const t = e.touches[0]
-  swipeStartX = t.clientX
-  swipeStartY = t.clientY
-  swipeIgnore = !!(e.target as HTMLElement | null)?.closest?.('[data-hswipe-skip]')
-}
-
-function onTouchEnd(e: TouchEvent) {
-  if (swipeIgnore) return
-  const t = e.changedTouches[0]
-  const dx = t.clientX - swipeStartX
-  const dy = t.clientY - swipeStartY
-  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.7) {
-    goTab(dx < 0 ? 1 : -1)
-  }
-}
+const tabOrder: Tab[] = ['liste', 'wochenplan', 'rezepte']
+const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
 
 type View = 'lists' | 'detail' | 'shopping-mode'
 const view = ref<View>('lists')
@@ -213,15 +186,17 @@ function listItemsFor(listId: string) {
         <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
       </div>
 
-      <!-- touchstart/touchend sitzen auf .tab-area (nicht nur .tab-content),
-           weil die FabButtons als Geschwister-Elemente von .tab-content
-           gerendert werden (siehe Kommentar unten) — Touch-Events bubblen
-           nicht zwischen Geschwistern, ein auf dem FAB startender Swipe würde
-           sonst nicht erkannt. -->
+      <!-- Die Touch-Handler sitzen auf .tab-area (nicht nur .tab-content), weil
+           die FabButtons als Geschwister-Elemente von .tab-content gerendert
+           werden (siehe Kommentar unten) — Touch-Events bubblen nicht zwischen
+           Geschwistern, ein auf dem FAB startender Swipe würde sonst nicht
+           erkannt. touchcancel zählt wie touchend, siehe useTabSwipe. -->
       <div
         class="tab-area"
         @touchstart.passive="onTouchStart"
+        @touchmove.passive="onTouchMove"
         @touchend.passive="onTouchEnd"
+        @touchcancel.passive="onTouchEnd"
       >
         <div class="tab-content">
           <Transition name="tab-fade" mode="out-in">
@@ -378,6 +353,8 @@ function listItemsFor(listId: string) {
 .lists-wrap {
   flex: 1;
   overflow-y: auto;
+  /* Nur vertikal scrollen — horizontale Gesten gehören dem Tab-Swipe. */
+  touch-action: pan-y;
   padding: 0 var(--screen-pad) 100px;
 }
 

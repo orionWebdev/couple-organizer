@@ -20,21 +20,20 @@ const emit = defineEmits<{
   seed: []
 }>()
 
-type Filter = 'alle' | 'personA' | 'personB' | 'both' | 'offen'
-const filter = ref<Filter>('alle')
 const roomFilter = ref<ChoreRoom | 'alle'>('alle')
 const search = ref('')
 const menuOpenId = ref<string | null>(null)
 
-const personA = computed(() => props.couple?.memberIds[0] ?? null)
-const personB = computed(() => props.couple?.memberIds[1] ?? null)
-const personAName = computed(() => props.couple?.memberNames[personA.value ?? ''] ?? 'Person A')
-const personBName = computed(() => props.couple?.memberNames[personB.value ?? ''] ?? 'Person B')
+// Eine erledigte einmalige Aufgabe verlässt den Pool endgültig — sie steht ab
+// dann nur noch im Verlauf. Wiederkehrende Aufgaben bleiben immer im Pool.
+const poolChores = computed(() =>
+  props.chores.filter((c) => !(c.type === 'once' && c.done))
+)
 
 // Anzahl Aufgaben je Raum, damit leere Räume ausgeblendet werden können.
 const roomCounts = computed(() => {
   const counts = new Map<ChoreRoom, number>()
-  for (const c of props.chores) {
+  for (const c of poolChores.value) {
     const r = roomOf(c)
     counts.set(r, (counts.get(r) ?? 0) + 1)
   }
@@ -44,12 +43,7 @@ const roomCounts = computed(() => {
 const activeRooms = computed(() => ROOMS.filter((r) => (roomCounts.value.get(r.id) ?? 0) > 0))
 
 const filtered = computed(() => {
-  let list = props.chores.slice()
-
-  if (filter.value === 'personA') list = list.filter((c) => c.assignee === personA.value)
-  else if (filter.value === 'personB') list = list.filter((c) => c.assignee === personB.value)
-  else if (filter.value === 'both') list = list.filter((c) => c.assignee === 'both')
-  else if (filter.value === 'offen') list = list.filter((c) => c.assignee === null)
+  let list = poolChores.value.slice()
 
   if (roomFilter.value !== 'alle') list = list.filter((c) => roomOf(c) === roomFilter.value)
 
@@ -101,15 +95,7 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
       </button>
     </div>
 
-    <div class="filter-row" data-hswipe-skip>
-      <button class="filter-chip" :class="{ 'filter-chip--active': filter === 'alle' }" @click="filter = 'alle'">Alle</button>
-      <button class="filter-chip" :class="{ 'filter-chip--active': filter === 'personA' }" @click="filter = 'personA'">{{ personAName }}</button>
-      <button class="filter-chip" :class="{ 'filter-chip--active': filter === 'personB' }" @click="filter = 'personB'">{{ personBName }}</button>
-      <button class="filter-chip" :class="{ 'filter-chip--active': filter === 'both' }" @click="filter = 'both'">Beide</button>
-      <button class="filter-chip filter-chip--offen" :class="{ 'filter-chip--offen-active': filter === 'offen' }" @click="filter = 'offen'">Offen</button>
-    </div>
-
-    <div v-if="chores.length === 0" class="empty empty--seed">
+    <div v-if="poolChores.length === 0" class="empty empty--seed">
       <p class="empty-text">Noch keine Aufgaben im Pool.</p>
       <button class="seed-btn" @click="emit('seed')">Standardaufgaben laden</button>
     </div>
@@ -132,7 +118,7 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
       />
     </TransitionGroup>
 
-    <button v-if="chores.length > 0" class="seed-link" @click="emit('seed')">
+    <button v-if="poolChores.length > 0" class="seed-link" @click="emit('seed')">
       Standardaufgaben ergänzen
     </button>
   </div>
@@ -179,23 +165,24 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
   padding-left: 40px;
 }
 
+/* Einziger Filter im Pool — darf etwas mehr Platz einnehmen. */
 .room-row {
   display: flex;
-  gap: 7px;
+  gap: 8px;
   overflow-x: auto;
   padding-bottom: 2px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .room-chip {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 700;
-  padding: 7px 12px;
+  padding: 9px 15px;
   border-radius: 100px;
   border: 1px solid var(--border-softer);
   background: var(--surface);
@@ -206,54 +193,13 @@ const { justAdded } = useJustAdded(() => filtered.value, c => c.id)
 }
 
 .room-chip__icon {
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1;
 }
 
 .room-chip--active {
   border-color: var(--accent);
   background: var(--accent-tint);
-  color: var(--text);
-}
-
-.filter-row {
-  display: flex;
-  gap: 7px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  margin-bottom: 14px;
-}
-
-.filter-chip {
-  flex-shrink: 0;
-  font-family: var(--font-body);
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 7px 13px;
-  border-radius: 10px;
-  border: 1px solid var(--border-softer);
-  background: var(--surface);
-  color: var(--text-meta);
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: var(--shadow-card);
-}
-
-.filter-chip--active {
-  border-color: var(--accent);
-  background: var(--accent-tint);
-  color: var(--text);
-}
-
-.filter-chip--offen {
-  border-style: dashed;
-  border-color: var(--danger-border);
-  color: var(--danger);
-}
-
-.filter-chip--offen-active {
-  border-color: var(--danger);
-  background: var(--danger-tint);
   color: var(--text);
 }
 

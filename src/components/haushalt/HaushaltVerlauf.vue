@@ -13,38 +13,59 @@ const emit = defineEmits<{
   delete: [entry: ChoreHistoryEntry]
 }>()
 
-const selectedMonth = ref(new Date().getMonth())
-const selectedYear = ref(new Date().getFullYear())
 const menuOpenId = ref<string | null>(null)
 
+function completedDate(entry: ChoreHistoryEntry): Date | null {
+  return (entry.completedAt as any)?.toDate?.() ?? null
+}
+
+// Nur Monate anbieten, in denen wirklich etwas getrackt wurde — keine leeren
+// Monate „auf Vorrat" wie beim früheren „letzte 4 Monate"-Fenster.
 const months = computed(() => {
-  const result: Array<{ label: string; month: number; year: number }> = []
-  const now = new Date()
-  for (let i = 0; i < 4; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    result.push({
-      label: new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(d),
-      month: d.getMonth(),
-      year: d.getFullYear()
+  const map = new Map<string, { key: string; label: string; month: number; year: number }>()
+  for (const h of props.history) {
+    const date = completedDate(h)
+    if (!date) continue
+    const month = date.getMonth()
+    const year = date.getFullYear()
+    const key = `${year}-${month}`
+    if (map.has(key)) continue
+    map.set(key, {
+      key,
+      label: new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(date),
+      month,
+      year,
     })
   }
-  return result
+  // Neuester Monat zuerst.
+  return [...map.values()].sort((a, b) => b.year - a.year || b.month - a.month)
 })
 
-const filteredByMonth = computed(() =>
-  props.history.filter((h) => {
-    const date = (h.completedAt as any)?.toDate?.() ?? null
-    if (!date) return false
-    return date.getMonth() === selectedMonth.value && date.getFullYear() === selectedYear.value
-  })
+// Bewusst nur die Auswahl merken, nicht den Monat selbst: Läuft der gewählte
+// Monat leer (letzter Eintrag gelöscht), fällt die Ansicht auf den neuesten
+// Monat mit Einträgen zurück, statt auf einem toten Chip stehen zu bleiben.
+const selectedKey = ref<string | null>(null)
+
+const activeMonth = computed(
+  () => months.value.find((m) => m.key === selectedKey.value) ?? months.value[0] ?? null
 )
+
+const filteredByMonth = computed(() => {
+  const active = activeMonth.value
+  if (!active) return []
+  return props.history.filter((h) => {
+    const date = completedDate(h)
+    if (!date) return false
+    return date.getMonth() === active.month && date.getFullYear() === active.year
+  })
+})
 
 interface DayGroup { label: string; items: ChoreHistoryEntry[] }
 
 const grouped = computed<DayGroup[]>(() => {
   const map = new Map<string, ChoreHistoryEntry[]>()
   for (const h of filteredByMonth.value) {
-    const date = (h.completedAt as any)?.toDate?.() ?? new Date()
+    const date = completedDate(h) ?? new Date()
     const key = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(date)
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(h)
@@ -66,19 +87,22 @@ function toggleMenu(id: string) {
 
 <template>
   <div class="verlauf">
-    <div class="month-row">
+    <div v-if="months.length > 0" class="month-row" data-hswipe-skip>
       <button
         v-for="m in months"
-        :key="`${m.year}-${m.month}`"
+        :key="m.key"
         class="month-chip"
-        :class="{ 'month-chip--active': m.month === selectedMonth && m.year === selectedYear }"
-        @click="selectedMonth = m.month; selectedYear = m.year"
+        :class="{ 'month-chip--active': m.key === activeMonth?.key }"
+        @click="selectedKey = m.key"
       >
         {{ m.label }}
       </button>
     </div>
 
-    <div v-if="grouped.length === 0" class="empty">
+    <div v-if="months.length === 0" class="empty">
+      Noch nichts getrackt. Sobald ihr Aufgaben abhakt, erscheinen sie hier.
+    </div>
+    <div v-else-if="grouped.length === 0" class="empty">
       Keine Einträge in diesem Monat.
     </div>
 

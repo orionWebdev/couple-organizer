@@ -252,6 +252,8 @@ defineExpose({ openCreateForm, showForm })
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Nur vertikal scrollen — horizontale Gesten gehören dem Tab-Swipe. */
+  touch-action: pan-y;
   width: 100%;
   max-width: 880px;
   margin: 0 auto;

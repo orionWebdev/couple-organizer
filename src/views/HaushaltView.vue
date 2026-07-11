@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useChores } from '@/composables/useChores'
+import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import TaskSheet from '@/components/haushalt/TaskSheet.vue'
@@ -57,38 +58,9 @@ const tabOptions = [
   { label: 'Verlauf', value: 'verlauf' },
 ]
 
-// ── Horizontaler Swipe zwischen den Tabs ─────────────────────
+// Reihenfolge muss die sichtbare Tab-Reihenfolge widerspiegeln.
 const order: Tab[] = ['zuweisungen', 'alle', 'uebersicht', 'verlauf']
-let swipeStartX = 0
-let swipeStartY = 0
-let swipeIgnore = false
-
-function goTab(dir: 1 | -1) {
-  const i = order.indexOf(tab.value)
-  const next = i + dir
-  if (next < 0 || next >= order.length) return
-  tab.value = order[next]
-}
-
-function onTouchStart(e: TouchEvent) {
-  const t = e.touches[0]
-  swipeStartX = t.clientX
-  swipeStartY = t.clientY
-  // Swipes, die in einem horizontal scrollbaren Bereich starten (Chip-/Monats-
-  // Reihen), nicht als Tab-Wechsel werten.
-  swipeIgnore = !!(e.target as HTMLElement | null)?.closest?.('[data-hswipe-skip]')
-}
-
-function onTouchEnd(e: TouchEvent) {
-  if (swipeIgnore) return
-  const t = e.changedTouches[0]
-  const dx = t.clientX - swipeStartX
-  const dy = t.clientY - swipeStartY
-  // Deutlich horizontaler Swipe mit ausreichender Distanz.
-  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.7) {
-    goTab(dx < 0 ? 1 : -1)
-  }
-}
+const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(order, tab)
 
 const showSheet = ref(false)
 const editingChore = ref<Chore | null>(null)
@@ -170,7 +142,9 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
       v-else
       class="tab-content"
       @touchstart.passive="onTouchStart"
+      @touchmove.passive="onTouchMove"
       @touchend.passive="onTouchEnd"
+      @touchcancel.passive="onTouchEnd"
     >
       <Transition :name="'tab-fade'" mode="out-in">
         <HaushaltZuweisungen

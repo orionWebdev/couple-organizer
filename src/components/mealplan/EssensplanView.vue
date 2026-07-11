@@ -174,6 +174,8 @@ async function handleCreateShoppingList() {
 .essensplan-scroll {
   flex: 1;
   overflow-y: auto;
+  /* Nur vertikal scrollen — horizontale Gesten gehören dem Tab-Swipe. */
+  touch-action: pan-y;
   padding: 0 var(--screen-pad);
 }
 

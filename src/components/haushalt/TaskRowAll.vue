@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { Chore, ChoreAssignee, Couple } from '@/types'
 import TaskAbhakControl from './TaskAbhakControl.vue'
-import { assigneeAvatarVisual, isDoneToday, metaLine, recurLabel } from '@/utils/chores'
+import { assigneeAvatarVisual, metaLine, recurLabel } from '@/utils/chores'
 import { pointsForChore } from '@/utils/points'
 
 const props = withDefaults(defineProps<{
@@ -21,7 +21,6 @@ const emit = defineEmits<{
   delete: []
 }>()
 
-const struck = computed(() => props.chore.type === 'once' && isDoneToday(props.chore))
 const points = computed(() => pointsForChore(props.chore))
 const avatar = computed(() => assigneeAvatarVisual(props.chore.assignee, props.couple))
 const personA = computed(() => props.couple?.memberIds[0] ?? null)
@@ -35,7 +34,7 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
         <div class="row-top">
           <div class="row-text">
             <div class="row-title-line">
-              <span class="row-name" :class="{ 'row-name--done': struck }">{{ chore.name }}</span>
+              <span class="row-name">{{ chore.name }}</span>
               <span class="points-badge">{{ points }} P</span>
               <span class="recur-badge">{{ recurLabel(chore) }}</span>
             </div>
@@ -141,11 +140,6 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   font-weight: 700;
   color: var(--text);
   transition: color var(--dur-base) var(--ease-standard);
-}
-
-.row-name--done {
-  color: var(--text-faint);
-  text-decoration: line-through;
 }
 
 .recur-badge {

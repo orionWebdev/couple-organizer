@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useExpenses } from '@/composables/useExpenses'
+import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import BalanceCard from '@/components/finance/BalanceCard.vue'
@@ -58,35 +59,9 @@ const tabOptions = [
   { label: 'Finanz-Coach', value: 'coach' },
 ]
 
-// ── Horizontaler Swipe zwischen den Tabs (gleiches Muster wie HaushaltView) ──
+// Reihenfolge muss die sichtbare Tab-Reihenfolge widerspiegeln.
 const tabOrder: Tab[] = ['uebersicht', 'coach']
-let swipeStartX = 0
-let swipeStartY = 0
-let swipeIgnore = false
-
-function goTab(dir: 1 | -1) {
-  const i = tabOrder.indexOf(tab.value)
-  const next = i + dir
-  if (next < 0 || next >= tabOrder.length) return
-  tab.value = tabOrder[next]
-}
-
-function onTouchStart(e: TouchEvent) {
-  const t = e.touches[0]
-  swipeStartX = t.clientX
-  swipeStartY = t.clientY
-  swipeIgnore = !!(e.target as HTMLElement | null)?.closest?.('[data-hswipe-skip]')
-}
-
-function onTouchEnd(e: TouchEvent) {
-  if (swipeIgnore) return
-  const t = e.changedTouches[0]
-  const dx = t.clientX - swipeStartX
-  const dy = t.clientY - swipeStartY
-  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.7) {
-    goTab(dx < 0 ? 1 : -1)
-  }
-}
+const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
 
 const showAdd = ref(false)
 const showSettle = ref(false)
@@ -203,7 +178,9 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       <div
         class="tab-area"
         @touchstart.passive="onTouchStart"
+        @touchmove.passive="onTouchMove"
         @touchend.passive="onTouchEnd"
+        @touchcancel.passive="onTouchEnd"
       >
         <div class="tab-content">
           <Transition name="tab-fade" mode="out-in">
@@ -361,6 +338,8 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* Nur vertikal scrollen — horizontale Gesten gehören dem Tab-Swipe. */
+  touch-action: pan-y;
 }
 
 /* Sanfter Übergang beim Tab-Wechsel (auch per Swipe) */

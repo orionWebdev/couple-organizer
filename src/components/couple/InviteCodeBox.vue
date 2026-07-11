@@ -8,7 +8,7 @@ const props = defineProps<{
 const canShare = typeof navigator !== 'undefined' && !!navigator.share
 
 function shareText() {
-  return `Tritt unserem Paarplaner bei! Lade die App und gib diesen Einladungscode ein: ${props.code}`
+  return `Sei bei Together dabei! Lade die App und gib diesen Einladungscode ein: ${props.code}`
 }
 
 async function copyCode() {
@@ -23,7 +23,7 @@ async function copyCode() {
 async function share() {
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'Paarplaner', text: shareText() })
+      await navigator.share({ title: 'Together', text: shareText() })
     } catch {
       // user cancelled – ignore
     }

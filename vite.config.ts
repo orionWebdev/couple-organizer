@@ -12,17 +12,25 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Paarplaner',
-        short_name: 'Paarplaner',
-        description: 'Gemeinsam organisiert',
+        id: '/',
+        name: 'Together',
+        short_name: 'Together',
+        description: 'Euer Zuhause, gemeinsam.',
+        lang: 'de',
+        dir: 'ltr',
         theme_color: '#fdfaf5',
         background_color: '#fdfaf5',
         display: 'standalone',
+        orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        /* "any" = gerundete Kachel mit transparenten Ecken (wird ungemaskt gezeigt),
+           "maskable" = randlos-quadratisch, das OS legt seine eigene Maske drüber. */
         icons: [
-          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'maskable-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ]
       },
       workbox: {

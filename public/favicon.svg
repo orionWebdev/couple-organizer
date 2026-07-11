@@ -1,4 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="20" fill="#120f0c"/>
-  <path d="M 67 28 A 28 28 0 1 0 67 72" fill="none" stroke="#86a596" stroke-width="11"/>
+  <!-- Together — Overlap-Marke. Farben = gerenderte sRGB-Werte von --haushalt/--finanzen;
+       die Überschneidung ist als eigene Fläche ausgezeichnet (Multiply beider Farben),
+       weil mix-blend-mode im Favicon-Kontext nicht überall greift. -->
+  <rect width="100" height="100" rx="22" fill="#ffffff"/>
+  <g transform="translate(50,50) scale(0.636) translate(-60,-45)">
+    <circle cx="46" cy="45" r="33" fill="#eb7955"/>
+    <circle cx="74" cy="45" r="33" fill="#3dafae"/>
+    <path d="M 60 15.117 A 33 33 0 0 1 60 74.883 A 33 33 0 0 1 60 15.117" fill="#38533a"/>
+  </g>
 </svg>

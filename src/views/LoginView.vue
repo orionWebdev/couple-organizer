@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useRouter } from 'vue-router'
+import TogetherLogo from '@/components/brand/TogetherLogo.vue'
 
 const { login, register } = useAuth()
 const router = useRouter()
@@ -35,8 +36,7 @@ async function submit() {
   <div class="login-page">
     <div class="login-inner">
       <div class="login-header">
-        <h1 class="app-name">Paarplaner</h1>
-        <p class="app-tagline">Gemeinsam organisiert</p>
+        <TogetherLogo variant="vertical" :height="72" tagline="Euer Zuhause, gemeinsam." />
       </div>
 
       <form class="login-form" @submit.prevent="submit">
@@ -103,21 +103,8 @@ async function submit() {
 }
 
 .login-header {
-  text-align: center;
-}
-
-.app-name {
-  font-family: var(--font-headline);
-  font-size: 38px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0 0 6px;
-}
-
-.app-tagline {
-  font-size: 14px;
-  color: var(--text-faint);
-  margin: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .login-form {

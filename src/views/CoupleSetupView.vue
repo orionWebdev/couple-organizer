@@ -4,6 +4,7 @@ import { useCouple } from '@/composables/useCouple'
 import { useAuth } from '@/composables/useAuth'
 import { useRouter } from 'vue-router'
 import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
+import TogetherLogo from '@/components/brand/TogetherLogo.vue'
 
 const { createCouple, joinCouple, loading, error } = useCouple()
 const { logout } = useAuth()
@@ -43,7 +44,7 @@ async function handleLogout() {
   <div class="setup-page">
     <div class="setup-inner">
       <div class="setup-header">
-        <h1 class="setup-title">Paarplaner</h1>
+        <TogetherLogo variant="vertical" :height="60" />
         <p class="setup-sub">Verbinde dich mit deiner Person</p>
       </div>
 
@@ -123,15 +124,10 @@ async function handleLogout() {
 }
 
 .setup-header {
-  text-align: center;
-}
-
-.setup-title {
-  font-family: var(--font-headline);
-  font-size: 34px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0 0 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
 }
 
 .setup-sub {

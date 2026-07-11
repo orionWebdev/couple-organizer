@@ -1,0 +1,100 @@
+/* ────────────────────────────────────────────────────────────────
+   Paarplaner — Design-Tokens
+   Quelle: src/app.css des Couple-Organizer-Repos.
+   Warmes, helles Theme. Farben teils in OKLCH (Bereichs-/Personenfarben),
+   teils als Hex (Flächen, Text, Ränder).
+   ──────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Flächen & Text ─────────────────────────────────────────── */
+  --bg:             #fdfaf5;  /* App-Hintergrund (warmes Off-White) */
+  --surface:        #ffffff;  /* Karten, Sheets */
+  --surface-deep:   #f7f1e6;  /* eingelassene Felder, Inputs */
+  --border:         #d8d0c2;
+  --border-soft:    #e9e0d0;
+  --border-softer:  #f0e8db;
+  --text:           #2c2823;  /* Haupttext */
+  --text-secondary: #8c857b;
+  --text-meta:      #9a9286;
+  --text-faint:     #b8b0a4;
+
+  /* ── Bereichsfarben — je Tab eine eigene Akzentfarbe ────────── */
+  --haushalt:        oklch(0.70 0.15 38);   /* Terrakotta  */
+  --haushalt-hover:  oklch(0.63 0.15 38);
+  --haushalt-tint:   oklch(0.955 0.03 40);
+  --einkauf:         oklch(0.78 0.13 80);   /* Amber       */
+  --einkauf-hover:   oklch(0.71 0.13 80);
+  --einkauf-tint:    oklch(0.955 0.05 80);
+  --einkauf-tint-strong: oklch(0.90 0.07 80);
+  --finanzen:        oklch(0.69 0.10 195);  /* Türkis      */
+  --finanzen-hover:  oklch(0.62 0.10 195);
+  --finanzen-tint:   oklch(0.95 0.03 195);
+  --dashboard:       oklch(0.60 0.14 280);  /* Indigo      */
+  --dashboard-hover: oklch(0.53 0.14 280);
+  --dashboard-tint:  oklch(0.95 0.03 280);
+
+  /* ── Weitere semantische Akzente ────────────────────────────── */
+  --food:            oklch(0.66 0.15 25);   /* Essensplan/Rezepte */
+  --food-tint:       oklch(0.955 0.035 25);
+  --bucket:          oklch(0.64 0.14 312);  /* Bucket-List (Violett) */
+  --bucket-hover:    oklch(0.57 0.14 312);
+  --bucket-tint:     oklch(0.97 0.035 312);
+  --success:         oklch(0.70 0.13 150);  /* Grün — positive Deltas */
+  --success-tint:    oklch(0.955 0.045 150);
+  --danger:         #b34a32;
+  --danger-border:  #ddaa95;
+  --danger-tint:    rgba(179, 74, 50, 0.12);
+
+  /* ── Default-Akzent (Login/Setup, außerhalb der Bereiche) ───── */
+  --accent:         var(--haushalt);
+  --accent-hover:   var(--haushalt-hover);
+  --accent-tint:    var(--haushalt-tint);
+  --on-accent:      #ffffff;
+
+  /* ── Personenfarben (die zwei Partner) ──────────────────────── */
+  --chris:          oklch(0.70 0.15 38);            /* = Terrakotta */
+  --chris-tint:     oklch(0.70 0.15 38 / 0.14);
+  --sarah:          oklch(0.69 0.10 195);           /* = Türkis     */
+  --sarah-tint:     oklch(0.69 0.10 195 / 0.15);
+
+  /* ── Radien ─────────────────────────────────────────────────── */
+  --radius-card:    16px;
+  --radius-card-lg: 20px;
+  --radius-tile:    13px;
+  --radius-sheet:   26px;
+  --radius-chip:    11px;
+
+  /* ── Abstände & Layout ──────────────────────────────────────── */
+  --screen-pad:     20px;
+  --safe-bottom:    env(safe-area-inset-bottom, 0px);
+  --safe-top:       env(safe-area-inset-top, 0px);
+
+  /* ── Schatten ───────────────────────────────────────────────── */
+  --shadow-card:    0 4px 12px rgba(60, 45, 30, 0.05);
+  --shadow-float:   0 10px 22px rgba(60, 45, 30, 0.14);
+  --shadow-accent:  0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
+
+  /* ── Schriften ──────────────────────────────────────────────── */
+  --font-body:      'Nunito', system-ui, sans-serif;   /* Fließtext, UI */
+  --font-headline:  'Fredoka', system-ui, sans-serif;  /* Beträge, Zahlen, Überschriften */
+
+  /* ── Motion-Tokens ──────────────────────────────────────────── */
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1); /* @kind other */ /* "Bounce" — Eintritt */
+  --ease-standard:  cubic-bezier(0.4, 0, 0.2, 1);      /* @kind other */ /* neutrale Farb-/Opacity-Wechsel */
+  --ease-in:        cubic-bezier(0.4, 0, 1, 1);        /* @kind other */ /* Austritt/Schließen, ohne Bounce */
+  --dur-fast:       200ms;  /* @kind other */
+  --dur-base:       280ms;  /* @kind other */
+  --dur-pop:        450ms;  /* @kind other */
+  --dur-sheet-open: 420ms;  /* @kind other */
+  --dur-sheet-close:260ms;  /* @kind other */
+  --dur-highlight:  650ms;  /* @kind other */
+}
+
+/* ── Bereichsfarben: pro Kontext den Akzent umschalten ──────────
+   In der App liegt eine dieser Klassen auf dem Tab-Root, sodass
+   --accent/-hover/-tint auf die Bereichsfarbe zeigen.            */
+.area-haushalt  { --accent: var(--haushalt);  --accent-hover: var(--haushalt-hover);  --accent-tint: var(--haushalt-tint);  }
+.area-einkauf   { --accent: var(--einkauf);   --accent-hover: var(--einkauf-hover);   --accent-tint: var(--einkauf-tint);   }
+.area-finanzen  { --accent: var(--finanzen);  --accent-hover: var(--finanzen-hover);  --accent-tint: var(--finanzen-tint);  }
+.area-dashboard { --accent: var(--dashboard); --accent-hover: var(--dashboard-hover); --accent-tint: var(--dashboard-tint); }
+.area-bucket    { --accent: var(--bucket);    --accent-hover: var(--bucket-hover);    --accent-tint: var(--bucket-tint);    }

@@ -7,14 +7,14 @@ import { useChores } from '@/composables/useChores'
 import { useShopping } from '@/composables/useShopping'
 import { useMealPlan } from '@/composables/useMealPlan'
 import { useExpenses } from '@/composables/useExpenses'
-import { useBucketList } from '@/composables/useBucketList'
 import { showToast } from '@/composables/useToast'
 import { isDoneToday, personName, personVisual } from '@/utils/chores'
 import { roomOf, roomLabel } from '@/utils/rooms'
 import { primaryTagMeta } from '@/utils/recipeTags'
 import { dateKey } from '@/utils/mealplan'
-import InitialChip from '@/components/ui/InitialChip.vue'
+import ProfileButton from '@/components/ui/ProfileButton.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import BelegungCard from '@/components/belegung/BelegungCard.vue'
 
 const router = useRouter()
 const { user } = useAuth()
@@ -25,25 +25,10 @@ const { chores, loading: choresLoading, completeChore } = useChores(coupleId)
 const { items, loading: shoppingLoading, toggleChecked } = useShopping(coupleId)
 const { week, loading: mealPlanLoading, setCookAssignee } = useMealPlan(coupleId)
 const { monthlySummaries, balanceInfo, loading: expensesLoading } = useExpenses(coupleId)
-const { items: bucketItems, loading: bucketLoading } = useBucketList(coupleId)
 
 const loading = computed(() =>
-  choresLoading.value || shoppingLoading.value || mealPlanLoading.value || expensesLoading.value || bucketLoading.value
+  choresLoading.value || shoppingLoading.value || mealPlanLoading.value || expensesLoading.value
 )
-
-// ── Bucket-List (Teaser-Karte, einziger Zugang zur Bucket-List) ───
-const nextBucketItem = computed(() => bucketItems.value.find((b) => !b.done) ?? null)
-const openBucketCount = computed(() => bucketItems.value.filter((b) => !b.done).length)
-const bucketSub = computed(() => {
-  const item = nextBucketItem.value
-  if (!item) return ''
-  const kind = item.category === 'ort' ? '📍 Reiseziel' : '🍽️ Restaurant'
-  return `${kind} · ${openBucketCount.value} offen`
-})
-
-function goToBucketList() {
-  router.push('/bucket-list')
-}
 
 const dateLabel = computed(() =>
   new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
@@ -160,15 +145,7 @@ async function saveBudget() {
         <h1 class="greeting">Moin, ihr zwei 👋</h1>
         <span class="date-label">{{ dateLabel }}</span>
       </div>
-      <div class="avatar-stack">
-        <InitialChip
-          v-for="uid in couple?.memberIds ?? []"
-          :key="uid"
-          :uid="uid"
-          :couple="couple"
-          :size="34"
-        />
-      </div>
+      <ProfileButton :size="34" />
     </div>
 
     <div v-if="loading" class="loading-msg">Laden…</div>
@@ -240,19 +217,8 @@ async function saveBudget() {
         <div v-else class="card-empty">Alles erledigt ✓</div>
       </div>
 
-      <!-- Bucket-List -->
-      <button type="button" class="bento-card bento-card--wide bucket-card" @click="goToBucketList">
-        <div class="card-head">
-          <span class="card-head-icon bucket-icon">🧳</span>
-          <span class="card-head-title">Bucket-List</span>
-        </div>
-        <template v-if="nextBucketItem">
-          <div class="bucket-name">{{ nextBucketItem.name }}</div>
-          <div class="bucket-sub">{{ bucketSub }}</div>
-        </template>
-        <div v-else class="card-empty">Noch nichts geplant</div>
-        <span class="card-link bucket-link">Zur Liste ›</span>
-      </button>
+      <!-- Belegung (geteilte Ressourcen) — Timeline + ＋, kein eigener Screen -->
+      <BelegungCard class="bento-card bento-card--wide belegung-card" />
 
       <!-- Finanzen -->
       <div class="bento-card bento-card--wide finance-card">
@@ -313,14 +279,6 @@ async function saveBudget() {
   font-weight: 600;
   color: var(--text-secondary);
   margin-top: 2px;
-}
-
-.avatar-stack {
-  display: flex;
-}
-
-.avatar-stack :deep(*:not(:first-child)) {
-  margin-left: -12px;
 }
 
 .loading-msg {
@@ -574,40 +532,9 @@ async function saveBudget() {
   cursor: pointer;
 }
 
-/* Bucket-List (einziger Zugang: Dashboard-Karte) */
-.bucket-card {
+/* Belegung — geteilte Ressourcen, lebt nur hier (kein eigener Screen) */
+.belegung-card {
   background: var(--bucket-tint);
-  display: block;
-  width: 100%;
-  margin: 0;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.bucket-icon {
-  background: var(--bucket);
-}
-
-.bucket-name {
-  font-family: var(--font-headline);
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.bucket-sub {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: var(--text-meta);
-  margin-top: 1px;
-}
-
-.bucket-link {
-  color: var(--bucket);
 }
 
 /* Finanzen */

@@ -218,6 +218,45 @@ export interface FinanceMonthComparison {
   categories: CategoryMonthlyComparison[]
 }
 
+// ── Belegung: geteilte Ressourcen (Auto, E-Bike, Hund …) ─────────
+export interface Resource {
+  id: string
+  coupleId: string
+  name: string
+  emoji: string
+  createdBy: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export type BookingRepeat = 'none' | 'weekly'
+
+// Eine Belegung wird direkt eingetragen — es gibt keinen Anfrage-/Bestätigen-
+// Flow (bewusst entfernt). Überschneidungen werden nur angezeigt, nie verhindert.
+export interface Booking {
+  id: string
+  coupleId: string
+  resourceId: string
+  owner: string // uid — für wen die Belegung ist (kann der Partner sein)
+  date: string // YYYY-MM-DD; bei repeat 'weekly' der erste Termin der Serie
+  weekday: number // 0 = Montag … 6 = Sonntag, aus `date` abgeleitet
+  allDay: boolean
+  start: string // HH:MM
+  end: string // HH:MM
+  repeat: BookingRepeat
+  note: string
+  createdBy: string // uid — wer sie eingetragen hat (für die Übersicht)
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// Eine Belegung an einem konkreten Tag. Wöchentliche Serien haben pro Woche
+// eine Occurrence, liegen in Firestore aber nur als ein Booking-Dokument.
+export interface BookingOccurrence {
+  booking: Booking
+  dateKey: string
+}
+
 export type BucketListCategory = 'ort' | 'restaurant'
 
 export interface BucketListItem {

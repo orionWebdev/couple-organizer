@@ -39,7 +39,11 @@ Domain composables (`useChores`, `useExpenses`, `useShopping`) share one shape �
 
 ### Routing & auth gating
 
-`src/router/index.ts` has a single `beforeEach` guard that awaits `authReady` and redirects based on two route meta flags: `requiresAuth` (must be signed in) and `requiresCouple` (must have a `coupleId`, otherwise sent to `/couple-setup`). The four main tabs (`/dashboard` — default landing, `/haushalt`, `/finanzen`, `/einkaufen`) are children of `TabsView.vue`, which renders the bottom tab bar and hosts cross-tab UI (`Toast`, the invite-partner `BottomSheet`).
+`src/router/index.ts` has a single `beforeEach` guard that awaits `authReady` and redirects based on two route meta flags: `requiresAuth` (must be signed in) and `requiresCouple` (must have a `coupleId`, otherwise sent to `/couple-setup`). The five main tabs (`/dashboard` — default landing, `/haushalt`, `/finanzen`, `/einkaufen`, `/belegung`) are children of `TabsView.vue`, which renders the bottom tab bar and hosts cross-tab UI (`Toast`, the invite-partner `BottomSheet`).
+
+`/settings` has **no** nav slot: it is reached only through `components/ui/ProfileButton.vue`, the couple's overlapping avatar stack sitting top-right in every tab's `.page-header`. On `/settings` the nav bubble stays on "Start".
+
+The Bucket-List is currently **disabled in the UI** (its view/panel and the Dashboard card were removed) — `useBucketList.ts`, the `BucketListItem` type, the `bucketListItems` rules and the existing documents are all still in place, so re-enabling it only means building a surface for it again.
 
 ### Bottom navigation (bubble + collar + droplets)
 
@@ -63,6 +67,21 @@ Domain composables (`useChores`, `useExpenses`, `useShopping`) share one shape �
 - An expense optionally belongs to a `FinanceEvent` (`kind: 'event' | 'monthly'`); expenses with no event are grouped by `monthKey` (`YYYY-MM`). Archived events (and their expenses) are excluded from active balance calculations (`isExpenseActive`).
 - Balances are derived, not stored: `buildBalanceSummary()` in `useExpenses.ts` computes per-user `totals` (paid) vs `owedTotals` (from each expense's `owedBy` split) to get net `balances`.
 - Settling up (`markAllPaid`) sets `isPaid: true` on a batch of expenses rather than deleting them.
+
+### Belegung domain specifics (geteilte Ressourcen)
+
+Source: `reference/design_handoff_belegung/` (README + React prototype), but the feature has moved a long way from it: **no screen of its own** (the week calendar, the request banner and the resource-settings overlay were all dropped) and — importantly — **no request/confirm flow**. A booking is simply entered; the handoff's `pending`/`declined` statuses and `requestedBy` no longer exist on `Booking`. Conflicts are shown, never blocked.
+
+What's left is one wide bento card on the Dashboard, `components/belegung/BelegungCard.vue`: a timeline grouped by day ("Heute" / "Morgen" / weekday · date), collapsed to the next 7 days and 5 rows, expandable ("Alle Termine anzeigen (+N)") to everything in the next 84 days — weekly series have no end date, so the list needs *some* horizon. The "+N" count is always computed over the full horizon, not the preview window, so the collapsed card never claims there's nothing more. "＋" opens `NewBookingSheet.vue`; tapping a row opens `BookingDetailSheet.vue`, which shows who entered it and when (`createdBy` + `createdAt`, via `bookedAtLabel()`) and can delete it.
+
+Resources (`name` + emoji from `RESOURCE_ICONS`, 7-column `IconGridPicker`) are managed in **`SettingsView.vue`** ("Belegung" section, mirroring the expense-categories section): tap a row to edit it, "✕" deletes it after a confirm that names how many bookings go with it (deleting a resource batch-deletes its bookings). With no resources, the Dashboard card's "＋" is disabled and the card shows a link into the settings instead.
+
+- Two Firestore collections, both `coupleId`-scoped like everything else: `resources` (`{ name, emoji }`) and `bookings`. `useBelegung.ts` loads **both collections whole** and derives the shown days client-side — a weekly series shows up in every later week, so a date-range query can't express it.
+- A `Booking` is stored per *series*, not per occurrence: `date` (`YYYY-MM-DD`) is the single day for `repeat: 'none'` and the **first** day for `repeat: 'weekly'`; `weekday` (0 = Monday) is derived from `date` at write time. `occursOn()` in `src/utils/belegung.ts` maps a booking onto a concrete day (weekly = same weekday and `date <= key`; the string compare works because both are `YYYY-MM-DD`). There is no series end date, and confirming/deleting always acts on the whole series.
+- `owner` (whom the booking is for — can be the partner) and `createdBy` (who entered it) are separate; the detail sheet shows both.
+- A conflict is two bookings of the *same resource on the same day* with overlapping times (`allDay` overlaps everything); `conflictsFor()` also runs on the not-yet-saved draft in `NewBookingSheet.vue`, which is what turns the CTA into "Trotzdem eintragen". Conflicts never block saving.
+- `src/utils/belegung.ts` still carries the week/ISO-KW helpers (`isoWeek`, `weekDates`, `weekOffsetBetween`, …) from the dropped calendar screen; only the day/conflict helpers are used by the card today.
+- `resources` + `bookings` need their composite indexes deployed (`firebase deploy --only firestore`) before the feature works against the live project — same caveat as `mealPlans`.
 
 ### Branding ("Together")
 

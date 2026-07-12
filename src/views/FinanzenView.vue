@@ -6,6 +6,7 @@ import { useExpenses } from '@/composables/useExpenses'
 import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
+import ProfileButton from '@/components/ui/ProfileButton.vue'
 import BalanceCard from '@/components/finance/BalanceCard.vue'
 import ExpenseRow from '@/components/finance/ExpenseRow.vue'
 import EventCard from '@/components/finance/EventCard.vue'
@@ -169,6 +170,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       <!-- Header -->
       <div class="page-header">
         <h1 class="page-title">Finanzen</h1>
+        <ProfileButton />
       </div>
 
       <div class="tab-bar-wrap">
@@ -291,6 +293,10 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
 }
 
 .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   padding: calc(var(--safe-top) + 20px) var(--screen-pad) 16px;
 }
 

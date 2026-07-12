@@ -45,11 +45,6 @@ const router = createRouter({
           component: () => import('@/views/EinkaufenView.vue')
         },
         {
-          path: 'bucket-list',
-          name: 'bucket-list',
-          component: () => import('@/views/BucketListView.vue')
-        },
-        {
           path: 'settings',
           name: 'settings',
           component: () => import('@/views/SettingsView.vue')

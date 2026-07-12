@@ -9,6 +9,7 @@ import { showToast } from '@/composables/useToast'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import FabButton from '@/components/ui/FabButton.vue'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
+import ProfileButton from '@/components/ui/ProfileButton.vue'
 import ShoppingListCard from '@/components/shopping/ShoppingListCard.vue'
 import ShoppingListDetail from '@/components/shopping/ShoppingListDetail.vue'
 import ShoppingModeView from '@/components/shopping/ShoppingModeView.vue'
@@ -181,6 +182,7 @@ function listItemsFor(listId: string) {
     <template v-else>
       <div class="page-header">
         <h1 class="page-title">Einkaufen</h1>
+        <ProfileButton />
       </div>
       <div class="tab-bar-wrap">
         <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
@@ -270,6 +272,10 @@ function listItemsFor(listId: string) {
 }
 
 .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   padding: calc(var(--safe-top) + 20px) var(--screen-pad) 20px;
 }
 

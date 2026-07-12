@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { ChoreAssignee, ChoreHistoryEntry, Couple } from '@/types'
+import { useCouple } from '@/composables/useCouple'
+import { showPaywall } from '@/composables/usePaywall'
+import { FREE_LIMITS } from '@/utils/premium'
 import TimelineEntry from './TimelineEntry.vue'
+
+const { isPremium } = useCouple()
 
 const props = defineProps<{
   history: readonly ChoreHistoryEntry[]
@@ -21,7 +26,7 @@ function completedDate(entry: ChoreHistoryEntry): Date | null {
 
 // Nur Monate anbieten, in denen wirklich etwas getrackt wurde — keine leeren
 // Monate „auf Vorrat" wie beim früheren „letzte 4 Monate"-Fenster.
-const months = computed(() => {
+const allMonths = computed(() => {
   const map = new Map<string, { key: string; label: string; month: number; year: number }>()
   for (const h of props.history) {
     const date = completedDate(h)
@@ -41,13 +46,24 @@ const months = computed(() => {
   return [...map.values()].sort((a, b) => b.year - a.year || b.month - a.month)
 })
 
+// Free-Tier sieht nur die jüngsten Monate. Bewusst NUR hier gefiltert und nicht
+// im choreHistory-Listener: HaushaltView rechnet aus derselben History den
+// Punktestand, und ein gekürztes Fenster würde die Wertung verfälschen.
+const visibleMonths = computed(() =>
+  isPremium.value ? allMonths.value : allMonths.value.slice(0, FREE_LIMITS.choreHistoryMonths)
+)
+
+const lockedMonths = computed(() =>
+  isPremium.value ? [] : allMonths.value.slice(FREE_LIMITS.choreHistoryMonths)
+)
+
 // Bewusst nur die Auswahl merken, nicht den Monat selbst: Läuft der gewählte
 // Monat leer (letzter Eintrag gelöscht), fällt die Ansicht auf den neuesten
 // Monat mit Einträgen zurück, statt auf einem toten Chip stehen zu bleiben.
 const selectedKey = ref<string | null>(null)
 
 const activeMonth = computed(
-  () => months.value.find((m) => m.key === selectedKey.value) ?? months.value[0] ?? null
+  () => visibleMonths.value.find((m) => m.key === selectedKey.value) ?? visibleMonths.value[0] ?? null
 )
 
 const filteredByMonth = computed(() => {
@@ -87,9 +103,9 @@ function toggleMenu(id: string) {
 
 <template>
   <div class="verlauf">
-    <div v-if="months.length > 0" class="month-row" data-hswipe-skip>
+    <div v-if="allMonths.length > 0" class="month-row" data-hswipe-skip>
       <button
-        v-for="m in months"
+        v-for="m in visibleMonths"
         :key="m.key"
         class="month-chip"
         :class="{ 'month-chip--active': m.key === activeMonth?.key }"
@@ -97,9 +113,17 @@ function toggleMenu(id: string) {
       >
         {{ m.label }}
       </button>
+      <button
+        v-for="m in lockedMonths"
+        :key="m.key"
+        class="month-chip month-chip--locked"
+        @click="showPaywall('choreHistory')"
+      >
+        🔒 {{ m.label }}
+      </button>
     </div>
 
-    <div v-if="months.length === 0" class="empty">
+    <div v-if="allMonths.length === 0" class="empty">
       Noch nichts getrackt. Sobald ihr Aufgaben abhakt, erscheinen sie hier.
     </div>
     <div v-else-if="grouped.length === 0" class="empty">
@@ -159,6 +183,12 @@ function toggleMenu(id: string) {
   background: var(--accent-tint);
   border-color: var(--accent);
   color: var(--text);
+}
+
+.month-chip--locked {
+  color: var(--text-faint);
+  border-style: dashed;
+  box-shadow: none;
 }
 
 .empty {

@@ -116,7 +116,7 @@ const metaLabel = computed(() => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--einkauf-tint);
+  background: var(--food-tint);
   display: flex;
   align-items: center;
   justify-content: center;

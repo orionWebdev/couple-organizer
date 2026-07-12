@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
-import type { RecipeSuggestion } from '@/services/gemini'
+import type { RecipeSuggestion, AiResult, Quota } from '@/services/ai'
 import type { AssignRecipeInput } from '@/composables/useMealPlan'
 import { weekdayLabel } from '@/utils/mealplan'
+import { showPaywall } from '@/composables/usePaywall'
 
 interface WeekDayLite {
   date: Date
@@ -15,7 +16,7 @@ const props = defineProps<{
   isOpen: boolean
   week: WeekDayLite[]
   initialDateKey: string | null
-  suggest: (query: string, count?: number) => Promise<RecipeSuggestion[]>
+  suggest: (query: string, count?: number) => Promise<AiResult<RecipeSuggestion[]>>
   assign: (dateKey: string, input: AssignRecipeInput) => Promise<boolean>
 }>()
 
@@ -26,6 +27,7 @@ const description = ref('')
 const loading = ref(false)
 const searched = ref(false)
 const suggestions = ref<RecipeSuggestion[]>([])
+const quota = ref<Quota | null>(null)
 
 watch(() => props.isOpen, (open) => {
   if (!open) return
@@ -34,17 +36,36 @@ watch(() => props.isOpen, (open) => {
   loading.value = false
   searched.value = false
   suggestions.value = []
+  quota.value = null
 })
 
 const selectedDay = computed(() => props.week.find((d) => d.dateKey === selectedDateKey.value) ?? null)
+
+// Nur anzeigen, wenn das Limit endlich klein ist — Premium (60/Monat) soll sich
+// nicht wie ein Kontingent anfühlen, das man im Blick behalten muss.
+const quotaLabel = computed(() => {
+  const q = quota.value
+  if (!q || q.limit === 0 || q.limit > 10) return null
+  return `Noch ${Math.max(0, q.limit - q.used)} von ${q.limit} KI-Vorschlägen diesen Monat`
+})
 
 async function handleSubmit() {
   if (!description.value.trim() || loading.value) return
   loading.value = true
   searched.value = true
   suggestions.value = []
-  suggestions.value = await props.suggest(description.value.trim())
+
+  const result = await props.suggest(description.value.trim())
   loading.value = false
+
+  if (result.kind === 'quota' || result.kind === 'premium') {
+    emit('close')
+    showPaywall('aiRecipes')
+    return
+  }
+
+  suggestions.value = result.data
+  quota.value = result.quota
 }
 
 async function handlePick(s: RecipeSuggestion) {
@@ -123,6 +144,8 @@ async function handlePick(s: RecipeSuggestion) {
           <div v-if="s.description" class="suggestion-desc">{{ s.description }}</div>
         </button>
       </div>
+
+      <p v-if="quotaLabel" class="quota-hint">{{ quotaLabel }}</p>
     </template>
   </BottomSheet>
 </template>
@@ -139,6 +162,13 @@ async function handlePick(s: RecipeSuggestion) {
 
 .query-label {
   margin-top: 14px;
+}
+
+.quota-hint {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-meta);
 }
 
 .day-picker {

@@ -4,8 +4,13 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useBelegung } from '@/composables/useBelegung'
+import { useExpenses } from '@/composables/useExpenses'
+import { useBucketList } from '@/composables/useBucketList'
 import { showToast } from '@/composables/useToast'
+import { showPaywall } from '@/composables/usePaywall'
+import { buildExpensesCsv, buildBookingsIcs, saveOrShare } from '@/services/export'
 import { resolveExpenseCategories, EXPENSE_CATEGORY_ICON_CHOICES, categoryColor } from '@/utils/expenseCategories'
+import { resolveIdeaCategories, ideaCategory, IDEA_ICON_CHOICES } from '@/utils/ideen'
 import { RESOURCE_ICONS } from '@/utils/belegung'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import IconGridPicker from '@/components/ui/IconGridPicker.vue'
@@ -14,7 +19,12 @@ import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
 
 const router = useRouter()
 const { user, logout, updatePrefs, deleteAccount } = useAuth()
-const { couple, updateBudget, regenerateInviteCode, updateMyIcon, addExpenseCategory, removeExpenseCategory, resetCoupleData } = useCouple()
+const {
+  couple, isPremium, updateBudget, regenerateInviteCode, updateMyIcon,
+  addExpenseCategory, removeExpenseCategory,
+  addIdeaCategory, updateIdeaCategory, removeIdeaCategory,
+  resetCoupleData,
+} = useCouple()
 
 const AVATAR_ICONS = ['🦊', '🦉', '🐻', '🐨', '🐢', '🦄', '🐸', '🐙', '🌵', '🍩', '🌟', '🔥', '🎧', '🎨', '⚡', '🌈']
 
@@ -104,13 +114,60 @@ async function handleRemoveCategory(id: string) {
 // Die geteilten Dinge (Auto, E-Bike, Hund …) werden nur hier verwaltet — die
 // Belegung selbst lebt als Timeline-Karte auf dem Dashboard.
 const coupleId = computed(() => user.value?.coupleId ?? null)
-const { resources, countBookings, addResource, updateResource, deleteResource } = useBelegung(coupleId)
+const { resources, bookings, canAddResource, countBookings, addResource, updateResource, deleteResource } = useBelegung(coupleId)
+
+// ── Export (Premium) ──────────────────────────────────────────
+const { expenses } = useExpenses(coupleId)
+const exporting = ref(false)
+
+async function runExport(filename: string, content: string, mimeType: string, empty: boolean) {
+  if (!isPremium.value) {
+    showPaywall('export')
+    return
+  }
+  if (empty) {
+    showToast('Nichts zu exportieren')
+    return
+  }
+
+  exporting.value = true
+  try {
+    await saveOrShare(filename, content, mimeType)
+  } catch (err) {
+    console.error('Export fehlgeschlagen:', err)
+    showToast('Export fehlgeschlagen')
+  } finally {
+    exporting.value = false
+  }
+}
+
+function handleExportExpenses() {
+  return runExport(
+    'together-ausgaben.csv',
+    buildExpensesCsv(expenses.value, couple.value),
+    'text/csv',
+    expenses.value.length === 0
+  )
+}
+
+function handleExportBookings() {
+  return runExport(
+    'together-belegungen.ics',
+    buildBookingsIcs(bookings.value, resources.value, couple.value),
+    'text/calendar',
+    bookings.value.length === 0
+  )
+}
 
 interface ResourceForm { id: string | null; name: string; emoji: string }
 const resourceForm = ref<ResourceForm | null>(null)
 const pendingResourceDelete = ref<ResourceForm | null>(null)
 
 function startNewResource() {
+  if (!canAddResource.value) {
+    showPaywall('belegungResources')
+    return
+  }
   resourceForm.value = { id: null, name: '', emoji: RESOURCE_ICONS[0] }
 }
 
@@ -142,6 +199,54 @@ async function confirmResourceDelete() {
   showToast(ok ? 'Ressource gelöscht' : 'Fehler beim Löschen')
   pendingResourceDelete.value = null
   if (ok) resourceForm.value = null
+}
+
+// ── Planung: Ideen-Kategorien ─────────────────────────────────
+// Gleiches Formular-Muster wie die Ressourcen: Zeile antippen = bearbeiten,
+// ✕ = löschen. Löschen nimmt die Ideen NICHT mit — sie behalten ihre Kategorie
+// und erscheinen im Ideen-Widget nur noch unter "Alle".
+const { items: ideas } = useBucketList(coupleId)
+const ideaCategories = computed(() => resolveIdeaCategories(couple.value))
+
+function countIdeas(id: string): number {
+  return ideas.value.filter((i) => ideaCategory(i.category, ideaCategories.value) === id).length
+}
+
+interface IdeaCategoryForm { id: string | null; label: string; emoji: string }
+const ideaForm = ref<IdeaCategoryForm | null>(null)
+const pendingIdeaDelete = ref<IdeaCategoryForm | null>(null)
+
+function startNewIdeaCategory() {
+  ideaForm.value = { id: null, label: '', emoji: IDEA_ICON_CHOICES[0] }
+}
+
+function startEditIdeaCategory(cat: { id: string; label: string; emoji: string }) {
+  ideaForm.value = { id: cat.id, label: cat.label, emoji: cat.emoji }
+}
+
+async function saveIdeaCategory() {
+  const form = ideaForm.value
+  if (!form?.label.trim()) return
+
+  const ok = form.id
+    ? await updateIdeaCategory(form.id, form.label, form.emoji)
+    : await addIdeaCategory(form.label, form.emoji)
+
+  if (ok) {
+    showToast(form.id ? 'Kategorie gespeichert' : `${form.emoji} ${form.label.trim()} angelegt`)
+    ideaForm.value = null
+  } else {
+    showToast('Fehler beim Speichern')
+  }
+}
+
+async function confirmIdeaDelete() {
+  const form = pendingIdeaDelete.value
+  if (!form?.id) return
+  const ok = await removeIdeaCategory(form.id)
+  showToast(ok ? 'Kategorie gelöscht' : 'Das geht nicht — mindestens eine Kategorie muss bleiben')
+  pendingIdeaDelete.value = null
+  if (ok) ideaForm.value = null
 }
 
 // ── Konto / Gefahrenzone ──────────────────────────────────────
@@ -193,6 +298,30 @@ async function confirmDanger() {
           <span class="profile-hint">Avatar ändern</span>
         </div>
         <span class="chevron">›</span>
+      </div>
+
+      <!-- Together Plus -->
+      <div class="section-label section-gap">Abo</div>
+      <div class="card plus-card" @click="router.push('/premium')">
+        <span class="plus-badge" :class="{ 'plus-badge--active': isPremium }">{{ isPremium ? '💛' : '✨' }}</span>
+        <div class="profile-text">
+          <span class="profile-name">{{ isPremium ? 'Together Plus aktiv' : 'Together Plus' }}</span>
+          <span class="profile-hint">{{ isPremium ? 'Abo verwalten' : 'KI, Auswertungen & mehr freischalten' }}</span>
+        </div>
+        <span class="chevron">›</span>
+      </div>
+
+      <!-- Export (Premium) -->
+      <div class="section-label section-gap">Export</div>
+      <div class="card">
+        <button class="row-action" type="button" :disabled="exporting" @click="handleExportExpenses">
+          <span>Ausgaben als CSV</span>
+          <span v-if="!isPremium" class="lock">🔒</span>
+        </button>
+        <button class="row-action" type="button" :disabled="exporting" @click="handleExportBookings">
+          <span>Belegungen als Kalender (.ics)</span>
+          <span v-if="!isPremium" class="lock">🔒</span>
+        </button>
       </div>
 
       <!-- Einladung -->
@@ -308,6 +437,52 @@ async function confirmDanger() {
         </template>
       </div>
 
+      <!-- Planung: Ideen-Kategorien -->
+      <div class="section-label section-gap">Ideen</div>
+      <div class="card">
+        <div class="field-label">Kategorien</div>
+        <div class="category-list">
+          <div v-for="c in ideaCategories" :key="c.id" class="category-row">
+            <span class="resource-icon">{{ c.emoji }}</span>
+            <button class="resource-btn" type="button" @click="startEditIdeaCategory(c)">
+              <span class="category-name">{{ c.label }}</span>
+              <span class="resource-count">
+                {{ countIdeas(c.id) }} {{ countIdeas(c.id) === 1 ? 'Idee' : 'Ideen' }}
+              </span>
+            </button>
+            <button
+              class="remove-btn"
+              type="button"
+              aria-label="Entfernen"
+              @click="pendingIdeaDelete = { id: c.id, label: c.label, emoji: c.emoji }"
+            >✕</button>
+          </div>
+        </div>
+
+        <button v-if="!ideaForm" class="text-btn" type="button" @click="startNewIdeaCategory">
+          + Kategorie hinzufügen
+        </button>
+        <template v-else>
+          <input
+            v-model="ideaForm.label"
+            class="app-field cat-name-field"
+            type="text"
+            placeholder="z. B. Konzerte, Wandern, Museen …"
+            @keyup.enter="saveIdeaCategory"
+          />
+          <IconGridPicker v-model="ideaForm.emoji" :icons="IDEA_ICON_CHOICES" />
+          <div class="cat-form-actions">
+            <button class="text-btn" type="button" @click="ideaForm = null">Abbrechen</button>
+            <button
+              class="btn-primary cat-save-btn"
+              type="button"
+              :disabled="!ideaForm.label.trim()"
+              @click="saveIdeaCategory"
+            >{{ ideaForm.id ? 'Speichern' : 'Kategorie anlegen' }}</button>
+          </div>
+        </template>
+      </div>
+
       <!-- Sprache -->
       <div class="section-label section-gap">Sprache</div>
       <div class="card">
@@ -360,6 +535,29 @@ async function confirmDanger() {
           Abbrechen
         </button>
         <button class="btn-primary confirm-yes" type="button" @click="confirmResourceDelete">
+          Ja, löschen
+        </button>
+      </div>
+    </BottomSheet>
+
+    <BottomSheet
+      :isOpen="!!pendingIdeaDelete"
+      title="Kategorie löschen?"
+      @close="pendingIdeaDelete = null"
+    >
+      <p class="confirm-text">
+        „{{ pendingIdeaDelete?.label }}“ löschen?
+        <template v-if="pendingIdeaDelete?.id && countIdeas(pendingIdeaDelete.id)">
+          Die {{ countIdeas(pendingIdeaDelete.id) }}
+          {{ countIdeas(pendingIdeaDelete.id) === 1 ? 'zugehörige Idee bleibt' : 'zugehörigen Ideen bleiben' }}
+          erhalten, {{ countIdeas(pendingIdeaDelete.id) === 1 ? 'wird' : 'werden' }} aber ohne Kategorie angezeigt.
+        </template>
+      </p>
+      <div class="confirm-actions">
+        <button class="text-btn confirm-cancel" type="button" @click="pendingIdeaDelete = null">
+          Abbrechen
+        </button>
+        <button class="btn-primary confirm-yes" type="button" @click="confirmIdeaDelete">
           Ja, löschen
         </button>
       </div>
@@ -442,6 +640,57 @@ async function confirmDanger() {
   align-items: center;
   gap: 12px;
   cursor: pointer;
+}
+
+.plus-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.plus-badge {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--surface-deep);
+}
+
+.plus-badge--active {
+  background: var(--accent-tint);
+}
+
+.row-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row-action + .row-action {
+  border-top: 1px solid var(--border-softer);
+}
+
+.row-action:disabled {
+  opacity: 0.55;
+}
+
+.lock {
+  font-size: 13px;
 }
 
 .avatar-badge {

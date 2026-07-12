@@ -15,6 +15,19 @@ service cloud.firestore {
         && request.auth.uid in get(/databases/$(database)/documents/couples/$(coupleId)).data.memberIds;
     }
 
+    // Abo-Felder. Geschrieben werden sie ausschließlich vom Backend über das
+    // Admin SDK (RevenueCat-Webhook + syncEntitlement-Callable), das die Rules
+    // umgeht. Für jeden Client sind sie unveränderlich — sonst wäre die Paywall
+    // ein Vorschlag und kein Gate.
+    function entitlementFields() {
+      return ['plan', 'premiumUntil', 'premiumStore', 'premiumUpdatedAt', 'rcAppUserId'];
+    }
+
+    function entitlementUntouched() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(entitlementFields());
+    }
+
     match /users/{userId} {
       allow create, read, update, delete: if isSelf(userId);
     }
@@ -29,9 +42,12 @@ service cloud.firestore {
         && request.resource.data.memberIds.size() == 1
         && request.resource.data.memberIds[0] == request.auth.uid
         && request.resource.data.memberNames[request.auth.uid] is string
-        && request.resource.data.inviteCode is string;
+        && request.resource.data.inviteCode is string
+        // Kein Paar startet als Premium.
+        && !request.resource.data.keys().hasAny(entitlementFields());
 
       allow update: if signedIn()
+        && entitlementUntouched()
         && (
           // Normaler Fall: der Aufrufer bleibt Mitglied (Budget/Kategorien/
           // Avatar/Einladungscode/Beitritt des Partners ändern, etc.).
@@ -47,6 +63,19 @@ service cloud.firestore {
             && request.resource.data.memberIds.size() == resource.data.memberIds.size() - 1
             && resource.data.memberIds.hasAll(request.resource.data.memberIds))
         );
+    }
+
+    // KI-Verbrauchszähler pro Paar. Nur das Backend schreibt (Transaktion in
+    // functions/src/lib/rateLimit.ts) — sonst könnte der Client seine Quote
+    // einfach zurücksetzen.
+    match /usage/{coupleId} {
+      allow read: if isCoupleMember(coupleId);
+      allow write: if false;
+    }
+
+    // Idempotenz-Log des RevenueCat-Webhooks. Für Clients komplett dicht.
+    match /webhookEvents/{eventId} {
+      allow read, write: if false;
     }
 
     match /chores/{choreId} {
@@ -129,6 +158,22 @@ service cloud.firestore {
     }
 
     match /bucketListItems/{itemId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
+    match /trips/{tripId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
+    match /notes/{noteId} {
       allow read: if isCoupleMember(resource.data.coupleId);
       allow create: if signedIn()
         && request.resource.data.createdBy == request.auth.uid

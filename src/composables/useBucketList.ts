@@ -5,12 +5,13 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { BucketListCategory, BucketListItem } from '@/types'
+import type { IdeaCategory, BucketListItem } from '@/types'
 
 export interface AddBucketItemInput {
-  category: BucketListCategory
+  category: IdeaCategory
   name: string
   note?: string
+  suggestedBy?: string // uid — Default: wer gerade eingeloggt ist
 }
 
 export function useBucketList(coupleId: Ref<string | null>) {
@@ -66,6 +67,7 @@ export function useBucketList(coupleId: Ref<string | null>) {
         name: cleanName,
         note: input.note?.trim() ?? '',
         done: false,
+        suggestedBy: input.suggestedBy || user.value.uid,
         createdBy: user.value.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()

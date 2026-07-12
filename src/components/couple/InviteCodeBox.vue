@@ -1,11 +1,21 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { Share } from '@capacitor/share'
+import { Clipboard } from '@capacitor/clipboard'
 import { showToast } from '@/composables/useToast'
 
+// Über die Capacitor-Plugins statt navigator.share/.clipboard: im Android-WebView
+// gibt es navigator.share gar nicht und navigator.clipboard schlägt sporadisch
+// fehl. Beide Plugins haben einen Web-Fallback, es bleibt also EIN Codepfad.
 const props = defineProps<{
   code: string
 }>()
 
-const canShare = typeof navigator !== 'undefined' && !!navigator.share
+const canShare = ref(false)
+
+onMounted(async () => {
+  canShare.value = (await Share.canShare()).value
+})
 
 function shareText() {
   return `Sei bei Together dabei! Lade die App und gib diesen Einladungscode ein: ${props.code}`
@@ -13,7 +23,7 @@ function shareText() {
 
 async function copyCode() {
   try {
-    await navigator.clipboard.writeText(props.code)
+    await Clipboard.write({ string: props.code })
     showToast('Code kopiert')
   } catch {
     showToast('Kopieren nicht möglich')
@@ -21,14 +31,14 @@ async function copyCode() {
 }
 
 async function share() {
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: 'Together', text: shareText() })
-    } catch {
-      // user cancelled – ignore
-    }
-  } else {
+  if (!canShare.value) {
     await copyCode()
+    return
+  }
+  try {
+    await Share.share({ title: 'Together', text: shareText(), dialogTitle: 'Einladungscode teilen' })
+  } catch {
+    // Abbruch durch den Nutzer — kein Fehler.
   }
 }
 </script>

@@ -113,6 +113,45 @@ export function bookingsOnDay(bookings: readonly Booking[], key: string): Bookin
     })
 }
 
+// Eine Woche (7 Tage) auf konkrete Termine auflösen: pro Tag die Belegungen,
+// die an ihm stattfinden. Das Fenster ist immer begrenzt — eine Serie bleibt
+// EIN Datensatz und wird nie über einen offenen Zeithorizont ausgerollt.
+export function expandWeek(bookings: readonly Booking[], week: Date[]): Booking[][] {
+  return week.map((date) => bookingsOnDay(bookings, dateKey(date)))
+}
+
+// Nächster konkreter Termin einer Belegung ab (inklusive) `from`.
+// Wöchentlich: der nächste passende Wochentag, frühestens am Serienstart.
+// Einmalig: das eigene Datum, sofern es nicht vorbei ist.
+export function nextOccurrence(booking: Booking, from: Date): Date | null {
+  const start = fromDateKey(dateKey(from))
+  const own = fromDateKey(booking.date)
+
+  if (booking.repeat !== 'weekly') return own >= start ? own : null
+
+  const search = own > start ? own : start
+  for (let i = 0; i < 7; i++) {
+    const day = addDays(search, i)
+    if (weekdayIndex(day) === booking.weekday) return day
+  }
+  return null // unerreichbar, solange weekday in 0..6 liegt
+}
+
+// Menschliche Beschreibung des nächsten Termins ("heute · 18:00–22:00") — damit
+// in der Serien-Liste nie verloren geht, wann eine Regel das nächste Mal fällt.
+export function nextLabel(booking: Booking, from: Date): string {
+  const next = nextOccurrence(booking, from)
+  if (!next) return 'vorbei'
+
+  const days = Math.round((next.getTime() - fromDateKey(dateKey(from)).getTime()) / 86400000)
+  const when =
+    days === 0 ? 'heute'
+    : days === 1 ? 'morgen'
+    : `${WEEKDAYS_LONG[weekdayIndex(next)]} ${dayMonth(next)}`
+
+  return `${when} · ${rangeLabel(booking)}`
+}
+
 // Konflikt = zwei Belegungen derselben Ressource am selben Tag mit
 // Zeitüberlappung. `candidate` darf ein noch nicht gespeicherter Entwurf sein
 // (dann ohne id).

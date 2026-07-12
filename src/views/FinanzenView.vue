@@ -5,6 +5,7 @@ import { useCouple } from '@/composables/useCouple'
 import { useExpenses } from '@/composables/useExpenses'
 import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
+import { useBackDismiss } from '@/composables/useBackButton'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import BalanceCard from '@/components/finance/BalanceCard.vue'
@@ -34,6 +35,7 @@ const {
   markAllPaid,
   createEvent,
   setEventArchived,
+  updateEventBudget,
 } = useExpenses(coupleId)
 
 const finView = ref<'dashboard' | 'event'>('dashboard')
@@ -52,6 +54,10 @@ function backToDashboard() {
   finView.value = 'dashboard'
   currentEventId.value = null
 }
+
+// Die Event-Detailansicht ist eine In-Page-Unteransicht ohne eigene Route —
+// ohne das hier würde Android-Zurück aus ihr heraus die App verlassen.
+useBackDismiss(() => finView.value === 'event', backToDashboard)
 
 type Tab = 'uebersicht' | 'coach'
 const tab = ref<Tab>('uebersicht')
@@ -151,9 +157,48 @@ async function onSettleEvent() {
   backToDashboard()
 }
 
+// ── Optionales Budget eines Events ────────────────────────────
+// Gleiche Eingabe-Semantik wie beim Monatsbudget: leeres Feld entfernt es,
+// eine unlesbare Eingabe wird abgelehnt statt still zu verwerfen.
+const showEventBudget = ref(false)
+const eventBudgetInput = ref('')
+
+function openEventBudgetSheet() {
+  const budget = currentEventSummary.value?.event.budget ?? null
+  eventBudgetInput.value = budget ? (budget / 100).toFixed(2) : ''
+  showEventBudget.value = true
+}
+
+async function saveEventBudget() {
+  const event = currentEventSummary.value?.event
+  if (!event) return
+
+  const raw = eventBudgetInput.value.trim().replace(',', '.')
+
+  if (raw === '') {
+    const ok = await updateEventBudget(event.id, null)
+    showToast(ok ? 'Budget entfernt' : 'Fehler beim Speichern')
+    if (ok) showEventBudget.value = false
+    return
+  }
+
+  const euros = parseFloat(raw)
+  if (isNaN(euros) || euros <= 0) {
+    showToast('Bitte einen Betrag eingeben')
+    return
+  }
+
+  const ok = await updateEventBudget(event.id, Math.round(euros * 100))
+  showToast(ok ? 'Budget gespeichert' : 'Fehler beim Speichern')
+  if (ok) showEventBudget.value = false
+}
+
+// Beglichene Ausgaben bleiben in der Liste stehen. "Begleichen" heißt, dass die
+// beiden sich untereinander verrechnet haben — nicht, dass das Geld nie
+// ausgegeben wurde. Die Zeilen werden nur als ausgeglichen markiert.
 const sortedExpenses = computed(() =>
   [...expenses.value]
-    .filter(e => !e.isPaid && !e.eventId)
+    .filter(e => !e.eventId)
     .sort((a, b) => {
       const ta = (a.createdAt as any)?.toMillis?.() ?? 0
       const tb = (b.createdAt as any)?.toMillis?.() ?? 0
@@ -259,7 +304,25 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       @deleteExpense="onDeleteExpense"
       @editExpense="openEditExpense"
       @settle="onSettleEvent"
+      @setBudget="openEventBudgetSheet"
     />
+
+    <BottomSheet
+      :isOpen="showEventBudget"
+      title="Budget für dieses Event"
+      @close="showEventBudget = false"
+    >
+      <input
+        v-model="eventBudgetInput"
+        class="app-field"
+        type="text"
+        inputmode="decimal"
+        placeholder="z. B. 250"
+        @keyup.enter="saveEventBudget"
+      />
+      <p class="sheet-hint">Optional. Leer lassen entfernt das Budget.</p>
+      <button class="btn-primary" @click="saveEventBudget">Speichern</button>
+    </BottomSheet>
 
     <!-- Add expense / new event sheet -->
     <AddExpenseSheet
@@ -477,5 +540,12 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
   font-weight: 700;
   cursor: pointer;
   margin-top: 10px;
+}
+
+.sheet-hint {
+  margin: 8px 0 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-meta);
 }
 </style>

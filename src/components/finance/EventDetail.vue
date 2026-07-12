@@ -15,13 +15,35 @@ const emit = defineEmits<{
   deleteExpense: [id: string]
   editExpense: [expense: Expense]
   settle: []
+  setBudget: []
 }>()
 
 const unpaidExpenses = computed(() => props.summary.expenses.filter((e) => !e.isPaid))
 
-const totalFormatted = computed(() => {
-  const euros = props.summary.total / 100
-  return euros.toFixed(2).replace('.', ',') + ' €'
+function euro(cents: number): string {
+  return (cents / 100).toFixed(2).replace('.', ',') + ' €'
+}
+
+const totalFormatted = computed(() => euro(props.summary.total))
+
+// ── Optionales Event-Budget ───────────────────────────────────
+// Bezugsgröße ist `spent` (alle Ausgaben des Events), nicht `total` — sonst
+// fiele der Balken nach dem Ausgleichen auf 0 zurück, obwohl das Geld weg ist.
+const budget = computed(() => props.summary.event.budget ?? null)
+const hasBudget = computed(() => budget.value != null && budget.value > 0)
+
+const budgetPct = computed(() =>
+  hasBudget.value ? Math.min(100, Math.round((props.summary.spent / budget.value!) * 100)) : 0
+)
+
+const overBudget = computed(() => hasBudget.value && props.summary.spent > budget.value!)
+
+const budgetLine = computed(() => {
+  if (!hasBudget.value) return ''
+  const rest = budget.value! - props.summary.spent
+  return overBudget.value
+    ? `${euro(-rest)} über Budget`
+    : `noch ${euro(rest)}`
 })
 
 const personA = computed(() => props.couple?.memberIds[0] ?? null)
@@ -59,6 +81,24 @@ const settleAmountFormatted = computed(() => {
     <div class="balance-card">
       <div class="card-label section-label">{{ summary.event.title.toUpperCase() }}</div>
       <div class="card-amount mono">{{ totalFormatted }}</div>
+
+      <template v-if="hasBudget">
+        <div class="budget-bar">
+          <div
+            class="budget-fill"
+            :class="{ 'budget-fill--over': overBudget }"
+            :style="{ width: budgetPct + '%' }"
+          />
+        </div>
+        <button class="budget-line" type="button" @click="emit('setBudget')">
+          <span class="mono">{{ euro(summary.spent) }} / {{ euro(budget!) }}</span>
+          <span :class="overBudget ? 'budget-over' : 'budget-rest'">· {{ budgetLine }}</span>
+        </button>
+      </template>
+
+      <button v-else class="budget-chip" type="button" @click="emit('setBudget')">
+        ＋ Budget für dieses Event
+      </button>
     </div>
 
     <div v-if="summary.expenses.length === 0" class="empty-state">
@@ -125,6 +165,62 @@ const settleAmountFormatted = computed(() => {
   border-radius: 22px;
   padding: 18px;
   margin: 12px var(--screen-pad) 24px;
+}
+
+/* Optionales Event-Budget — bewusst zurückhaltend: Der Betrag oben bleibt die
+   Hauptaussage, das Budget ist eine Zusatzinformation. */
+.budget-bar {
+  height: 8px;
+  margin-top: 12px;
+  border-radius: 5px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.budget-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: var(--accent);
+  transition: width 0.6s var(--ease-standard);
+}
+
+.budget-fill--over {
+  background: var(--danger);
+}
+
+.budget-line {
+  display: flex;
+  gap: 5px;
+  margin-top: 7px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.budget-rest {
+  color: var(--text-meta);
+}
+
+.budget-over {
+  color: var(--danger);
+}
+
+.budget-chip {
+  margin-top: 12px;
+  padding: 5px 11px;
+  border: 1px dashed var(--accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .card-label {

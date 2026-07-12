@@ -11,13 +11,34 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Together" />
     <title>Together</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+    <link rel="preload" href="/fonts/fredoka-var.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/nunito-var.woff2" as="font" type="font/woff2" crossorigin />
 
     <!-- Splash: sichtbar ab dem ersten Paint, bis main.ts nach authReady gemountet hat.
          Werte hier literal statt via Tokens — app.css kommt erst mit dem JS-Bundle. -->
     <style>
+      /* Selbst gehostet statt vom Google-CDN: in der APK gäbe es die Schrift
+         sonst erst nach der ersten Netzantwort und offline nie — der Splash
+         selbst wäre das erste Opfer. Muss hier im Head stehen und nicht in
+         app.css, weil app.css erst mit dem JS-Bundle kommt.
+         Beide sind Variable Fonts: eine Datei deckt alle Gewichte ab. */
+      @font-face {
+        font-family: 'Fredoka';
+        font-style: normal;
+        font-weight: 300 700;
+        font-display: swap;
+        src: url('/fonts/fredoka-var.woff2') format('woff2');
+      }
+
+      @font-face {
+        font-family: 'Nunito';
+        font-style: normal;
+        font-weight: 200 1000;
+        font-display: swap;
+        src: url('/fonts/nunito-var.woff2') format('woff2');
+      }
+
       #splash {
         position: fixed;
         inset: 0;

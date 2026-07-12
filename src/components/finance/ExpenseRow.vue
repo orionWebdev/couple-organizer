@@ -43,7 +43,7 @@ function toggleExpand() {
 <template>
   <div
     class="row list-row"
-    :class="{ 'row--expanded': expanded }"
+    :class="{ 'row--expanded': expanded, 'row--settled': expense.isPaid }"
     @click="toggleExpand"
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"
@@ -52,7 +52,12 @@ function toggleExpand() {
       <span class="category-chip" :style="{ background: tagColor }" :title="categoryLabel">{{ categoryIcon }}</span>
       <div class="row-text">
         <span class="row-title">{{ expense.title }}</span>
-        <span class="row-sub">{{ payerName }}</span>
+        <span class="row-sub">
+          {{ payerName }}
+          <!-- "Ausgeglichen" heißt: zwischen den beiden verrechnet. Die Ausgabe
+               bleibt bestehen und zählt weiter in die Monatssumme. -->
+          <span v-if="expense.isPaid" class="settled-badge">✓ ausgeglichen</span>
+        </span>
       </div>
       <div class="row-right">
         <span class="row-amount mono">{{ amountFormatted }}</span>
@@ -91,6 +96,27 @@ function toggleExpand() {
 .row--expanded {
   border-color: var(--accent);
   box-shadow: var(--shadow-float);
+}
+
+/* Ausgeglichen: die Ausgabe zählt weiter, tritt aber optisch zurück. */
+.row--settled {
+  background: var(--surface-deep);
+  box-shadow: none;
+}
+
+.row--settled .row-amount {
+  color: var(--text-secondary);
+}
+
+.settled-badge {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--success-tint);
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .row-main {

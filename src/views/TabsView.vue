@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import Toast from '@/components/ui/Toast.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
+import PaywallSheet from '@/components/premium/PaywallSheet.vue'
 
-const { user } = useAuth()
-const { couple, watchCouple } = useCouple()
-
-if (user.value?.coupleId) {
-  watchCouple(user.value.coupleId)
-}
+// useCouple ist ein Modul-Singleton und startet seinen Listener selbst, sobald
+// user.coupleId gesetzt ist — hier ist nichts mehr anzustoßen.
+const { couple } = useCouple()
 
 const route = useRoute()
 const router = useRouter()
@@ -25,21 +22,26 @@ const showInvite = ref(false)
 
 interface NavItem { id: string; label: string; icon: string; color: string; href: string }
 
-// Bereichsfarbe + Icon je Tab (Nido-Referenz: Dashboard indigo, Haushalt
-// terrakotta, Finanzen türkis, Essen amber). Finanz-Coach ist ein Tab innerhalb
-// von Finanzen, Belegung eine Karte auf dem Dashboard.
+// Bereichsfarbe + Icon je Tab. "Planung" (Belegung · Ideen · Reisen · Notizen)
+// sitzt bewusst mittig — es ist der Hub, nicht der letzte Slot. Finanz-Coach ist
+// ein Tab innerhalb von Finanzen. Die id ist zugleich das Routen-Segment.
 const NAV_ITEMS: readonly NavItem[] = [
   { id: 'dashboard', label: 'Start', icon: '🏠', color: 'var(--dashboard)', href: '/dashboard' },
   { id: 'haushalt', label: 'Haushalt', icon: '🧽', color: 'var(--haushalt)', href: '/haushalt' },
+  { id: 'planung', label: 'Planung', icon: '🗓️', color: 'var(--planung)', href: '/planung' },
   { id: 'finanzen', label: 'Finanzen', icon: '💶', color: 'var(--finanzen)', href: '/finanzen' },
-  { id: 'einkaufen', label: 'Essen', icon: '🍽️', color: 'var(--einkauf)', href: '/einkaufen' },
+  { id: 'einkaufen', label: 'Essen', icon: '🍽️', color: 'var(--food)', href: '/einkaufen' },
 ]
 
-// Die Einstellungen (Profil-Avatare im Header) haben keinen eigenen Nav-Slot —
-// dort zeigt die Bubble weiterhin auf "Start".
+// Routen ohne eigenen Nav-Slot leihen sich den Slot ihres Bereichs: der
+// Wochenkalender gehört zur Planung. Die Einstellungen (Profil-Avatare im
+// Header) haben keinen Bereich — dort bleibt die Bubble auf "Start".
+const SLOT_ALIASES: Record<string, string> = { belegung: 'planung' }
+
 const activeId = computed(() => {
   const seg = route.path.split('/')[1] || 'dashboard'
-  return NAV_ITEMS.find(i => i.id === seg)?.id ?? 'dashboard'
+  const id = SLOT_ALIASES[seg] ?? seg
+  return NAV_ITEMS.find(i => i.id === id)?.id ?? 'dashboard'
 })
 
 const activeIndex = computed(() =>
@@ -117,6 +119,10 @@ function selectNav(id: string) {
     <BottomSheet :isOpen="showInvite" title="Person einladen" @close="showInvite = false">
       <InviteCodeBox v-if="couple" :code="couple.inviteCode" />
     </BottomSheet>
+
+    <!-- Einmal für die ganze App: jede Composable/View öffnet sie über
+         showPaywall(feature), ohne sie durchreichen zu müssen. -->
+    <PaywallSheet />
 
     <div class="nav-wrap">
       <div class="nav-bar">

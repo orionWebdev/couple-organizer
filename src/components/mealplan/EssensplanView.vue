@@ -4,6 +4,7 @@ import type { Couple, Recipe } from '@/types'
 import { useMealPlan } from '@/composables/useMealPlan'
 import { useShopping } from '@/composables/useShopping'
 import { showToast } from '@/composables/useToast'
+import { showPaywall } from '@/composables/usePaywall'
 import MealPlanDayRow from './MealPlanDayRow.vue'
 import RecipeSuggestSheet from './RecipeSuggestSheet.vue'
 import AiRecipeSheet from './AiRecipeSheet.vue'
@@ -16,10 +17,21 @@ const props = defineProps<{
 
 const coupleIdRef = computed(() => props.coupleId)
 
-const { week, recipes, loading, suggestRecipes, assignRecipe, assignExistingRecipe, removeAssignment } = useMealPlan(coupleIdRef)
+const { week, recipes, loading, canCreateRecipe, suggestRecipes, assignRecipe, assignExistingRecipe, removeAssignment } = useMealPlan(coupleIdRef)
 const { activeListId, addItem: addShoppingItem } = useShopping(coupleIdRef)
 
 const hasAnyRecipe = computed(() => week.value.some((d) => d.recipe))
+
+// assignRecipe legt immer ein neues Rezept-Doc an und fällt damit unters
+// Rezept-Limit. Die Sheets bekommen deshalb diese Hülle statt assignRecipe
+// direkt — sonst schlüge das Zuweisen still fehl.
+async function assignWithPaywall(dateKey: string, input: Parameters<typeof assignRecipe>[1]) {
+  if (!canCreateRecipe.value) {
+    showPaywall('recipeCount')
+    return false
+  }
+  return assignRecipe(dateKey, input)
+}
 
 // Tages-Schnellzuweisung (Klick auf einen leeren Tag): reiner Text oder
 // Auswahl aus der bestehenden Rezept-Sammlung — keine KI hier.
@@ -140,7 +152,7 @@ async function handleCreateShoppingList() {
       :week="weekForSheet"
       :initialDateKey="suggestDateKey"
       :recipes="recipes"
-      :assign="assignRecipe"
+      :assign="assignWithPaywall"
       :assignExisting="assignExistingRecipe"
       @close="showSheet = false"
       @assigned="onAssigned"
@@ -151,7 +163,7 @@ async function handleCreateShoppingList() {
       :week="weekForSheet"
       :initialDateKey="defaultSuggestDateKey"
       :suggest="suggestRecipes"
-      :assign="assignRecipe"
+      :assign="assignWithPaywall"
       @close="showAiModal = false"
       @assigned="onAssigned"
     />

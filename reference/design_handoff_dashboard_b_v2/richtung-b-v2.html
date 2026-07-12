@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Together — Richtung B · v2</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  html, body { margin: 0; background: #e7e0d4; font-family: var(--font-body); color: var(--text); }
+  a { color: var(--planung); text-decoration: none; }
+  * { -webkit-tap-highlight-color: transparent; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes tgfade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes tgpop { from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+  @keyframes tgpush { from { transform: translateX(14px); opacity: 0.4; } to { transform: translateX(0); opacity: 1; } }
+  .tgsheet { animation: tgfade .18s ease; }
+  input[type="time"].app-field { font-family: var(--font-headline); font-weight: 600; }
+  .wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 34px 20px 60px; box-sizing: border-box; }
+  .cap { max-width: 620px; text-align: center; }
+  .cap h1 { font-family: var(--font-headline); font-weight: 700; font-size: 24px; margin: 0; }
+  .cap p { font-size: 13.5px; font-weight: 600; color: var(--text-secondary); line-height: 1.5; margin: 8px 0 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: center; margin-top: 12px; font-size: 12px; font-weight: 800; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  .legend i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="cap">
+    <h1>Richtung B · <span style="color:var(--food)">v2</span></h1>
+    <p>Konsolidiert nach deinem Feedback: <b>Finanz-Karte</b> = Budget-Ring + Paar-Split + „zuletzt bezahlt", <b>Haushalt</b> als Fairness-Waage, <b>Einkauf</b> raus vom Dashboard. Neuer <b style="color:var(--planung)">5. Tab „Planung"</b> mit eigener Bereichsfarbe (Belegung · Ideen · Reisen · Notizen). Umschalter: Normalfall · Leer · Volle Belegung.</p>
+    <div class="legend">
+      <span><i style="background:var(--dashboard)"></i>Start</span>
+      <span><i style="background:var(--haushalt)"></i>Haushalt</span>
+      <span><i style="background:var(--planung)"></i>Planung <b style="color:var(--planung)">(neu)</b></span>
+      <span><i style="background:var(--finanzen)"></i>Finanzen</span>
+      <span><i style="background:var(--food)"></i>Essen</span>
+    </div>
+  </div>
+  <div id="root"></div>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="./redesign-data.js"></script>
+<script type="text/babel" src="./shared.jsx"></script>
+<script type="text/babel" src="./planung-tab.jsx"></script>
+<script type="text/babel" src="./richtung-b-v2.jsx"></script>
+<script type="text/babel" data-presets="react">
+  ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(window.RichtungBv2));
+</script>
+</body>
+</html>

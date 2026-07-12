@@ -80,10 +80,10 @@ const canSubmit = computed(
 
 <template>
   <BottomSheet :isOpen="isOpen" @close="emit('close')">
-    <!-- BottomSheet teleportiert nach <body>, liegt also außerhalb des
-         .area-dashboard-Wrappers der Seite — ohne eigene Bereichsklasse fiele
-         --accent im Sheet auf den Default (Terrakotta) zurück. -->
-    <div class="area-bucket">
+    <!-- BottomSheet teleportiert nach <body>, liegt also außerhalb der
+         .area-*-Klasse der Seite — ohne eigene Bereichsklasse fiele --accent im
+         Sheet auf den Default (Terrakotta) zurück. Belegung gehört zur Planung. -->
+    <div class="area-planung">
       <div class="sheet-head">
         <span class="sheet-heading">Neue Belegung</span>
         <span class="sheet-sub">Was, wann und wer</span>

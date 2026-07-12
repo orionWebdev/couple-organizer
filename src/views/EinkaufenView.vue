@@ -6,6 +6,8 @@ import { useShopping } from '@/composables/useShopping'
 import { useExpenses } from '@/composables/useExpenses'
 import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
+import { showPaywall } from '@/composables/usePaywall'
+import { useBackDismiss } from '@/composables/useBackButton'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import FabButton from '@/components/ui/FabButton.vue'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
@@ -27,6 +29,7 @@ const {
   activeList,
   activeItems,
   loading,
+  canCreateList,
   setActiveList,
   createList,
   renameList,
@@ -40,19 +43,20 @@ const {
 
 const { addExpense } = useExpenses(coupleId)
 
-type Tab = 'liste' | 'wochenplan' | 'rezepte'
-// Einkaufsliste ist der initiale Tab und sitzt ganz links.
-const tab = ref<Tab>('liste')
+type Tab = 'wochenplan' | 'liste' | 'rezepte'
+// Der Nav-Slot heißt "Essen" und landet deshalb auf dem Wochenplan; die
+// Einkaufsliste ist von hier einen Tap entfernt.
+const tab = ref<Tab>('wochenplan')
 const tabOptions = [
-  { label: 'Einkaufsliste', value: 'liste' },
   { label: 'Wochenplan', value: 'wochenplan' },
+  { label: 'Einkaufsliste', value: 'liste' },
   { label: 'Rezepte', value: 'rezepte' },
 ]
 
 const rezeptWikiRef = ref<InstanceType<typeof RezeptWikiView> | null>(null)
 
 // Reihenfolge muss die sichtbare Tab-Reihenfolge widerspiegeln.
-const tabOrder: Tab[] = ['liste', 'wochenplan', 'rezepte']
+const tabOrder: Tab[] = ['wochenplan', 'liste', 'rezepte']
 const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
 
 type View = 'lists' | 'detail' | 'shopping-mode'
@@ -61,9 +65,24 @@ const view = ref<View>('lists')
 const showNewList = ref(false)
 const newListName = ref('')
 
+// Die Paywall greift schon beim Antippen des FAB — den Namen erst tippen zu
+// lassen und dann abzulehnen wäre die unfreundlichere Reihenfolge.
+function handleNewListTap() {
+  if (!canCreateList.value) {
+    showPaywall('shoppingLists')
+    return
+  }
+  showNewList.value = true
+}
+
 async function handleCreateList() {
   if (!newListName.value.trim()) return
-  await createList(newListName.value.trim())
+  const ok = await createList(newListName.value.trim())
+  if (!ok) {
+    showNewList.value = false
+    showPaywall('shoppingLists')
+    return
+  }
   showToast('Liste erstellt')
   newListName.value = ''
   showNewList.value = false
@@ -101,6 +120,12 @@ function goBack() {
 function startShopping() {
   view.value = 'shopping-mode'
 }
+
+// Listendetail und Einkaufsmodus sind In-Page-Unteransichten ohne eigene Route.
+// Der Einkaufsmodus liegt "über" dem Detail, also muss er zuerst registriert
+// werden — sonst landet man aus dem Einkaufsmodus direkt auf der Listenübersicht.
+useBackDismiss(() => view.value === 'detail', goBack)
+useBackDismiss(() => view.value === 'shopping-mode', () => { view.value = 'detail' })
 
 async function handleToggle(id: string, checked: boolean) {
   await toggleChecked(id, checked, user.value?.uid)
@@ -152,7 +177,7 @@ function listItemsFor(listId: string) {
 </script>
 
 <template>
-  <div class="einkaufen-page area-einkauf">
+  <div class="einkaufen-page area-food">
     <!-- Shopping mode — fullscreen overlay within the tab -->
     <ShoppingModeView
       v-if="view === 'shopping-mode' && activeList"
@@ -239,7 +264,7 @@ function listItemsFor(listId: string) {
 
         <!-- Außerhalb der Transition (verhindert das FAB-Slow-Slide-Problem,
              siehe unten), aber innerhalb der Swipe-Zone. -->
-        <FabButton v-if="tab === 'liste'" label="Neue Liste" @click="showNewList = true" />
+        <FabButton v-if="tab === 'liste'" label="Neue Liste" @click="handleNewListTap" />
         <FabButton
           v-else-if="tab === 'rezepte' && !rezeptWikiRef?.showForm"
           label="Rezept hinzufügen"

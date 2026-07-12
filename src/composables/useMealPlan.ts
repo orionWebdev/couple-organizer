@@ -5,8 +5,10 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
+import { useCouple } from './useCouple'
+import { FREE_LIMITS } from '@/utils/premium'
 import type { MealPlanEntry, Recipe, RecipeIngredient, RecipeNutrition } from '@/types'
-import { suggestRecipes as fetchSuggestions, type RecipeSuggestion } from '@/services/gemini'
+import { suggestRecipes as fetchSuggestions, type RecipeSuggestion, type AiResult } from '@/services/ai'
 import { currentWeekDates, dateKey as toDateKey } from '@/utils/mealplan'
 
 export interface AssignRecipeInput {
@@ -30,6 +32,7 @@ export interface WeekDay {
 
 export function useMealPlan(coupleId: Ref<string | null>) {
   const { user } = useAuth()
+  const { isPremium } = useCouple()
   const recipes = ref<Recipe[]>([])
   const entries = ref<MealPlanEntry[]>([])
   const loadingRecipes = ref(true)
@@ -39,6 +42,12 @@ export function useMealPlan(coupleId: Ref<string | null>) {
   let unsubscribeEntries: (() => void) | null = null
 
   const loading = computed(() => loadingRecipes.value || loadingEntries.value)
+
+  // Gilt für BEIDE Wege, auf denen ein Rezept-Doc entsteht: createRecipe() aus
+  // dem Rezept-Wiki und assignRecipe(), das beim Zuweisen still eines anlegt.
+  const canCreateRecipe = computed(
+    () => isPremium.value || recipes.value.length < FREE_LIMITS.recipeCount
+  )
 
   function startListeningToRecipes(id: string) {
     if (unsubscribeRecipes) unsubscribeRecipes()
@@ -128,15 +137,19 @@ export function useMealPlan(coupleId: Ref<string | null>) {
   )
 
   // Nie an den Aufrufer werfen — analog zu den anderen use*.ts-Composables.
-  async function suggestRecipes(searchQuery: string, count = 3): Promise<RecipeSuggestion[]> {
+  // Quota-/Premium-Ablehnungen sind aber KEIN Fehler: sie kommen als eigener
+  // AiResult-Zweig zurück, damit der Aufrufer die Paywall öffnen kann statt
+  // einen Toast zu zeigen.
+  async function suggestRecipes(searchQuery: string, count = 3): Promise<AiResult<RecipeSuggestion[]>> {
+    if (!coupleId.value) return { kind: 'ok', data: [], quota: { used: 0, limit: 0 } }
     try {
-      const results = await fetchSuggestions(searchQuery, count)
+      const result = await fetchSuggestions(coupleId.value, searchQuery, count)
       error.value = null
-      return results
+      return result
     } catch (err: any) {
       console.error('Failed to fetch recipe suggestions:', err)
       error.value = err.message
-      return []
+      return { kind: 'ok', data: [], quota: { used: 0, limit: 0 } }
     }
   }
 
@@ -162,6 +175,7 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     if (!coupleId.value || !user.value) return false
     const cleanTitle = input.title.trim()
     if (!cleanTitle) return false
+    if (!canCreateRecipe.value) return false
 
     try {
       const recipeRef = await addDoc(collection(db, 'recipes'), recipeDocPayload(input, cleanTitle))
@@ -227,6 +241,7 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     if (!coupleId.value || !user.value) return false
     const cleanTitle = input.title.trim()
     if (!cleanTitle) return false
+    if (!canCreateRecipe.value) return false
 
     try {
       await addDoc(collection(db, 'recipes'), recipeDocPayload(input, cleanTitle))
@@ -310,6 +325,7 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     recipes: readonly(recipes),
     loading,
     error: readonly(error),
+    canCreateRecipe,
     suggestRecipes,
     assignRecipe,
     assignExistingRecipe,

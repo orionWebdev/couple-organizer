@@ -7,15 +7,32 @@
     "dev": "vite",
     "watch": "vite",
     "build": "vue-tsc -b && vite build",
+    "build:native": "vue-tsc -b && vite build --mode native",
     "typecheck:watch": "vue-tsc -b --watch --preserveWatchOutput",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:sync": "npm run build:native && cap sync android",
+    "cap:android": "cap open android"
   },
   "dependencies": {
+    "@capacitor-community/safe-area": "^8.0.1",
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/browser": "^8.0.3",
+    "@capacitor/clipboard": "^8.0.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/share": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
+    "@revenuecat/purchases-capacitor": "^13.2.2",
     "firebase": "^11.0.0",
     "vue": "^3.5.0",
     "vue-router": "^4.4.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.4.1",
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-vue": "^5.2.0",
     "tailwindcss": "^4.0.0",

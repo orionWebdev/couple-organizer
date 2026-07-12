@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { Recipe } from '@/types'
 import { useMealPlan } from '@/composables/useMealPlan'
 import { showToast } from '@/composables/useToast'
+import { showPaywall } from '@/composables/usePaywall'
 import { RECIPE_TAGS, primaryTagMeta, recipeTagDef, type RecipeTagId } from '@/utils/recipeTags'
 import RecipeDetailModal from './RecipeDetailModal.vue'
 
@@ -11,7 +12,7 @@ const props = defineProps<{
 }>()
 
 const coupleIdRef = computed(() => props.coupleId)
-const { recipes, createRecipe, updateRecipe, deleteRecipe } = useMealPlan(coupleIdRef)
+const { recipes, canCreateRecipe, createRecipe, updateRecipe, deleteRecipe } = useMealPlan(coupleIdRef)
 
 const search = ref('')
 const activeTags = ref<Set<RecipeTagId>>(new Set())
@@ -74,6 +75,12 @@ function resetForm() {
 }
 
 function openCreateForm() {
+  // Nur neue Rezepte sind limitiert — bestehende bleiben immer bearbeitbar
+  // (startEdit geht bewusst nicht durch diese Prüfung).
+  if (!canCreateRecipe.value) {
+    showPaywall('recipeCount')
+    return
+  }
   resetForm()
   showForm.value = true
 }

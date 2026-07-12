@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, toRef } from 'vue'
+import { useBackDismiss } from '@/composables/useBackButton'
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean
   title?: string
 }>()
@@ -9,6 +10,10 @@ defineProps<{
 const emit = defineEmits<{
   close: []
 }>()
+
+// Android-Zurück schließt das Sheet, statt die App zu verlassen. Weil jedes
+// Sheet der App auf dieser Komponente aufbaut, reicht diese eine Zeile.
+useBackDismiss(toRef(props, 'isOpen'), () => emit('close'))
 
 // ── Downward-swipe-to-close ──────────────────────────────────
 // Ein nach unten gezogenes Sheet folgt dem Finger und schließt beim Loslassen,

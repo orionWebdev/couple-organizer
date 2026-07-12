@@ -16,6 +16,10 @@ export interface ExpenseCategoryDef {
   icon: string
 }
 
+// Das Abo gehört dem Paar, nicht der Person: kauft einer, haben beide Premium.
+// Deshalb liegen die Felder auf dem Couple-Doc und nicht auf dem User.
+export type CouplePlan = 'free' | 'premium'
+
 export interface Couple {
   id: string
   memberIds: string[]
@@ -24,7 +28,16 @@ export interface Couple {
   inviteCode: string
   monthlyBudget?: number | null // cents; optional — absent on older couple docs
   expenseCategories?: ExpenseCategoryDef[] // optional — absent = DEFAULT_EXPENSE_CATEGORIES (src/utils/expenseCategories.ts)
+  ideaCategories?: IdeaCategoryDef[] // optional — absent = DEFAULT_IDEA_CATEGORIES (src/utils/ideen.ts)
   createdAt: Timestamp
+
+  // Entitlement — ausschließlich vom Backend geschrieben (Admin SDK), für
+  // Clients in firestore.rules unveränderlich. absent = 'free'.
+  plan?: CouplePlan
+  premiumUntil?: Timestamp | null
+  premiumStore?: 'play' | 'appstore' | 'promo'
+  premiumUpdatedAt?: Timestamp
+  rcAppUserId?: string
 }
 
 export type ChoreType = 'recurring' | 'once'
@@ -155,6 +168,7 @@ export interface FinanceEvent {
   kind: FinanceEventKind
   category: ExpenseCategory | null
   archived: boolean
+  budget?: number | null // cents; optional — absent/null = kein Budget für dieses Event
   createdBy: string
   createdAt: Timestamp
   updatedAt: Timestamp
@@ -187,16 +201,24 @@ export interface ExpenseBalanceSummary {
   totalSpent: number
 }
 
+// Zwei getrennte Achsen, die vorher vermischt waren:
+//   "ausgegeben"   = alle Ausgaben des Monats, egal ob untereinander ausgeglichen
+//   "ausgeglichen" = isPaid, also der Ausgleich ZWISCHEN den Partnern
+// Ein beglichener Einkauf ist trotzdem ausgegebenes Geld.
 export interface MonthlyExpenseSummary {
   monthKey: string
-  total: number
-  balances: Record<string, number>
+  total: number // cents — alles, was der Monat gekostet hat (auch Beglichenes)
+  open: number // cents — davon noch nicht ausgeglichen
+  paidBy: Record<string, number> // cents je uid — wer hat den Monat ausgelegt (alle Ausgaben)
+  balances: Record<string, number> // Ausgleichs-Saldo (nur noch offene Ausgaben)
   expenses: Expense[]
 }
 
 export interface FinanceEventSummary {
   event: FinanceEvent
-  total: number
+  total: number // cents — noch offen (nicht ausgeglichen)
+  spent: number // cents — alles, was das Event gekostet hat (auch Ausgeglichenes);
+                // nur das ist die richtige Bezugsgröße für ein Event-Budget
   balances: Record<string, number>
   expenses: Expense[]
 }
@@ -257,15 +279,49 @@ export interface BookingOccurrence {
   dateKey: string
 }
 
-export type BucketListCategory = 'ort' | 'restaurant'
+// "Ideen für uns" im Planung-Tab. Die Collection heißt weiter bucketListItems.
+// Die Kategorien sind wie die Ausgaben-Kategorien frei definierbar und liegen auf
+// dem Couple-Doc (Couple.ideaCategories) — die Default-IDs ('film' | 'essen' |
+// 'date') und die noch älteren Bucket-List-Werte ('ort' | 'restaurant') bleiben
+// als gespeicherte Werte gültig, siehe ideaCategory() in src/utils/ideen.ts.
+export type IdeaCategory = string
+
+export interface IdeaCategoryDef {
+  id: string
+  label: string
+  emoji: string
+}
 
 export interface BucketListItem {
   id: string
   coupleId: string
-  category: BucketListCategory
+  category: IdeaCategory
   name: string
   note: string
   done: boolean
+  suggestedBy: string // uid — von wem die Idee stammt (kann der Partner sein)
+  createdBy: string // uid — wer sie eingetragen hat
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// Reisen & Ausflüge — `when` ist bewusst Freitext ("Sept.", "noch offen"),
+// weil die wenigsten Ideen schon ein Datum haben.
+export interface Trip {
+  id: string
+  coupleId: string
+  title: string
+  when: string
+  emoji: string
+  createdBy: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export interface Note {
+  id: string
+  coupleId: string
+  text: string
   createdBy: string
   createdAt: Timestamp
   updatedAt: Timestamp

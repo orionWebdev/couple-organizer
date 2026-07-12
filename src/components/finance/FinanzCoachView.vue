@@ -2,7 +2,9 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Couple, FinanceMonthComparison } from '@/types'
 import { resolveExpenseCategories, categoryMeta } from '@/utils/expenseCategories'
-import { suggestFinanceInsight, type FinanceCategoryDelta } from '@/services/geminiFinance'
+import { suggestFinanceInsight, type FinanceCategoryDelta } from '@/services/ai'
+import { showPaywall } from '@/composables/usePaywall'
+import { useCouple } from '@/composables/useCouple'
 
 // Als Finanzen-Tab eingebettet statt eigener Route — bekommt die schon in
 // FinanzenView laufenden Daten als Props statt eine zweite useExpenses-
@@ -12,6 +14,8 @@ const props = defineProps<{
   months: readonly FinanceMonthComparison[]
   loading: boolean
 }>()
+
+const { isPremium } = useCouple()
 
 const categories = computed(() => resolveExpenseCategories(props.couple))
 
@@ -76,14 +80,24 @@ const bars = computed(() => {
 const animatedTotal = computed(() => Math.round((activeMonth.value?.total ?? 0) * anim.value))
 
 // ── AI-Insight pro Monat (einmalig geladen, danach gecacht) ──
-interface InsightState { text: string; error: boolean }
+// 'locked' = Free-Tier. Der Callable lehnt den Aufruf ab, bevor Gemini
+// überhaupt gefragt wird — die Karte wird dann zum Teaser statt zum Fehler.
+interface InsightState { text: string; error: boolean; locked: boolean }
 const insightCache = ref<Record<string, InsightState>>({})
 const insightLoading = ref(false)
 let insightToken = 0
 
 async function loadInsightFor(month: FinanceMonthComparison | null) {
   if (!month || month.categories.length === 0) return
+  if (!props.couple) return
   if (insightCache.value[month.monthKey]) return // schon geladen
+
+  // Ohne Premium den Callable gar nicht erst aufrufen — er würde ohnehin
+  // ablehnen. Der Server bleibt trotzdem die maßgebliche Prüfung.
+  if (!isPremium.value) {
+    insightCache.value[month.monthKey] = { text: '', error: false, locked: true }
+    return
+  }
 
   const token = ++insightToken
   insightLoading.value = true
@@ -94,11 +108,19 @@ async function loadInsightFor(month: FinanceMonthComparison | null) {
       previousEuros: c.previous / 100,
       deltaPct: c.deltaPct,
     }))
-    const text = await suggestFinanceInsight(deltas, month.label)
-    if (token === insightToken) insightCache.value[month.monthKey] = { text, error: false }
+    const result = await suggestFinanceInsight(props.couple.id, deltas, month.label)
+    if (token !== insightToken) return
+
+    if (result.kind === 'ok') {
+      insightCache.value[month.monthKey] = { text: result.data, error: false, locked: false }
+    } else {
+      // 'premium' (Free-Tier) und 'quota' (Fair-Use bei Premium) landen beide
+      // auf derselben Teaser-Karte.
+      insightCache.value[month.monthKey] = { text: '', error: false, locked: true }
+    }
   } catch (err) {
     console.error('Failed to load finance insight:', err)
-    if (token === insightToken) insightCache.value[month.monthKey] = { text: '', error: true }
+    if (token === insightToken) insightCache.value[month.monthKey] = { text: '', error: true, locked: false }
   } finally {
     if (token === insightToken) insightLoading.value = false
   }
@@ -143,7 +165,19 @@ const activeInsight = computed<InsightState | null>(() =>
       </div>
 
       <!-- AI-Insight -->
-      <div class="insight-card">
+      <button
+        v-if="activeInsight?.locked"
+        type="button"
+        class="insight-card insight-card--locked"
+        @click="showPaywall('financeCoach')"
+      >
+        <span class="insight-icon">🔒</span>
+        <span class="insight-locked-body">
+          <span class="insight-text">Der Finanz-Coach erkennt, wo eure Ausgaben diesen Monat aus dem Rahmen fallen.</span>
+          <span class="insight-cta">Mit Together Plus freischalten</span>
+        </span>
+      </button>
+      <div v-else class="insight-card">
         <span class="insight-icon">✨</span>
         <p v-if="!activeInsight && insightLoading" class="insight-text insight-text--loading">Analysiere eure Ausgaben …</p>
         <p v-else-if="activeInsight?.error" class="insight-text">
@@ -249,6 +283,31 @@ const activeInsight = computed<InsightState | null>(() =>
 
 .insight-text--loading {
   color: var(--text-secondary);
+}
+
+.insight-card--locked {
+  width: 100%;
+  text-align: left;
+  align-items: center;
+  cursor: pointer;
+  font: inherit;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.insight-card--locked:active {
+  transform: scale(0.98);
+}
+
+.insight-locked-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.insight-cta {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--finanzen);
 }
 
 /* ── Monatssumme ─────────────────────────────────────────── */

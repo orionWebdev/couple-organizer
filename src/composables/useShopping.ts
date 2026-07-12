@@ -15,6 +15,8 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
+import { useCouple } from './useCouple'
+import { FREE_LIMITS } from '@/utils/premium'
 import type { ShoppingItem, ShoppingList } from '@/types'
 
 interface AddShoppingItemInput {
@@ -95,6 +97,7 @@ function mapShoppingList(data: Record<string, any>, id: string): ShoppingList {
 
 export function useShopping(coupleId: Ref<string | null>) {
   const { user } = useAuth()
+  const { isPremium } = useCouple()
   const lists = ref<ShoppingList[]>([])
   const items = ref<ShoppingItem[]>([])
   const activeListId = ref<string | null>(null)
@@ -107,6 +110,12 @@ export function useShopping(coupleId: Ref<string | null>) {
 
   const activeLists = computed(() => lists.value.filter((list) => !list.archived))
   const archivedLists = computed(() => lists.value.filter((list) => list.archived))
+
+  // Archivierte Listen zählen bewusst nicht mit — sonst würde das Limit auch
+  // Paare treffen, die einfach schon lange aufräumen.
+  const canCreateList = computed(
+    () => isPremium.value || activeLists.value.length < FREE_LIMITS.shoppingLists
+  )
 
   const activeList = computed(() => {
     if (!activeListId.value) return null
@@ -220,10 +229,13 @@ export function useShopping(coupleId: Ref<string | null>) {
     startListeningToItems(id)
   }, { immediate: true })
 
-  async function createList(title: string) {
-    if (!coupleId.value || !user.value) return
+  // Free-Limit. Die View prüft es ebenfalls (und öffnet die Paywall) — hier
+  // steht es trotzdem, damit kein Aufrufer es versehentlich umgehen kann.
+  async function createList(title: string): Promise<boolean> {
+    if (!coupleId.value || !user.value) return false
     const cleanTitle = title.trim()
-    if (!cleanTitle) return
+    if (!cleanTitle) return false
+    if (!canCreateList.value) return false
 
     try {
       await addDoc(collection(db, 'shoppingLists'), {
@@ -234,9 +246,11 @@ export function useShopping(coupleId: Ref<string | null>) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       })
+      return true
     } catch (err: any) {
       console.error('Failed to create shopping list:', err)
       error.value = err.message
+      return false
     }
   }
 
@@ -403,6 +417,7 @@ export function useShopping(coupleId: Ref<string | null>) {
     activeItems,
     loading,
     error: readonly(error),
+    canCreateList,
     setActiveList,
     createList,
     archiveList,

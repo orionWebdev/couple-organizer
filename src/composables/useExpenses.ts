@@ -102,6 +102,7 @@ function mapFinanceEvent(data: Record<string, any>, id: string): FinanceEvent {
     kind: rawKind === 'monthly' ? 'monthly' : 'event',
     category: data.category ?? null,
     archived: data.archived ?? false,
+    budget: data.budget ?? null,
     createdBy: data.createdBy || '',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt || data.createdAt,
@@ -259,11 +260,21 @@ export function useExpenses(coupleId: Ref<string | null>) {
         const orderedExpenses = [...monthExpenses]
           .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt))
 
+        // Wer hat den Monat ausgelegt — über ALLE Ausgaben. Ob die beiden sich
+        // untereinander schon ausgeglichen haben, ändert nichts daran, wer
+        // gezahlt hat.
+        const paidBy: Record<string, number> = {}
+        for (const expense of orderedExpenses) {
+          paidBy[expense.paidBy] = (paidBy[expense.paidBy] || 0) + expense.amount
+        }
+
         return {
           monthKey,
-          total: orderedExpenses
+          total: orderedExpenses.reduce((sum, expense) => sum + expense.amount, 0),
+          open: orderedExpenses
             .filter((expense) => !expense.isPaid)
             .reduce((sum, expense) => sum + expense.amount, 0),
+          paidBy,
           balances: buildBalanceSummary(orderedExpenses).balances,
           expenses: orderedExpenses
         }
@@ -283,6 +294,7 @@ export function useExpenses(coupleId: Ref<string | null>) {
           total: eventExpenses
             .filter((expense) => !expense.isPaid)
             .reduce((sum, expense) => sum + expense.amount, 0),
+          spent: eventExpenses.reduce((sum, expense) => sum + expense.amount, 0),
           balances: buildBalanceSummary(eventExpenses).balances,
           expenses: eventExpenses
         }
@@ -452,6 +464,22 @@ export function useExpenses(coupleId: Ref<string | null>) {
     }
   }
 
+  // Optionales Budget eines Events. `null` entfernt es wieder — dieselbe
+  // Semantik wie Couple.monthlyBudget.
+  async function updateEventBudget(eventId: string, budget: number | null): Promise<boolean> {
+    try {
+      await updateDoc(doc(db, 'financeEvents', eventId), {
+        budget,
+        updatedAt: serverTimestamp()
+      })
+      return true
+    } catch (err: any) {
+      console.error('Failed to update event budget:', err)
+      error.value = err.message
+      return false
+    }
+  }
+
   async function createEvent(title: string, options: { kind?: FinanceEventKind } = {}) {
     if (!coupleId.value || !user.value) return
     const cleanTitle = title.trim()
@@ -534,6 +562,7 @@ export function useExpenses(coupleId: Ref<string | null>) {
     markAllPaid,
     createEvent,
     deleteEvent,
-    setEventArchived
+    setEventArchived,
+    updateEventBudget
   }
 }

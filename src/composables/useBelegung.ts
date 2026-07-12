@@ -5,6 +5,8 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
+import { useCouple } from './useCouple'
+import { FREE_LIMITS } from '@/utils/premium'
 import { weekdayIndex, fromDateKey } from '@/utils/belegung'
 import type { Booking, BookingRepeat, Resource } from '@/types'
 
@@ -21,11 +23,16 @@ export interface BookingDraft {
 
 export function useBelegung(coupleId: Ref<string | null>) {
   const { user } = useAuth()
+  const { isPremium } = useCouple()
 
   const resources = ref<Resource[]>([])
   const bookings = ref<Booking[]>([])
   const loading = ref(true)
   const error = ref<string | null>(null)
+
+  const canAddResource = computed(
+    () => isPremium.value || resources.value.length < FREE_LIMITS.belegungResources
+  )
 
   let unsubResources: (() => void) | null = null
   let unsubBookings: (() => void) | null = null
@@ -150,9 +157,9 @@ export function useBelegung(coupleId: Ref<string | null>) {
     if (!coupleId.value || !user.value) return null
     const cleanName = name.trim()
     if (!cleanName) return null
+    if (!canAddResource.value) return null
 
     try {
-      console.log('[belegung] addResource →', cleanName)
       const ref = await addDoc(collection(db, 'resources'), {
         coupleId: coupleId.value,
         name: cleanName,
@@ -223,6 +230,7 @@ export function useBelegung(coupleId: Ref<string | null>) {
     resourceById,
     loading: readonly(loading),
     error: readonly(error),
+    canAddResource,
     countBookings,
     addBooking,
     deleteBooking,

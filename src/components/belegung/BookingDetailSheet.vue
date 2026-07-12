@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import {
-  WEEKDAYS_LONG, bookedAtLabel, dayMonth, fromDateKey, personColor, personName, personTint, rangeLabel
+  WEEKDAYS_LONG, bookedAtLabel, dayMonth, fromDateKey, nextLabel,
+  personColor, personName, personTint, rangeLabel
 } from '@/utils/belegung'
 import type { Booking, Couple, Resource } from '@/types'
 
@@ -60,6 +61,9 @@ const bookedLabel = computed(() => {
             {{ ownerName }}<template v-if="booking.note"> · {{ booking.note }}</template>
           </span>
           <span class="booked-at">{{ bookedLabel }}</span>
+          <span v-if="booking.repeat === 'weekly'" class="booked-at">
+            Nächster Termin: {{ nextLabel(booking, new Date()) }}
+          </span>
         </div>
       </div>
 

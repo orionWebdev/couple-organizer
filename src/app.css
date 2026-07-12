@@ -27,9 +27,16 @@
   --dashboard:       oklch(0.60 0.14 280);
   --dashboard-hover: oklch(0.53 0.14 280);
   --dashboard-tint:  oklch(0.95 0.03 280);
+  /* Planung (Belegung, Ideen, Reisen, Notizen) — Blau in der Lücke
+     zwischen Finanzen-Türkis (195) und Start-Indigo (280) */
+  --planung:         oklch(0.64 0.13 235);
+  --planung-hover:   oklch(0.57 0.13 235);
+  --planung-tint:    oklch(0.955 0.03 235);
 
-  /* Essensplan/Rezept-Akzent (Nährwerte, "Wer kocht? · Beide", Fleisch/Fisch-Tag) */
+  /* Bereichsfarbe "Essen" (Wochenplan, Rezepte, Einkaufsliste) — zugleich der
+     Akzent für Nährwerte, "Wer kocht? · Beide" und den Fleisch/Fisch-Tag */
   --food:            oklch(0.66 0.15 25);
+  --food-hover:      oklch(0.59 0.15 25);
   --food-tint:       oklch(0.955 0.035 25);
 
   /* Bucket-List-Akzent (Violett, aus Nido-Referenz) */
@@ -62,6 +69,11 @@
   --shadow-card:    0 4px 12px rgba(60, 45, 30, 0.05);
   --shadow-float:   0 10px 22px rgba(60, 45, 30, 0.14);
   --shadow-accent:  0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
+  /* env() ist auch nativ korrekt — dafür sorgt @capacitor-community/safe-area:
+     bei Chromium >= 140 funktioniert env() im WebView von selbst, darunter
+     padded das Plugin die WebView und setzt env() bewusst auf 0px. In beiden
+     Fällen ist das hier die richtige Quelle. Ohne das Plugin meldet Android im
+     Edge-to-Edge-Modus 0 und die Bubble-Navigation läge unter der Gestenleiste. */
   --safe-bottom:    env(safe-area-inset-bottom, 0px);
   --safe-top:       env(safe-area-inset-top, 0px);
   --font-body:      'Nunito', system-ui, sans-serif;
@@ -127,10 +139,14 @@
   --accent-tint:  var(--haushalt-tint);
 }
 
-.area-einkauf {
-  --accent:       var(--einkauf);
-  --accent-hover: var(--einkauf-hover);
-  --accent-tint:  var(--einkauf-tint);
+/* "Essen" (Wochenplan · Einkaufsliste · Rezepte) — die Bereichsfarbe ist das
+   Rot-Orange der Nav-Bubble, nicht mehr das alte Einkaufs-Amber. Die
+   --einkauf-Token bleiben, sie sind noch die Farbe der Ausgaben-Kategorie
+   "Einkauf" (src/utils/expenseCategories.ts). */
+.area-food {
+  --accent:       var(--food);
+  --accent-hover: var(--food-hover);
+  --accent-tint:  var(--food-tint);
 }
 
 .area-finanzen {
@@ -143,6 +159,12 @@
   --accent:       var(--dashboard);
   --accent-hover: var(--dashboard-hover);
   --accent-tint:  var(--dashboard-tint);
+}
+
+.area-planung {
+  --accent:       var(--planung);
+  --accent-hover: var(--planung-hover);
+  --accent-tint:  var(--planung-tint);
 }
 
 .area-bucket {

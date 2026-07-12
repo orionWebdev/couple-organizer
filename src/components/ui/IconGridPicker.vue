@@ -1,14 +1,15 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   icons: readonly string[]
   modelValue: string
+  columns?: number
 }>()
 
 defineEmits<{ 'update:modelValue': [icon: string] }>()
 </script>
 
 <template>
-  <div class="icon-grid">
+  <div class="icon-grid" :style="{ gridTemplateColumns: `repeat(${props.columns ?? 8}, 1fr)` }">
     <button
       v-for="icon in icons"
       :key="icon"

@@ -112,6 +112,22 @@ service cloud.firestore {
       allow update, delete: if isCoupleMember(resource.data.coupleId);
     }
 
+    match /resources/{resourceId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
     match /bucketListItems/{itemId} {
       allow read: if isCoupleMember(resource.data.coupleId);
       allow create: if signedIn()

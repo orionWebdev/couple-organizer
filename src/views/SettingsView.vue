@@ -3,8 +3,10 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
+import { useBelegung } from '@/composables/useBelegung'
 import { showToast } from '@/composables/useToast'
 import { resolveExpenseCategories, EXPENSE_CATEGORY_ICON_CHOICES, categoryColor } from '@/utils/expenseCategories'
+import { RESOURCE_ICONS } from '@/utils/belegung'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import IconGridPicker from '@/components/ui/IconGridPicker.vue'
 import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
@@ -96,6 +98,50 @@ async function handleAddCategory() {
 async function handleRemoveCategory(id: string) {
   const ok = await removeExpenseCategory(id)
   showToast(ok ? 'Kategorie entfernt' : 'Das geht nicht — mindestens eine Kategorie muss bleiben')
+}
+
+// ── Belegung: Ressourcen ──────────────────────────────────────
+// Die geteilten Dinge (Auto, E-Bike, Hund …) werden nur hier verwaltet — die
+// Belegung selbst lebt als Timeline-Karte auf dem Dashboard.
+const coupleId = computed(() => user.value?.coupleId ?? null)
+const { resources, countBookings, addResource, updateResource, deleteResource } = useBelegung(coupleId)
+
+interface ResourceForm { id: string | null; name: string; emoji: string }
+const resourceForm = ref<ResourceForm | null>(null)
+const pendingResourceDelete = ref<ResourceForm | null>(null)
+
+function startNewResource() {
+  resourceForm.value = { id: null, name: '', emoji: RESOURCE_ICONS[0] }
+}
+
+function startEditResource(resource: { id: string; name: string; emoji: string }) {
+  resourceForm.value = { id: resource.id, name: resource.name, emoji: resource.emoji }
+}
+
+async function saveResource() {
+  const form = resourceForm.value
+  if (!form?.name.trim()) return
+
+  const ok = form.id
+    ? !!(await updateResource(form.id, form.name, form.emoji))
+    : !!(await addResource(form.name, form.emoji))
+
+  if (ok) {
+    showToast(form.id ? 'Ressource gespeichert' : `${form.emoji} ${form.name.trim()} angelegt`)
+    resourceForm.value = null
+  } else {
+    showToast('Fehler beim Speichern')
+  }
+}
+
+// Löschen nimmt die Belegungen der Ressource mit — daher die Rückfrage.
+async function confirmResourceDelete() {
+  const form = pendingResourceDelete.value
+  if (!form?.id) return
+  const ok = await deleteResource(form.id)
+  showToast(ok ? 'Ressource gelöscht' : 'Fehler beim Löschen')
+  pendingResourceDelete.value = null
+  if (ok) resourceForm.value = null
 }
 
 // ── Konto / Gefahrenzone ──────────────────────────────────────
@@ -213,6 +259,55 @@ async function confirmDanger() {
         </template>
       </div>
 
+      <!-- Belegung: geteilte Ressourcen -->
+      <div class="section-label section-gap">Belegung</div>
+      <div class="card">
+        <div class="field-label">Ressourcen</div>
+        <p v-if="!resources.length" class="toggle-hint resource-empty">
+          Noch nichts angelegt — z. B. Auto, E-Bike, Parkplatz oder „Gassi“.
+        </p>
+        <div v-else class="category-list">
+          <div v-for="r in resources" :key="r.id" class="category-row">
+            <span class="resource-icon">{{ r.emoji }}</span>
+            <button class="resource-btn" type="button" @click="startEditResource(r)">
+              <span class="category-name">{{ r.name }}</span>
+              <span class="resource-count">
+                {{ countBookings(r.id) }} {{ countBookings(r.id) === 1 ? 'Belegung' : 'Belegungen' }}
+              </span>
+            </button>
+            <button
+              class="remove-btn"
+              type="button"
+              aria-label="Entfernen"
+              @click="pendingResourceDelete = { id: r.id, name: r.name, emoji: r.emoji }"
+            >✕</button>
+          </div>
+        </div>
+
+        <button v-if="!resourceForm" class="text-btn" type="button" @click="startNewResource">
+          + Ressource hinzufügen
+        </button>
+        <template v-else>
+          <input
+            v-model="resourceForm.name"
+            class="app-field cat-name-field"
+            type="text"
+            placeholder="z. B. Auto, Wohnmobil, Bohrmaschine …"
+            @keyup.enter="saveResource"
+          />
+          <IconGridPicker v-model="resourceForm.emoji" :icons="RESOURCE_ICONS" :columns="7" />
+          <div class="cat-form-actions">
+            <button class="text-btn" type="button" @click="resourceForm = null">Abbrechen</button>
+            <button
+              class="btn-primary cat-save-btn"
+              type="button"
+              :disabled="!resourceForm.name.trim()"
+              @click="saveResource"
+            >{{ resourceForm.id ? 'Speichern' : 'Ressource anlegen' }}</button>
+          </div>
+        </template>
+      </div>
+
       <!-- Sprache -->
       <div class="section-label section-gap">Sprache</div>
       <div class="card">
@@ -245,6 +340,29 @@ async function confirmDanger() {
         <span class="reset-avatar-badge">{{ myInitial }}</span>
         Zurück zu Initialen
       </button>
+    </BottomSheet>
+
+    <BottomSheet
+      :isOpen="!!pendingResourceDelete"
+      title="Ressource löschen?"
+      @close="pendingResourceDelete = null"
+    >
+      <p class="confirm-text">
+        „{{ pendingResourceDelete?.name }}“ löschen?
+        <template v-if="pendingResourceDelete?.id && countBookings(pendingResourceDelete.id)">
+          Die {{ countBookings(pendingResourceDelete.id) }}
+          {{ countBookings(pendingResourceDelete.id) === 1 ? 'zugehörige Belegung wird' : 'zugehörigen Belegungen werden' }}
+          mit gelöscht.
+        </template>
+      </p>
+      <div class="confirm-actions">
+        <button class="text-btn confirm-cancel" type="button" @click="pendingResourceDelete = null">
+          Abbrechen
+        </button>
+        <button class="btn-primary confirm-yes" type="button" @click="confirmResourceDelete">
+          Ja, löschen
+        </button>
+      </div>
     </BottomSheet>
 
     <BottomSheet :isOpen="!!pendingDanger" title="Bist du sicher?" @close="pendingDanger = null">
@@ -512,6 +630,42 @@ async function confirmDanger() {
   color: var(--danger);
   font-size: 12px;
   cursor: pointer;
+}
+
+.resource-empty {
+  margin: 0 0 4px;
+}
+
+.resource-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--surface-deep);
+  font-size: 16px;
+}
+
+/* Zeile antippen = bearbeiten (Name + Icon), ✕ = löschen */
+.resource-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.resource-count {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-meta);
 }
 
 .cat-name-field {

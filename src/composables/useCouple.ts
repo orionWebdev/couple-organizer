@@ -12,7 +12,8 @@ import { DEFAULT_EXPENSE_CATEGORIES } from '@/utils/expenseCategories'
 // ausgelöst wird — Couple-Doc + Mitgliedschaft selbst bleiben unangetastet.
 const RESETTABLE_COLLECTIONS = [
   'chores', 'choreHistory', 'shoppingItems', 'shoppingLists',
-  'expenses', 'financeEvents', 'recipes', 'mealPlans', 'bucketListItems'
+  'expenses', 'financeEvents', 'recipes', 'mealPlans', 'bucketListItems',
+  'bookings', 'resources'
 ] as const
 
 const BATCH_LIMIT = 450 // unter dem Firestore-Limit von 500 Operationen/Batch

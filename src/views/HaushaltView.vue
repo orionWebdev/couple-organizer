@@ -6,6 +6,7 @@ import { useChores } from '@/composables/useChores'
 import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
+import ProfileButton from '@/components/ui/ProfileButton.vue'
 import TaskSheet from '@/components/haushalt/TaskSheet.vue'
 import HaushaltZuweisungen from '@/components/haushalt/HaushaltZuweisungen.vue'
 import HaushaltAlle from '@/components/haushalt/HaushaltAlle.vue'
@@ -132,6 +133,7 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
   <div class="haushalt-page area-haushalt">
     <div class="page-header">
       <h1 class="page-title">Haushalt</h1>
+      <ProfileButton />
     </div>
     <div class="tab-bar-wrap">
       <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
@@ -208,6 +210,10 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
 }
 
 .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   padding: calc(var(--safe-top) + 20px) var(--screen-pad) 16px;
 }
 

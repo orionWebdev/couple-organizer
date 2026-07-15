@@ -4,7 +4,8 @@ import BottomSheet from '@/components/ui/BottomSheet.vue'
 import type { Recipe } from '@/types'
 import type { AssignRecipeInput } from '@/composables/useMealPlan'
 import { weekdayLabel } from '@/utils/mealplan'
-import { primaryTagMeta } from '@/utils/recipeTags'
+import { primaryTagMeta, resolveRecipeCategories } from '@/utils/recipeTags'
+import { useCouple } from '@/composables/useCouple'
 
 interface WeekDayLite {
   date: Date
@@ -22,6 +23,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ close: []; assigned: [success: boolean] }>()
+
+const { couple } = useCouple()
+const categories = computed(() => resolveRecipeCategories(couple.value))
 
 const selectedDateKey = ref('')
 const manualTitle = ref('')
@@ -120,7 +124,7 @@ async function handlePickExisting(recipe: Recipe) {
           :disabled="!selectedDateKey"
           @click="handlePickExisting(r)"
         >
-          <span class="pick-icon" :style="{ background: primaryTagMeta(r.tags).color }">{{ primaryTagMeta(r.tags).emoji }}</span>
+          <span class="pick-icon" :style="{ background: primaryTagMeta(r.tags, categories).color }">{{ primaryTagMeta(r.tags, categories).emoji }}</span>
           <div class="pick-text">
             <span class="pick-title">{{ r.title }}</span>
             <span v-if="r.minutes" class="pick-meta">⏱ {{ r.minutes }} Min</span>

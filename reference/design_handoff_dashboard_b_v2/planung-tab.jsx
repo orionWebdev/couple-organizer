@@ -5,7 +5,7 @@
 (function () {
   const { useState } = React;
   const { person, WEEKDAYS, weekDates, expandWeek, onDate, weekdayIdx, TODAY, resMapOf, conflictsOn, COUPLE } = TG;
-  const { ResIcon, Avatar, Sheet } = TG_UI;
+  const { ResIcon, Avatar, Sheet, StatusBar } = TG_UI;
 
   const CATS = {
     film:  { e: "🎬", l: "Filme & Serien" },
@@ -94,18 +94,25 @@
   }
 
   // ── Reisen & Notizen ────────────────────────────────────────────────
-  function ReisenBlock({ reisen, onAdd }) {
+  function ReisenBlock({ reisen, onAdd, onOpen }) {
     return (
       <SectionCard icon="🧳" title="Reisen & Ausflüge" count={reisen.length}
         action={<button onClick={onAdd} style={{ cursor: "pointer", border: "none", background: "var(--accent)", color: "#fff", borderRadius: "50%", width: 28, height: 28, fontSize: 16, lineHeight: 1 }}>＋</button>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {reisen.map(r => (
-            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "9px 11px", background: "var(--surface-deep)", borderRadius: "var(--radius-tile)" }}>
-              <span style={{ fontSize: 20 }}>{r.emoji}</span>
-              <span style={{ flex: 1, fontWeight: 800, fontSize: 14 }}>{r.title}</span>
-              <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--accent)", background: "var(--accent-tint)", padding: "3px 9px", borderRadius: 999 }}>{r.when}</span>
-            </div>
-          ))}
+          {reisen.map(r => {
+            const todos = r.todos || [], open = todos.filter(t => !t.done).length;
+            return (
+              <button key={r.id} onClick={() => onOpen && onOpen(r)} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: "left", cursor: "pointer", border: "1px solid var(--border-softer)", padding: "9px 11px", background: "var(--surface-deep)", borderRadius: "var(--radius-tile)" }}>
+                <span style={{ fontSize: 20 }}>{r.emoji}</span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontWeight: 800, fontSize: 14 }}>{r.title}</span>
+                  {todos.length > 0 && <span style={{ display: "block", fontSize: 11.5, fontWeight: 700, color: "var(--text-meta)" }}>{open > 0 ? open + " To-dos offen" : "alles erledigt ✓"}</span>}
+                </span>
+                <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--accent)", background: "var(--accent-tint)", padding: "3px 9px", borderRadius: 999 }}>{r.when}</span>
+                <span style={{ color: "var(--text-faint)", fontWeight: 800, fontSize: 15 }}>›</span>
+              </button>
+            );
+          })}
           {reisen.length === 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-meta)", padding: "4px 2px" }}>Wohin als Nächstes? Tippt ＋.</div>}
         </div>
       </SectionCard>
@@ -168,7 +175,7 @@
   }
 
   // ── Planung-Tab (Inhalt) ────────────────────────────────────────────
-  function PlanungTab({ data, onOpenBelegung, onAddIdea, onToggleIdea, onAddReise, onAddNotiz, flash }) {
+  function PlanungTab({ data, onOpenBelegung, onOpenReise, onAddIdea, onToggleIdea, onAddReise, onAddNotiz, flash }) {
     const [sheet, setSheet] = useState(null); // 'idea' | 'reise' | 'notiz'
     const p = data.planung || { ideen: [], reisen: [], notizen: [] };
     const empty = p.ideen.length === 0 && p.reisen.length === 0 && p.notizen.length === 0 && data.bookings.length === 0;
@@ -185,7 +192,7 @@
               </div>
             : <>
                 <IdeenBlock ideen={p.ideen} onToggle={onToggleIdea} onAdd={() => setSheet("idea")} flash={flash} />
-                <ReisenBlock reisen={p.reisen} onAdd={() => setSheet("reise")} />
+                <ReisenBlock reisen={p.reisen} onAdd={() => setSheet("reise")} onOpen={onOpenReise} />
                 <NotizenBlock notizen={p.notizen} onAdd={() => setSheet("notiz")} />
               </>}
         </div>
@@ -197,5 +204,89 @@
     );
   }
 
+  // ── Inline-Hinzufügen (Textfeld + ＋) ───────────────────────────────
+  function InlineAdd({ placeholder, onAdd }) {
+    const [t, setT] = useState("");
+    function go() { const v = t.trim(); if (!v) return; onAdd(v); setT(""); }
+    return (
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <input className="app-field" placeholder={placeholder} value={t} onChange={e => setT(e.target.value)} onKeyDown={e => { if (e.key === "Enter") go(); }} style={{ flex: 1, padding: "10px 13px", fontSize: 13.5 }} />
+        <button onClick={go} disabled={!t.trim()} style={{ flexShrink: 0, cursor: t.trim() ? "pointer" : "default", border: "none", borderRadius: 11, width: 44, background: t.trim() ? "var(--accent)" : "var(--border-soft)", color: "#fff", fontSize: 20, lineHeight: 1 }}>＋</button>
+      </div>
+    );
+  }
+
+  // ══ Reise-Detail (eigenes Fenster) ═════════════════════════════════
+  function ReiseDetail({ reise, onClose, onToggleTodo, onAddTodo, onAddProgramm, onSetNotiz, onDelete }) {
+    if (!reise) return null;
+    const todos = reise.todos || [], programm = reise.programm || [];
+    const openTodos = todos.filter(t => !t.done).length;
+    return (
+      <div style={{ position: "absolute", inset: 0, zIndex: 46, background: "var(--bg)", display: "flex", flexDirection: "column", animation: "tgpush .28s var(--ease-standard)" }}>
+        <StatusBar />
+        <div style={{ padding: "6px 20px 10px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: "50%", border: "1px solid var(--border-soft)", background: "var(--surface)", cursor: "pointer", fontSize: 18, display: "grid", placeItems: "center", color: "var(--text-secondary)" }}>‹</button>
+            <span style={{ fontSize: 26 }}>{reise.emoji}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: "var(--font-headline)", fontWeight: 700, fontSize: 20, lineHeight: 1.05 }}>{reise.title}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>📅 {reise.when}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "4px 20px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* To-dos / Buchen */}
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border-softer)", borderRadius: "var(--radius-card)", padding: 15, boxShadow: "var(--shadow-card)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 15 }}>🧳</span>
+              <span style={{ flex: 1, fontFamily: "var(--font-headline)", fontWeight: 700, fontSize: 15 }}>Packen &amp; Buchen</span>
+              <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--accent)", background: "var(--accent-tint)", padding: "2px 9px", borderRadius: 999 }}>{openTodos} offen</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              {todos.map(t => (
+                <button key={t.id} onClick={() => onToggleTodo(reise.id, t.id)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", cursor: "pointer", border: "none", background: "none", padding: "5px 2px" }}>
+                  <span style={{ width: 22, height: 22, flexShrink: 0, borderRadius: 7, border: t.done ? "none" : "2px solid var(--border)", background: t.done ? "var(--success)" : "var(--surface)", color: "#fff", fontWeight: 900, fontSize: 13, display: "grid", placeItems: "center" }}>{t.done ? "✓" : ""}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, textDecoration: t.done ? "line-through" : "none", color: t.done ? "var(--text-meta)" : "var(--text)" }}>{t.text}</span>
+                </button>
+              ))}
+            </div>
+            <InlineAdd placeholder="z. B. Reiseapotheke einpacken" onAdd={v => onAddTodo(reise.id, v)} />
+          </div>
+
+          {/* Programm & Ideen */}
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border-softer)", borderRadius: "var(--radius-card)", padding: 15, boxShadow: "var(--shadow-card)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 15 }}>✨</span>
+              <span style={{ flex: 1, fontFamily: "var(--font-headline)", fontWeight: 700, fontSize: 15 }}>Programm &amp; Ideen</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              {programm.map(p => (
+                <div key={p.id} style={{ display: "flex", alignItems: "flex-start", gap: 9, padding: "7px 11px", background: "var(--surface-deep)", borderRadius: "var(--radius-tile)" }}>
+                  <span style={{ color: "var(--accent)", fontWeight: 900, marginTop: 1 }}>›</span>
+                  <span style={{ flex: 1, fontSize: 13.5, fontWeight: 700 }}>{p.text}</span>
+                </div>
+              ))}
+              {programm.length === 0 && <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-meta)", padding: "2px" }}>Noch keine Idee — was wollt ihr vor Ort machen?</div>}
+            </div>
+            <InlineAdd placeholder="z. B. Käse-Markt besuchen" onAdd={v => onAddProgramm(reise.id, v)} />
+          </div>
+
+          {/* Notizen */}
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border-softer)", borderRadius: "var(--radius-card)", padding: 15, boxShadow: "var(--shadow-card)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 15 }}>📝</span>
+              <span style={{ flex: 1, fontFamily: "var(--font-headline)", fontWeight: 700, fontSize: 15 }}>Notizen</span>
+            </div>
+            <textarea className="app-field" rows={3} placeholder="Gemeinsam festhalten …" value={reise.notiz || ""} onChange={e => onSetNotiz(reise.id, e.target.value)} style={{ resize: "none", lineHeight: 1.5 }} />
+          </div>
+
+          <button onClick={() => onDelete(reise.id)} style={{ cursor: "pointer", padding: 13, borderRadius: 14, border: "1px solid var(--danger-border)", background: "var(--surface)", color: "var(--danger)", fontWeight: 800, fontSize: 14 }}>Reise löschen</button>
+        </div>
+      </div>
+    );
+  }
+
   window.PlanungTab = PlanungTab;
+  window.ReiseDetail = ReiseDetail;
 })();

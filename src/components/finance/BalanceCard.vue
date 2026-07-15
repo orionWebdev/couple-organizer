@@ -40,6 +40,7 @@ const displayAmount = computed(() => {
 <template>
   <div class="balance-card">
     <div class="card-label section-label">GEMEINSAMER SALDO</div>
+    <div class="card-scope">Monatsausgaben · Events rechnet ihr im Event ab</div>
 
     <div class="card-amount mono">{{ displayAmount }}</div>
 
@@ -79,6 +80,13 @@ const displayAmount = computed(() => {
 
 .card-label {
   color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.card-scope {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-meta);
   margin-bottom: 8px;
 }
 

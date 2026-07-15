@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import type { RecipeSuggestion, AiResult, Quota } from '@/services/ai'
 import type { AssignRecipeInput } from '@/composables/useMealPlan'
+import type { RecipeCategoryDef } from '@/types'
 import { weekdayLabel } from '@/utils/mealplan'
 import { showPaywall } from '@/composables/usePaywall'
 
@@ -12,15 +13,28 @@ interface WeekDayLite {
   recipeTitle: string | null
 }
 
+// Zwei Modi, ein Sheet — die aufwendige KI-Optik (Gradient-Button, Lade-Orb)
+// und der Vorschlags-Zustand sind in beiden identisch, nur das Ziel unterscheidet
+// sich: 'day' plant den Vorschlag direkt für einen Wochentag ein (Essensplan),
+// 'library' speichert ihn mit selbst gewählten Kategorien ins Rezept-Wiki.
 const props = defineProps<{
   isOpen: boolean
-  week: WeekDayLite[]
-  initialDateKey: string | null
   suggest: (query: string, count?: number) => Promise<AiResult<RecipeSuggestion[]>>
-  assign: (dateKey: string, input: AssignRecipeInput) => Promise<boolean>
+  mode?: 'day' | 'library'
+  // Nur im Tagesmodus:
+  week?: WeekDayLite[]
+  initialDateKey?: string | null
+  assign?: (dateKey: string, input: AssignRecipeInput) => Promise<boolean>
+  // Nur im Bibliotheksmodus:
+  categories?: readonly RecipeCategoryDef[]
+  save?: (input: AssignRecipeInput) => Promise<boolean>
 }>()
 
 const emit = defineEmits<{ close: []; assigned: [success: boolean] }>()
+
+const isLibrary = computed(() => props.mode === 'library')
+const week = computed(() => props.week ?? [])
+const categories = computed(() => props.categories ?? [])
 
 const selectedDateKey = ref('')
 const description = ref('')
@@ -29,17 +43,33 @@ const searched = ref(false)
 const suggestions = ref<RecipeSuggestion[]>([])
 const quota = ref<Quota | null>(null)
 
+// Bibliotheksmodus: der angetippte Vorschlag wartet hier, bis die Kategorien
+// bestätigt sind — erst dann entsteht das Rezept-Dokument.
+const pending = ref<RecipeSuggestion | null>(null)
+const pendingTags = ref<Set<string>>(new Set())
+const saving = ref(false)
+
 watch(() => props.isOpen, (open) => {
   if (!open) return
-  selectedDateKey.value = props.initialDateKey ?? props.week[0]?.dateKey ?? ''
+  selectedDateKey.value = props.initialDateKey ?? week.value[0]?.dateKey ?? ''
   description.value = ''
   loading.value = false
   searched.value = false
   suggestions.value = []
   quota.value = null
+  pending.value = null
+  pendingTags.value = new Set()
+  saving.value = false
 })
 
-const selectedDay = computed(() => props.week.find((d) => d.dateKey === selectedDateKey.value) ?? null)
+const selectedDay = computed(() => week.value.find((d) => d.dateKey === selectedDateKey.value) ?? null)
+
+function togglePendingTag(id: string) {
+  const next = new Set(pendingTags.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  pendingTags.value = next
+}
 
 // Nur anzeigen, wenn das Limit endlich klein ist — Premium (60/Monat) soll sich
 // nicht wie ein Kontingent anfühlen, das man im Blick behalten muss.
@@ -68,43 +98,100 @@ async function handleSubmit() {
   quota.value = result.quota
 }
 
-async function handlePick(s: RecipeSuggestion) {
-  if (!selectedDateKey.value) return
-  const ok = await props.assign(selectedDateKey.value, {
+function recipeInput(s: RecipeSuggestion, tags: string[]): AssignRecipeInput {
+  return {
     title: s.title,
     description: s.description,
     minutes: s.minutes ?? null,
     servings: s.servings ?? null,
-    tags: s.tags ?? [],
+    tags,
     ingredients: s.ingredients,
     steps: s.steps,
     nutrition: s.nutrition ?? null,
     source: 'ai',
-  })
+  }
+}
+
+async function handlePick(s: RecipeSuggestion) {
+  if (isLibrary.value) {
+    // Gemini kennt nur die Default-Kategorie-IDs (TAG_IDS im Schema) — selbst
+    // angelegte kann es nicht vorschlagen. Was es liefert, ist deshalb nur ein
+    // Vorschlag: übernommen wird es als Vorauswahl, sofern die Kategorie noch
+    // existiert, und danach entscheidet der Nutzer.
+    pending.value = s
+    pendingTags.value = new Set((s.tags ?? []).filter((t) => categories.value.some((c) => c.id === t)))
+    return
+  }
+
+  if (!selectedDateKey.value || !props.assign) return
+  const ok = await props.assign(selectedDateKey.value, recipeInput(s, s.tags ?? []))
+  emit('assigned', ok)
+}
+
+async function handleSave() {
+  const s = pending.value
+  if (!s || !props.save || saving.value) return
+  saving.value = true
+  const ok = await props.save(recipeInput(s, [...pendingTags.value]))
+  saving.value = false
   emit('assigned', ok)
 }
 </script>
 
 <template>
   <BottomSheet :isOpen="isOpen" title="✨ KI-Rezeptvorschlag" @close="emit('close')">
-    <div class="field-label">Für welchen Tag?</div>
-    <div class="day-picker">
-      <button
-        v-for="d in week"
-        :key="d.dateKey"
-        type="button"
-        class="day-pill"
-        :class="{ 'day-pill--active': selectedDateKey === d.dateKey }"
-        @click="selectedDateKey = d.dateKey"
-      >
-        {{ weekdayLabel(d.date) }}
-      </button>
-    </div>
-    <p v-if="selectedDay?.recipeTitle" class="replace-hint">
-      Ersetzt „{{ selectedDay.recipeTitle }}"
-    </p>
+    <!-- Bibliotheksmodus, Schritt 2: Kategorien für den gewählten Vorschlag -->
+    <template v-if="pending">
+      <div class="pending-title">{{ pending.title }}</div>
+      <p v-if="pending.minutes" class="pending-meta">⏱ {{ pending.minutes }} Min</p>
 
-    <div class="field-label query-label">Was stellst du dir vor?</div>
+      <div class="field-label cat-label">Kategorien</div>
+      <p v-if="!categories.length" class="empty-hint">
+        Noch keine Rezept-Kategorien — anlegen könnt ihr sie in den Einstellungen.
+      </p>
+      <div v-else class="cat-picker">
+        <button
+          v-for="c in categories"
+          :key="c.id"
+          type="button"
+          class="cat-badge"
+          :class="{ 'cat-badge--active': pendingTags.has(c.id) }"
+          :style="pendingTags.has(c.id) ? { background: c.color, borderColor: c.color } : undefined"
+          @click="togglePendingTag(c.id)"
+        >
+          {{ c.emoji }} {{ c.label }}
+        </button>
+      </div>
+
+      <button class="btn-primary save-btn" :disabled="saving" @click="handleSave">
+        {{ saving ? 'Wird gespeichert …' : 'Rezept speichern' }}
+      </button>
+      <button class="picker-toggle" type="button" @click="pending = null">
+        ‹ Zurück zu den Vorschlägen
+      </button>
+    </template>
+
+    <template v-else>
+    <template v-if="!isLibrary">
+      <div class="field-label">Für welchen Tag?</div>
+      <div class="day-picker">
+        <button
+          v-for="d in week"
+          :key="d.dateKey"
+          type="button"
+          class="day-pill"
+          :class="{ 'day-pill--active': selectedDateKey === d.dateKey }"
+          @click="selectedDateKey = d.dateKey"
+        >
+          {{ weekdayLabel(d.date) }}
+        </button>
+      </div>
+      <p v-if="selectedDay?.recipeTitle" class="replace-hint">
+        Ersetzt „{{ selectedDay.recipeTitle }}"
+      </p>
+    </template>
+
+    <div class="field-label" :class="{ 'query-label': !isLibrary }">Was stellst du dir vor?</div>
     <textarea
       v-model="description"
       class="app-field ai-textarea"
@@ -133,7 +220,7 @@ async function handlePick(s: RecipeSuggestion) {
           :key="i"
           type="button"
           class="suggestion-card"
-          :disabled="!selectedDateKey"
+          :disabled="!isLibrary && !selectedDateKey"
           @click="handlePick(s)"
         >
           <div class="suggestion-title">{{ s.title }}</div>
@@ -146,6 +233,7 @@ async function handlePick(s: RecipeSuggestion) {
       </div>
 
       <p v-if="quotaLabel" class="quota-hint">{{ quotaLabel }}</p>
+    </template>
     </template>
   </BottomSheet>
 </template>
@@ -162,6 +250,64 @@ async function handlePick(s: RecipeSuggestion) {
 
 .query-label {
   margin-top: 14px;
+}
+
+/* Bibliotheksmodus, Schritt 2 */
+.pending-title {
+  font-family: var(--font-headline);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.pending-meta {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-meta);
+}
+
+.cat-label {
+  margin-top: 16px;
+}
+
+.cat-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cat-badge {
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-softer);
+  white-space: nowrap;
+}
+
+.cat-badge--active {
+  color: #fff;
+}
+
+.save-btn {
+  margin-top: 16px;
+}
+
+.picker-toggle {
+  display: block;
+  margin: 10px auto 0;
+  background: none;
+  border: none;
+  color: var(--text-meta);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .quota-hint {

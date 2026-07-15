@@ -6,8 +6,9 @@ import { useCouple } from '@/composables/useCouple'
 import { useBelegung, type BookingDraft } from '@/composables/useBelegung'
 import { showToast } from '@/composables/useToast'
 import {
-  WEEKDAYS_SHORT, WEEKDAYS_LONG, mondayOf, weekDates, addDays, weekdayIndex,
-  isoWeek, dayMonth, expandWeek, conflictsFor, nextLabel, personColor,
+  WEEKDAYS_SHORT, WEEKDAYS_LONG, weekdayIndex, monthGrid, monthLabel, addMonths,
+  firstOfMonth, sameMonth, dayMonth, expandDays, bookingsOnDay, conflictsFor,
+  nextLabel, personColor, fromDateKey, todayKey,
 } from '@/utils/belegung'
 import { dateKey } from '@/utils/mealplan'
 import type { Booking } from '@/types'
@@ -26,30 +27,40 @@ const {
   addBooking, deleteBooking,
 } = useBelegung(coupleId)
 
-// ── Woche ─────────────────────────────────────────────────────
-// Der Zeithorizont ist immer genau eine Woche — egal wie viele Serien es gibt.
-const weekOffset = ref(0)
-const selectedDay = ref(weekdayIndex(new Date()))
+// ── Monat ─────────────────────────────────────────────────────
+// Das Fenster ist immer genau ein Monatsraster (volle Wochen Mo–So). Serien
+// bleiben eine Regel und werden nur in dieses Fenster hinein aufgelöst.
+const anchor = ref(firstOfMonth(new Date()))
+const selectedKey = ref(todayKey())
 
-const monday = computed(() => addDays(mondayOf(new Date()), weekOffset.value * 7))
-const week = computed(() => weekDates(monday.value))
-const byDay = computed(() => expandWeek(bookings.value, week.value))
+const days = computed(() => monthGrid(anchor.value))
+const byDay = computed(() => expandDays(bookings.value, days.value))
 
-const isCurrentWeek = computed(() => weekOffset.value === 0)
-const todayIndex = computed(() => (isCurrentWeek.value ? weekdayIndex(new Date()) : -1))
+const selectedDate = computed(() => fromDateKey(selectedKey.value))
+const selectedList = computed(() => bookingsOnDay(bookings.value, selectedKey.value))
 
-const rangeText = computed(() => {
-  const days = week.value
-  return `${days[0].getDate()}. – ${dayMonth(days[6])}`
-})
+const isToday = (date: Date) => dateKey(date) === todayKey()
+const isSelected = (date: Date) => dateKey(date) === selectedKey.value
+const isCurrentMonth = computed(() => sameMonth(anchor.value, new Date()))
 
-const selectedDate = computed(() => week.value[selectedDay.value])
-const selectedKey = computed(() => dateKey(selectedDate.value))
-const selectedList = computed(() => byDay.value[selectedDay.value] ?? [])
+// Ein Tag aus einem Nachbarmonat blättert mit — sonst läge die Auswahl in einer
+// Zelle, die gleich aus dem Raster fällt.
+function selectDay(date: Date) {
+  selectedKey.value = dateKey(date)
+  if (!sameMonth(date, anchor.value)) anchor.value = firstOfMonth(date)
+}
+
+function shiftMonth(delta: number) {
+  anchor.value = addMonths(anchor.value, delta)
+
+  // Auswahl mitnehmen: im aktuellen Monat auf heute, sonst auf den Ersten.
+  const today = new Date()
+  selectedKey.value = dateKey(sameMonth(anchor.value, today) ? today : anchor.value)
+}
 
 function backToToday() {
-  weekOffset.value = 0
-  selectedDay.value = weekdayIndex(new Date())
+  anchor.value = firstOfMonth(new Date())
+  selectedKey.value = todayKey()
 }
 
 function conflictOn(booking: Booking): boolean {
@@ -106,59 +117,61 @@ function openNew() {
       <button class="back-btn" type="button" aria-label="Zurück" @click="router.back()">‹</button>
       <div>
         <h1 class="page-title">Belegung</h1>
-        <p class="page-subtitle">Geteilte Ressourcen · ganze Woche</p>
+        <p class="page-subtitle">Geteilte Ressourcen · Kalender</p>
       </div>
     </div>
 
-    <div class="week-nav">
-      <button class="nav-btn" type="button" aria-label="Vorherige Woche" @click="weekOffset--">‹</button>
-      <div class="week-label">
-        <span class="kw">KW {{ isoWeek(monday) }}</span>
-        <span class="range">{{ rangeText }}</span>
-      </div>
-      <button class="nav-btn" type="button" aria-label="Nächste Woche" @click="weekOffset++">›</button>
+    <div class="month-nav">
+      <button class="nav-btn" type="button" aria-label="Vorheriger Monat" @click="shiftMonth(-1)">‹</button>
+      <span class="month-label">{{ monthLabel(anchor) }}</span>
+      <button class="nav-btn" type="button" aria-label="Nächster Monat" @click="shiftMonth(1)">›</button>
     </div>
 
-    <div v-if="!isCurrentWeek" class="today-row">
-      <button class="today-pill" type="button" @click="backToToday">↩ Heute · aktuelle KW</button>
+    <div v-if="!isCurrentMonth" class="today-row">
+      <button class="today-pill" type="button" @click="backToToday">↩ Heute</button>
     </div>
 
     <div v-if="loading" class="loading-msg">Laden…</div>
 
     <div v-else class="kalender-body">
-      <!-- Wochen-Grid -->
-      <div class="card grid-card">
-        <div class="week-grid">
+      <!-- Monatsraster -->
+      <div class="card cal-card">
+        <div class="cal-weekdays">
+          <span v-for="wd in WEEKDAYS_SHORT" :key="wd" class="cal-wd">{{ wd }}</span>
+        </div>
+
+        <div class="cal-grid">
           <button
-            v-for="(date, day) in week"
+            v-for="(date, i) in days"
             :key="dateKey(date)"
             type="button"
-            class="grid-day"
-            :class="{ 'grid-day--selected': day === selectedDay }"
-            @click="selectedDay = day"
+            class="cal-day"
+            :class="{
+              'cal-day--selected': isSelected(date),
+              'cal-day--muted': !sameMonth(date, anchor),
+            }"
+            @click="selectDay(date)"
           >
-            <span class="grid-wd">{{ WEEKDAYS_SHORT[day] }}</span>
-            <span
-              class="grid-date"
-              :class="{ 'grid-date--today': day === todayIndex }"
-            >{{ date.getDate() }}</span>
-            <span class="grid-dots">
+            <span class="cal-date" :class="{ 'cal-date--today': isToday(date) }">
+              {{ date.getDate() }}
+            </span>
+            <span class="cal-dots">
               <span
-                v-for="booking in byDay[day].slice(0, 3)"
+                v-for="booking in byDay[i].slice(0, 3)"
                 :key="booking.id"
                 class="dot"
                 :style="{ background: personColor(couple, booking.owner) }"
               />
-              <span v-if="byDay[day].length > 3" class="grid-more">+{{ byDay[day].length - 3 }}</span>
+              <span v-if="byDay[i].length > 3" class="cal-more">+{{ byDay[i].length - 3 }}</span>
             </span>
           </button>
         </div>
       </div>
 
-      <!-- Tages-Detail -->
+      <!-- Tages-Detail: öffnet sich direkt unter dem Kalender -->
       <div class="card day-card">
         <div class="day-head">
-          <span class="day-name">{{ WEEKDAYS_LONG[selectedDay] }}</span>
+          <span class="day-name">{{ WEEKDAYS_LONG[weekdayIndex(selectedDate)] }}</span>
           <span class="day-date">{{ dayMonth(selectedDate) }}</span>
         </div>
 
@@ -266,50 +279,39 @@ function openNew() {
   color: var(--text-secondary);
 }
 
-.week-nav {
+.month-nav {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px var(--screen-pad) 0;
+  padding: 14px var(--screen-pad) 0;
 }
 
 .nav-btn {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   border: 1px solid var(--border-soft);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--surface);
   color: var(--text-secondary);
   font-family: var(--font-headline);
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
 }
 
-.week-label {
+.month-label {
   flex: 1;
   text-align: center;
-}
-
-.kw {
-  display: block;
   font-family: var(--font-headline);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text);
-}
-
-.range {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-meta);
 }
 
 .today-row {
   display: flex;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .today-pill {
@@ -334,7 +336,7 @@ function openNew() {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px var(--screen-pad) 90px;
+  padding: 14px var(--screen-pad) 90px;
 }
 
 .card {
@@ -344,103 +346,116 @@ function openNew() {
   box-shadow: var(--shadow-card);
 }
 
-.grid-card {
-  padding: 10px;
+.cal-card {
+  padding: 12px 10px;
 }
 
-.week-grid {
+.cal-weekdays,
+.cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
+  gap: 4px;
 }
 
-.grid-day {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 6px 1px 7px;
-  border: 1.5px solid transparent;
-  border-radius: 11px;
-  background: transparent;
-  cursor: pointer;
+.cal-weekdays {
+  margin-bottom: 6px;
 }
 
-.grid-day--selected {
-  border-color: var(--accent);
-  background: var(--accent-tint);
-}
-
-.grid-wd {
-  font-size: 9.5px;
+.cal-wd {
+  text-align: center;
+  font-size: 11px;
   font-weight: 800;
   color: var(--text-meta);
 }
 
-.grid-date {
-  width: 26px;
-  height: 26px;
+.cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 54px;
+  padding: 6px 1px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cal-day--selected {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.cal-day--muted .cal-date {
+  color: var(--text-faint);
+}
+
+.cal-date {
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   font-family: var(--font-headline);
-  font-size: 14.5px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text);
 }
 
-.grid-day--selected .grid-date {
+.cal-day--selected .cal-date {
   color: var(--accent);
 }
 
-.grid-date--today {
+.cal-date--today {
   background: var(--accent);
   color: var(--on-accent);
 }
 
-.grid-day--selected .grid-date--today {
+.cal-day--selected .cal-date--today,
+.cal-day--muted .cal-date--today {
   color: var(--on-accent);
 }
 
-.grid-dots {
+.cal-dots {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   height: 6px;
 }
 
 .dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
 }
 
-.grid-more {
-  font-size: 8px;
+.cal-more {
+  font-size: 9px;
   font-weight: 800;
   color: var(--text-faint);
 }
 
 .day-card {
-  padding: 14px;
+  padding: 16px;
 }
 
 .day-head {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .day-name {
   font-family: var(--font-headline);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text);
 }
 
 .day-date {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-meta);
 }
@@ -451,13 +466,13 @@ function openNew() {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 12px;
+  padding: 13px;
   border: 1.5px dashed var(--border);
   border-radius: var(--radius-tile);
   background: transparent;
   color: var(--text-meta);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
 }

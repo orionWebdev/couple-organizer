@@ -1,7 +1,7 @@
-# Handoff: Dashboard-Redesign „Together" — Richtung B v2
+# Handoff: Dashboard-Redesign „TwoDo" — Richtung B v2
 
 ## Überblick
-Redesign des **Dashboards (Start-Tab)** der Paar-App „Together"/„Paarplaner" plus ein **neuer 5. Navigations-Tab „Planung"**. Ziel des Redesigns:
+Redesign des **Dashboards (Start-Tab)** der Paar-App „TwoDo"/„Paarplaner" plus ein **neuer 5. Navigations-Tab „Planung"**. Ziel des Redesigns:
 1. **Hierarchie** herstellen (nicht mehr fünf gleich laute Bento-Karten).
 2. **Zeit-/Kontext-Infos** aussagekräftig zeigen (Karten, die einen Blick liefern, den ein Tab-Tap nicht gibt).
 3. Die **Belegung** strukturell tragfähig lösen (endlose Serien in einer Kachel).
@@ -86,7 +86,7 @@ Sammelt: **Belegung** von Ressourcen · **Ideen** (Bucketlist als Ideen-Sammlung
 - **Layout**: Spalte, `gap: 12px`. Header „Planung" / „Belegung · Ideen · Reisen".
 - **Belegung-Block**: SectionCard mit Mini-Wochenstreifen + „Als Nächstes" + Button „Kalender ›" → Wochenkalender-Screen.
 - **Ideen (Bucketlist)**: SectionCard „Ideen für uns", Kategorie-Filter-Chips (Alle / 🎬 Filme & Serien / 🍜 Essen gehen / ✨ Date-Ideen), Liste mit Checkbox (erledigt → `--success`, durchgestrichen), Kategorie-Emoji, Titel, Avatar des Vorschlagenden. „＋" öffnet Add-Idee-Sheet (Kategorie-Segmented + Titel + Von wem).
-- **Reisen & Ausflüge**: SectionCard „🧳", Liste (Emoji, Titel, „when"-Pill in `--accent`). „＋" → Quick-Add-Sheet.
+- **Reisen & Ausflüge**: SectionCard „🧳", Liste (Emoji, Titel, offene-To-dos-Zeile, „when"-Pill in `--accent`, „›"). Jeder Eintrag ist **anklickbar → eigenes Reise-Detail-Fenster** (Screen C.2). „＋" → Quick-Add-Sheet (legt Reise mit leeren `todos`/`programm`/`notiz` an).
 - **Notizen**: SectionCard „📝", einfache Textzeilen. „＋" → Quick-Add-Sheet.
 - **Leerzustand**: freundliche Karte „Was habt ihr vor?" + „＋ Erste Idee".
 
@@ -98,6 +98,14 @@ Sammelt: **Belegung** von Ressourcen · **Ideen** (Bucketlist als Ideen-Sammlung
 - **Serien-Liste**: jede wöchentliche Regel **einmal**, mit „jeden {Wochentag}" + „Nächster: {nextLabel}".
 - **FAB „＋"** → Neue-Belegung-Sheet.
 - **Belegungs-Zeile**: Icon (Ressourcen-Emoji, `bg --surface-deep`), Zeit `.mono`, „↻" bei Serie, „⚠" bei Konflikt, „{Ressource} · {Notiz}", rechts Personen-Avatar. Linke Kante 3px Personenfarbe (Konflikt → `--danger`).
+
+### C.2) Reise-Detail-Fenster (Vollbild-Overlay)  ·  `.area-planung`
+Öffnet sich beim Antippen einer Reise. Kopf: „‹" zurück, Emoji, Titel (Fredoka), „📅 {when}". Karten:
+- **Packen & Buchen**: Checkliste (`todos[]`, Toggle → `--success`, durchgestrichen), „{n} offen"-Badge, Inline-Add-Zeile (Textfeld + ＋).
+- **Programm & Ideen**: Bullet-Liste (`programm[]`), Inline-Add.
+- **Notizen**: `<textarea class="app-field">` gebunden an `reise.notiz`.
+- „Reise löschen" (Danger).
+State-Ergänzung im Modell: `Reise { …, todos:[{id,text,done}], programm:[{id,text}], notiz }`.
 
 ### D) Bottom-Sheets (Muster für alle Eingaben — Radius `--radius-sheet`, Grabber)
 - **Neue Belegung**: Ressourcen-Chips · „Wer" (Segmented, Personenfarben) · Tag (Mo–So; bei „Einmalig" = Datum dieser Woche, bei „Wöchentlich" = jeden Wochentag) · Zeit (Ganztägig-Toggle + zwei `<input type=time>`) · Wiederholung (Einmalig / Wöchentlich ↻) · Notiz · Inline-Konflikt-Warnung. **Kein Anfrage-/Bestätigen-Flow** — „wer einträgt, hat eingetragen"; bei Überschneidung nur Warnung, Button „Trotzdem eintragen".

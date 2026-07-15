@@ -55,6 +55,36 @@ export function weekDates(monday: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => addDays(monday, i))
 }
 
+// ── Monat ─────────────────────────────────────────────────────────
+export function firstOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
+export function addMonths(date: Date, months: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1)
+}
+
+export function sameMonth(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()
+}
+
+// Das Monatsraster des Kalenders: volle Wochen Mo–So, die den Monat abdecken —
+// je nach Monat 4 (Februar, wenn er auf einem Montag beginnt) bis 6 Zeilen. Die
+// Tage aus den Nachbarmonaten gehören dazu, sonst hätte das Gitter Löcher.
+export function monthGrid(anchor: Date): Date[] {
+  const start = mondayOf(firstOfMonth(anchor))
+  const end = addDays(mondayOf(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0)), 6)
+  const days: Date[] = []
+  for (let day = start; day <= end; day = addDays(day, 1)) days.push(day)
+  return days
+}
+
+const monthYearFormatter = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' })
+
+export function monthLabel(date: Date): string {
+  return monthYearFormatter.format(date)
+}
+
 // Ganze Wochen zwischen zwei Montagen — über die Zeitdifferenz gerundet, damit
 // Sommer-/Winterzeit (23- bzw. 25-Stunden-Tage) nicht danebenliegt.
 export function weekOffsetBetween(fromMonday: Date, toMonday: Date): number {
@@ -113,11 +143,16 @@ export function bookingsOnDay(bookings: readonly Booking[], key: string): Bookin
     })
 }
 
-// Eine Woche (7 Tage) auf konkrete Termine auflösen: pro Tag die Belegungen,
-// die an ihm stattfinden. Das Fenster ist immer begrenzt — eine Serie bleibt
-// EIN Datensatz und wird nie über einen offenen Zeithorizont ausgerollt.
+// Ein begrenztes Fenster (eine Woche, ein Monatsraster) auf konkrete Termine
+// auflösen: pro Tag die Belegungen, die an ihm stattfinden. Das Fenster ist
+// immer begrenzt — eine Serie bleibt EIN Datensatz und wird nie über einen
+// offenen Zeithorizont ausgerollt.
+export function expandDays(bookings: readonly Booking[], days: Date[]): Booking[][] {
+  return days.map((date) => bookingsOnDay(bookings, dateKey(date)))
+}
+
 export function expandWeek(bookings: readonly Booking[], week: Date[]): Booking[][] {
-  return week.map((date) => bookingsOnDay(bookings, dateKey(date)))
+  return expandDays(bookings, week)
 }
 
 // Nächster konkreter Termin einer Belegung ab (inklusive) `from`.

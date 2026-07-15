@@ -6,7 +6,6 @@ import { useMountFlag } from '@/composables/useMountAnim'
 const props = defineProps<{
   couple: Couple | null
   counts: Record<string, number> // erledigte Aufgaben dieser Woche je uid
-  openCount: number
   nextChore: Chore | null
 }>()
 
@@ -44,7 +43,6 @@ const verdict = computed(() => {
     <div class="fair-head">
       <span class="fair-emoji">🧽</span>
       <span class="fair-title">Haushalt · diese Woche</span>
-      <span class="fair-link">{{ openCount }} offen ›</span>
     </div>
 
     <div class="scale">
@@ -90,13 +88,6 @@ const verdict = computed(() => {
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
-}
-
-.fair-link {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--text-meta);
-  white-space: nowrap;
 }
 
 .scale {

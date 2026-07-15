@@ -16,6 +16,16 @@ export interface ExpenseCategoryDef {
   icon: string
 }
 
+// Kategorien des Rezept-Wikis. Anders als bei Ausgaben/Ideen trägt eine
+// Rezept-Kategorie ihre Farbe mit (die Badges/Karten färben sich danach); sie
+// wird beim Anlegen aus einer Palette vergeben, nicht frei gewählt.
+export interface RecipeCategoryDef {
+  id: string
+  label: string
+  emoji: string
+  color: string
+}
+
 // Das Abo gehört dem Paar, nicht der Person: kauft einer, haben beide Premium.
 // Deshalb liegen die Felder auf dem Couple-Doc und nicht auf dem User.
 export type CouplePlan = 'free' | 'premium'
@@ -29,6 +39,7 @@ export interface Couple {
   monthlyBudget?: number | null // cents; optional — absent on older couple docs
   expenseCategories?: ExpenseCategoryDef[] // optional — absent = DEFAULT_EXPENSE_CATEGORIES (src/utils/expenseCategories.ts)
   ideaCategories?: IdeaCategoryDef[] // optional — absent = DEFAULT_IDEA_CATEGORIES (src/utils/ideen.ts)
+  recipeCategories?: RecipeCategoryDef[] // optional — absent = DEFAULT_RECIPE_CATEGORIES (src/utils/recipeTags.ts)
   createdAt: Timestamp
 
   // Entitlement — ausschließlich vom Backend geschrieben (Admin SDK), für

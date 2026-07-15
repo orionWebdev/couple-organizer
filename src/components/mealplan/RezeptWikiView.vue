@@ -1,26 +1,40 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { Recipe } from '@/types'
-import { useMealPlan } from '@/composables/useMealPlan'
+import { useMealPlan, type AssignRecipeInput } from '@/composables/useMealPlan'
+import { useCouple } from '@/composables/useCouple'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
-import { RECIPE_TAGS, primaryTagMeta, recipeTagDef, type RecipeTagId } from '@/utils/recipeTags'
+import { primaryTagMeta, recipeCategoryDef, resolveRecipeCategories } from '@/utils/recipeTags'
 import RecipeDetailModal from './RecipeDetailModal.vue'
+import AiRecipeSheet from './AiRecipeSheet.vue'
 
 const props = defineProps<{
   coupleId: string | null
 }>()
 
 const coupleIdRef = computed(() => props.coupleId)
-const { recipes, canCreateRecipe, createRecipe, updateRecipe, deleteRecipe } = useMealPlan(coupleIdRef)
+const {
+  recipes, canCreateRecipe, suggestRecipes, createRecipe, updateRecipe, deleteRecipe,
+} = useMealPlan(coupleIdRef)
+const { couple } = useCouple()
+
+const categories = computed(() => resolveRecipeCategories(couple.value))
 
 const search = ref('')
-const activeTags = ref<Set<RecipeTagId>>(new Set())
+const activeTags = ref<Set<string>>(new Set())
 
-function toggleTagFilter(tag: RecipeTagId) {
+// Wie im Aufgaben-Pool: eine Zeile, horizontal scrollbar, führendes "Alle".
+// Kategorien ohne Rezepte bleiben draußen — die Zeile soll die Sammlung
+// spiegeln, nicht die Kategorieliste.
+const filterCategories = computed(() =>
+  categories.value.filter((c) => recipes.value.some((r) => r.tags.includes(c.id)))
+)
+
+function toggleTagFilter(id: string) {
   const next = new Set(activeTags.value)
-  if (next.has(tag)) next.delete(tag)
-  else next.add(tag)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
   activeTags.value = next
 }
 
@@ -28,10 +42,37 @@ const filteredRecipes = computed(() => {
   const q = search.value.trim().toLowerCase()
   return recipes.value.filter((r) => {
     const matchesSearch = !q || r.title.toLowerCase().includes(q)
-    const matchesTags = activeTags.value.size === 0 || r.tags.some((t) => activeTags.value.has(t as RecipeTagId))
+    const matchesTags = activeTags.value.size === 0 || r.tags.some((t) => activeTags.value.has(t))
     return matchesSearch && matchesTags
   })
 })
+
+// ── KI-Vorschlag → direkt in die Sammlung ─────────────────────
+// Gleiche Sheet-Komponente wie im Essensplan, aber im Bibliotheksmodus: kein
+// Tagesbezug, dafür wählt man beim Übernehmen die Kategorien selbst.
+const showAiSheet = ref(false)
+
+function openAiSheet() {
+  if (!canCreateRecipe.value) {
+    showPaywall('recipeCount')
+    return
+  }
+  showAiSheet.value = true
+}
+
+async function saveAiRecipe(input: AssignRecipeInput) {
+  if (!canCreateRecipe.value) {
+    showAiSheet.value = false
+    showPaywall('recipeCount')
+    return false
+  }
+  return createRecipe(input)
+}
+
+function onAiSaved(success: boolean) {
+  showAiSheet.value = false
+  showToast(success ? 'Rezept gespeichert' : 'Fehler beim Speichern')
+}
 
 // ── Rezept anlegen/bearbeiten (ein Formular für beides) ───────
 const showForm = ref(false)
@@ -40,12 +81,12 @@ const formName = ref('')
 const formDuration = ref('')
 const formIngredients = ref<string[]>([''])
 const formSteps = ref<string[]>([''])
-const formTags = ref<Set<RecipeTagId>>(new Set())
+const formTags = ref<Set<string>>(new Set())
 
-function toggleFormTag(tag: RecipeTagId) {
+function toggleFormTag(id: string) {
   const next = new Set(formTags.value)
-  if (next.has(tag)) next.delete(tag)
-  else next.add(tag)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
   formTags.value = next
 }
 
@@ -90,7 +131,7 @@ function startEdit(recipe: Recipe) {
   formDuration.value = recipe.minutes != null ? String(recipe.minutes) : ''
   formIngredients.value = recipe.ingredients.length ? recipe.ingredients.map((i) => i.name) : ['']
   formSteps.value = recipe.steps.length ? [...recipe.steps] : ['']
-  formTags.value = new Set(recipe.tags as RecipeTagId[])
+  formTags.value = new Set(recipe.tags)
   editingId.value = recipe.id
   showDetail.value = false
   showForm.value = true
@@ -141,6 +182,15 @@ defineExpose({ openCreateForm, showForm })
 <template>
   <div class="wiki">
     <div class="wiki-scroll">
+      <button class="suggest-card" type="button" @click="openAiSheet">
+        <span class="suggest-icon">✨</span>
+        <div class="suggest-text">
+          <span class="suggest-title">Rezept vorschlagen lassen</span>
+          <span class="suggest-sub">Direkt in eure Sammlung, mit eigener Kategorie</span>
+        </div>
+        <span class="suggest-chevron">›</span>
+      </button>
+
       <input
         v-model="search"
         class="app-field search-field"
@@ -148,17 +198,24 @@ defineExpose({ openCreateForm, showForm })
         placeholder="Rezept suchen …"
       />
 
-      <div class="filter-row">
+      <div class="cat-row" data-hswipe-skip>
         <button
-          v-for="tag in RECIPE_TAGS"
-          :key="tag.id"
           type="button"
-          class="filter-badge"
-          :class="{ 'filter-badge--active': activeTags.has(tag.id) }"
-          :style="activeTags.has(tag.id) ? { background: tag.color, borderColor: tag.color } : undefined"
-          @click="toggleTagFilter(tag.id)"
+          class="cat-chip"
+          :class="{ 'cat-chip--active': activeTags.size === 0 }"
+          @click="activeTags = new Set()"
+        >Alle</button>
+        <button
+          v-for="c in filterCategories"
+          :key="c.id"
+          type="button"
+          class="cat-chip"
+          :class="{ 'cat-chip--active': activeTags.has(c.id) }"
+          :style="activeTags.has(c.id) ? { background: c.color, borderColor: c.color, color: '#fff' } : undefined"
+          @click="toggleTagFilter(c.id)"
         >
-          {{ tag.emoji }} {{ tag.label }}
+          <span class="cat-chip__icon" aria-hidden="true">{{ c.emoji }}</span>
+          <span>{{ c.label }}</span>
         </button>
       </div>
 
@@ -185,17 +242,20 @@ defineExpose({ openCreateForm, showForm })
         <button class="row-add" type="button" @click="addStepRow">+ Schritt hinzufügen</button>
 
         <div class="form-label">Kategorien</div>
-        <div class="filter-row">
+        <p v-if="!categories.length" class="cat-empty">
+          Noch keine Kategorien — anlegen könnt ihr sie in den Einstellungen.
+        </p>
+        <div v-else class="cat-badges">
           <button
-            v-for="tag in RECIPE_TAGS"
-            :key="tag.id"
+            v-for="c in categories"
+            :key="c.id"
             type="button"
-            class="filter-badge"
-            :class="{ 'filter-badge--active': formTags.has(tag.id) }"
-            :style="formTags.has(tag.id) ? { background: tag.color, borderColor: tag.color } : undefined"
-            @click="toggleFormTag(tag.id)"
+            class="cat-badge"
+            :class="{ 'cat-badge--active': formTags.has(c.id) }"
+            :style="formTags.has(c.id) ? { background: c.color, borderColor: c.color } : undefined"
+            @click="toggleFormTag(c.id)"
           >
-            {{ tag.emoji }} {{ tag.label }}
+            {{ c.emoji }} {{ c.label }}
           </button>
         </div>
 
@@ -215,18 +275,19 @@ defineExpose({ openCreateForm, showForm })
           class="recipe-card"
           @click="openDetail(r)"
         >
-          <span class="card-icon" :style="{ background: primaryTagMeta(r.tags).color }">{{ primaryTagMeta(r.tags).emoji }}</span>
+          <span class="card-icon" :style="{ background: primaryTagMeta(r.tags, categories).color }">{{ primaryTagMeta(r.tags, categories).emoji }}</span>
           <div class="card-body">
             <div class="card-name">{{ r.title }}</div>
             <div class="card-meta">
               <span v-if="r.minutes" class="card-time">⏱ {{ r.minutes }} Min</span>
               <span v-if="r.tags.length" class="card-tags">
-                <span
-                  v-for="t in r.tags.slice(0, 3)"
-                  :key="t"
-                  class="tag-dot"
-                  :style="{ background: recipeTagDef(t)?.color }"
-                >{{ recipeTagDef(t)?.emoji }}</span>
+                <template v-for="t in r.tags.slice(0, 3)" :key="t">
+                  <span
+                    v-if="recipeCategoryDef(t, categories)"
+                    class="tag-dot"
+                    :style="{ background: recipeCategoryDef(t, categories)!.color }"
+                  >{{ recipeCategoryDef(t, categories)!.emoji }}</span>
+                </template>
               </span>
             </div>
           </div>
@@ -234,6 +295,16 @@ defineExpose({ openCreateForm, showForm })
         </button>
       </div>
     </div>
+
+    <AiRecipeSheet
+      :isOpen="showAiSheet"
+      mode="library"
+      :suggest="suggestRecipes"
+      :categories="categories"
+      :save="saveAiRecipe"
+      @close="showAiSheet = false"
+      @assigned="onAiSaved"
+    />
 
     <RecipeDetailModal
       :isOpen="showDetail"
@@ -267,18 +338,128 @@ defineExpose({ openCreateForm, showForm })
   padding: 0 var(--screen-pad) 100px;
 }
 
+/* KI-Look angelehnt an Gemini — identisch zur Karte im Essensplan. */
+.suggest-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(120deg, #4285f4 0%, #9b72cb 35%, #d96570 65%, #f6b73c 100%);
+  background-size: 220% 220%;
+  border: none;
+  border-radius: var(--radius-card-lg);
+  cursor: pointer;
+  text-align: left;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.28) inset,
+    0 6px 20px -4px rgba(155, 114, 203, 0.55),
+    0 0 22px rgba(66, 133, 244, 0.35);
+  animation: suggestGradientShift 6s ease-in-out infinite;
+  transition: transform 0.12s ease;
+}
+
+.suggest-card:active {
+  transform: scale(0.98);
+}
+
+@keyframes suggestGradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.suggest-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.55);
+}
+
+.suggest-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.suggest-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.suggest-sub {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.suggest-chevron {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+}
+
 .search-field {
   margin-bottom: 10px;
 }
 
-.filter-row {
+/* Eine Zeile, horizontal scrollbar — wie die Raum-Chips im Aufgaben-Pool.
+   data-hswipe-skip im Template hält den Tab-Swipe von dieser Zeile fern. */
+.cat-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  margin-bottom: 14px;
+}
+
+.cat-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 9px 15px;
+  border-radius: 100px;
+  border: 1px solid var(--border-softer);
+  background: var(--surface);
+  color: var(--text-meta);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+}
+
+.cat-chip__icon {
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* Nur der "Alle"-Chip trägt den Bereichs-Akzent; die Kategorie-Chips färben
+   sich aktiv in ihrer eigenen Farbe (Inline-Style im Template). */
+.cat-chip--active {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--text);
+}
+
+.cat-badges {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 12px;
 }
 
-.filter-badge {
+.cat-badge {
   padding: 6px 11px;
   border-radius: 20px;
   font-family: var(--font-body);
@@ -291,8 +472,15 @@ defineExpose({ openCreateForm, showForm })
   white-space: nowrap;
 }
 
-.filter-badge--active {
+.cat-badge--active {
   color: #fff;
+}
+
+.cat-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
 }
 
 .form-card {

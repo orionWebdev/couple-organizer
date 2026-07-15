@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import type { MealPlanEntry, Recipe } from '@/types'
 import { weekdayLabel, dayMonthLabel } from '@/utils/mealplan'
-import { primaryTagMeta, recipeTagDef } from '@/utils/recipeTags'
+import { primaryTagMeta, recipeCategoryDef, resolveRecipeCategories } from '@/utils/recipeTags'
+import { useCouple } from '@/composables/useCouple'
 
 const props = defineProps<{
   date: Date
@@ -11,19 +12,22 @@ const props = defineProps<{
   recipe: Recipe | null
 }>()
 
+const { couple } = useCouple()
+const categories = computed(() => resolveRecipeCategories(couple.value))
+
 const emit = defineEmits<{
   addRecipe: [dateKey: string]
   remove: [entryId: string]
   open: [recipe: Recipe]
 }>()
 
-const icon = computed(() => (props.recipe ? primaryTagMeta(props.recipe.tags) : null))
+const icon = computed(() => (props.recipe ? primaryTagMeta(props.recipe.tags, categories.value) : null))
 
 const metaLabel = computed(() => {
   if (!props.recipe) return ''
   const parts: string[] = []
   if (props.recipe.minutes) parts.push(`${props.recipe.minutes} Min`)
-  const tagLabel = recipeTagDef(props.recipe.tags[0])?.label
+  const tagLabel = recipeCategoryDef(props.recipe.tags[0] ?? '', categories.value)?.label
   if (tagLabel) parts.push(tagLabel)
   return parts.join(' · ')
 })

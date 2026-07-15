@@ -27,8 +27,8 @@ const coupleId = computed(() => user.value?.coupleId ?? null)
 const { chores, history, loading: choresLoading, completeChore } = useChores(coupleId)
 const { week, loading: mealPlanLoading, setCookAssignee } = useMealPlan(coupleId)
 const {
-  expenses, monthlySummaries, balanceInfo, recentExpenses,
-  loading: expensesLoading, markAllPaid,
+  expenses, monthlySummaries, recentExpenses,
+  loading: expensesLoading,
 } = useExpenses(coupleId)
 const { bookings, resources, resourceById, loading: belegungLoading } = useBelegung(coupleId)
 
@@ -81,8 +81,8 @@ const currentMonth = computed(() =>
 )
 
 // Ausgegeben = alles, was der Monat gekostet hat. Ob die beiden sich
-// untereinander schon ausgeglichen haben, ist eine andere Frage (siehe `debt`
-// in der Karte) und darf diese Zahl nicht kleiner machen.
+// untereinander schon ausgeglichen haben, ist eine andere Frage — die stellt
+// die Finanzen-View — und darf diese Zahl nicht kleiner machen.
 const currentMonthSpent = computed(() => currentMonth.value?.total ?? 0)
 const currentMonthPaidBy = computed(() => currentMonth.value?.paidBy ?? {})
 
@@ -92,15 +92,6 @@ const lastPayment = computed(() => {
   const e = recentExpenses.value[0]
   return e ? { by: e.paidBy, title: e.title, amount: e.amount } : null
 })
-
-// Ausgleichen = alle offenen Ausgaben als bezahlt markieren (gleiche Semantik
-// wie "Saldo ausgleichen" in der Finanzen-View), nicht löschen.
-async function settleUp() {
-  const ids = expenses.value.filter((e) => !e.isPaid).map((e) => e.id)
-  if (!ids.length) return
-  await markAllPaid(ids)
-  showToast('Ausgeglichen 🎉')
-}
 
 // ── Haushalt: Fairness diese Woche ────────────────────────────
 const weekCounts = computed(() => {
@@ -224,10 +215,8 @@ async function saveBudget() {
             :spent="currentMonthSpent"
             :budget="budgetCents"
             :paid="currentMonthPaidBy"
-            :balances="balanceInfo.balances"
             :last="lastPayment"
             @open="goToFinanzen"
-            @settle="settleUp"
             @setBudget="openBudgetSheet"
           />
           <BelegungShelfCard
@@ -239,7 +228,6 @@ async function saveBudget() {
           <HaushaltBalanceCard
             :couple="couple"
             :counts="weekCounts"
-            :openCount="openChores.length"
             :nextChore="nextChore"
             @open="goToHaushalt"
             @complete="completeNextChore"

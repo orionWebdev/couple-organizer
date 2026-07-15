@@ -10,15 +10,11 @@ const props = defineProps<{
   spent: number // Cent — alle Ausgaben des laufenden Monats (auch beglichene)
   budget: number | null // Cent
   paid: Record<string, number> // Cent je uid — wer hat den Monat ausgelegt (alle Ausgaben)
-  // Cent je uid — Ausgleich zwischen den Partnern; hängt NICHT an den obigen
-  // Monatszahlen und läuft über alle noch offenen Ausgaben, auch ältere.
-  balances: Record<string, number>
   last: { by: string; title: string; amount: number } | null
 }>()
 
 const emit = defineEmits<{
   (e: 'open'): void
-  (e: 'settle'): void
   (e: 'setBudget'): void
 }>()
 
@@ -83,23 +79,6 @@ function personColor(uid: string): string {
 function personName(uid: string): string {
   return props.couple?.memberNames[uid] ?? '?'
 }
-
-// Saldo: wer noch was von wem bekommt. In einem Paar ist balances[a] das
-// Negativ von balances[b] — ein Vorzeichen genügt.
-const debt = computed(() => {
-  const [a, b] = members.value
-  if (!a || !b) return null
-  const balA = props.balances[a] ?? 0
-  if (Math.abs(balA) < 1) return null
-  return {
-    from: balA > 0 ? b : a,
-    to: balA > 0 ? a : b,
-    amount: Math.abs(balA),
-  }
-})
-
-const debtAmount = computed(() => debt.value?.amount ?? 0)
-const debtAnim = useCountUp(debtAmount, run, 700)
 </script>
 
 <template>
@@ -156,6 +135,8 @@ const debtAnim = useCountUp(debtAmount, run, 700)
       </div>
     </div>
 
+    <!-- Nur der Paar-Split: wer hat den Monat ausgelegt. Der offene Saldo und
+         das Ausgleichen leben ausschließlich in der Finanzen-View. -->
     <div class="split">
       <div class="split-persons">
         <div v-for="(uid, i) in members" :key="uid" class="split-person">
@@ -177,15 +158,6 @@ const debtAnim = useCountUp(debtAmount, run, 700)
             />
           </div>
         </div>
-      </div>
-
-      <div v-if="debt" class="debt">
-        <span class="debt-icon">⚖️</span>
-        <span class="debt-text">
-          {{ personName(debt.from) }} schuldet {{ personName(debt.to) }}
-          <span class="mono" :style="{ color: personColor(debt.to) }">{{ eur(Math.round(debtAnim)) }} €</span>
-        </span>
-        <button class="debt-btn" type="button" @click.stop="emit('settle')">Ausgleichen</button>
       </div>
     </div>
   </div>
@@ -337,7 +309,6 @@ const debtAnim = useCountUp(debtAmount, run, 700)
 .split-persons {
   display: flex;
   gap: 12px;
-  margin-bottom: 9px;
 }
 
 .split-person {
@@ -378,39 +349,5 @@ const debtAnim = useCountUp(debtAmount, run, 700)
   height: 100%;
   border-radius: 999px;
   transition: width 0.9s var(--ease-standard);
-}
-
-.debt {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 11px;
-  background: var(--surface);
-  border-radius: 12px;
-}
-
-.debt-icon {
-  font-size: 15px;
-}
-
-.debt-text {
-  flex: 1;
-  min-width: 0;
-  font-size: 12.5px;
-  font-weight: 800;
-  color: var(--text-secondary);
-}
-
-.debt-btn {
-  flex-shrink: 0;
-  padding: 7px 12px;
-  border: none;
-  border-radius: 10px;
-  background: var(--finanzen);
-  color: #fff;
-  font-family: var(--font-body);
-  font-size: 11.5px;
-  font-weight: 800;
-  cursor: pointer;
 }
 </style>

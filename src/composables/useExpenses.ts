@@ -238,13 +238,27 @@ export function useExpenses(coupleId: Ref<string | null>) {
     return expenses.value.filter((expense) => isExpenseActive(expense))
   })
 
+  // Ausgaben, die in den gemeinsamen Saldo gehören: alles ohne Event (bzw. mit
+  // einem `monthly`-Event). Event-Ausgaben werden im Event selbst abgerechnet
+  // ("Abschließen & Ausgleichen") und dürfen den Monatssaldo nicht verschieben.
+  const monthlyExpenses = computed(() =>
+    activeExpenses.value.filter((expense) => getExpenseScope(expense) === 'monthly')
+  )
+
   const recentExpenses = computed(() => {
     return [...activeExpenses.value]
       .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt))
       .slice(0, 6)
   })
 
-  const balanceInfo = computed(() => buildBalanceSummary(activeExpenses.value))
+  // Der gemeinsame Saldo — bewusst NUR über die Monatsausgaben, dafür über alle
+  // Monate: ein offener Rest aus dem Vormonat darf nicht verschwinden.
+  const balanceInfo = computed(() => buildBalanceSummary(monthlyExpenses.value))
+
+  // Die offenen Monatsausgaben, die "Saldo begleichen" auf isPaid setzt.
+  const openMonthlyExpenseIds = computed(() =>
+    monthlyExpenses.value.filter((expense) => !expense.isPaid).map((expense) => expense.id)
+  )
 
   const monthlySummaries = computed<MonthlyExpenseSummary[]>(() => {
     const byMonth = new Map<string, Expense[]>()
@@ -549,6 +563,7 @@ export function useExpenses(coupleId: Ref<string | null>) {
     loading,
     error: readonly(error),
     balanceInfo,
+    openMonthlyExpenseIds,
     recentExpenses,
     monthlySummaries,
     financeMonths,

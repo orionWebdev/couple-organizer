@@ -5,9 +5,10 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { Couple, CouplePlan, ExpenseCategoryDef, IdeaCategoryDef } from '@/types'
+import type { Couple, CouplePlan, ExpenseCategoryDef, IdeaCategoryDef, RecipeCategoryDef } from '@/types'
 import { DEFAULT_EXPENSE_CATEGORIES } from '@/utils/expenseCategories'
 import { DEFAULT_IDEA_CATEGORIES } from '@/utils/ideen'
+import { DEFAULT_RECIPE_CATEGORIES, nextRecipeCategoryColor } from '@/utils/recipeTags'
 
 // Collections, die pro Couple komplett geleert werden, wenn "App zurücksetzen"
 // ausgelöst wird — Couple-Doc + Mitgliedschaft selbst bleiben unangetastet.
@@ -221,14 +222,9 @@ export function useCouple() {
     }
   }
 
-  async function addExpenseCategory(name: string, icon: string): Promise<boolean> {
+  async function saveExpenseCategories(next: ExpenseCategoryDef[]): Promise<boolean> {
     if (!couple.value) return false
-    const cleanName = name.trim()
-    if (!cleanName) return false
-
     try {
-      const current = couple.value.expenseCategories ?? [...DEFAULT_EXPENSE_CATEGORIES]
-      const next: ExpenseCategoryDef[] = [...current, { id: crypto.randomUUID(), name: cleanName, icon }]
       await updateDoc(doc(db, 'couples', couple.value.id), { expenseCategories: next })
       error.value = null
       return true
@@ -238,23 +234,38 @@ export function useCouple() {
     }
   }
 
+  function currentExpenseCategories(): ExpenseCategoryDef[] {
+    return couple.value?.expenseCategories ?? [...DEFAULT_EXPENSE_CATEGORIES]
+  }
+
+  async function addExpenseCategory(name: string, icon: string): Promise<boolean> {
+    if (!couple.value) return false
+    const cleanName = name.trim()
+    if (!cleanName) return false
+    return saveExpenseCategories([
+      ...currentExpenseCategories(),
+      { id: crypto.randomUUID(), name: cleanName, icon },
+    ])
+  }
+
+  async function updateExpenseCategory(id: string, name: string, icon: string): Promise<boolean> {
+    if (!couple.value) return false
+    const cleanName = name.trim()
+    if (!cleanName) return false
+    return saveExpenseCategories(
+      currentExpenseCategories().map((c) => (c.id === id ? { ...c, name: cleanName, icon } : c))
+    )
+  }
+
   async function removeExpenseCategory(id: string): Promise<boolean> {
     if (!couple.value) return false
-
-    try {
-      const current = couple.value.expenseCategories ?? [...DEFAULT_EXPENSE_CATEGORIES]
-      const next = current.filter((c) => c.id !== id)
-      if (next.length === 0) {
-        error.value = 'Mindestens eine Kategorie muss übrig bleiben'
-        return false
-      }
-      await updateDoc(doc(db, 'couples', couple.value.id), { expenseCategories: next })
-      error.value = null
-      return true
-    } catch (e: any) {
-      error.value = e.message
+    const next = currentExpenseCategories().filter((c) => c.id !== id)
+    // Ohne Kategorie könnte keine neue Ausgabe mehr angelegt werden.
+    if (next.length === 0) {
+      error.value = 'Mindestens eine Kategorie muss übrig bleiben'
       return false
     }
+    return saveExpenseCategories(next)
   }
 
   // Ideen-Kategorien ("Ideen für uns"). Gleiches Muster wie die Ausgaben-
@@ -307,6 +318,51 @@ export function useCouple() {
     return saveIdeaCategories(next)
   }
 
+  // Rezept-Kategorien (Rezept-Wiki). Gleiches Muster wie oben, mit zwei
+  // Unterschieden: die Farbe kommt beim Anlegen aus der Palette (das Formular
+  // wählt nur Name + Icon), und es darf auf null Kategorien heruntergehen —
+  // Recipe.tags ist optional, ein Rezept ohne Kategorie ist ein gültiges Rezept.
+  async function saveRecipeCategories(next: RecipeCategoryDef[]): Promise<boolean> {
+    if (!couple.value) return false
+    try {
+      await updateDoc(doc(db, 'couples', couple.value.id), { recipeCategories: next })
+      error.value = null
+      return true
+    } catch (e: any) {
+      error.value = e.message
+      return false
+    }
+  }
+
+  function currentRecipeCategories(): RecipeCategoryDef[] {
+    return couple.value?.recipeCategories ?? [...DEFAULT_RECIPE_CATEGORIES]
+  }
+
+  async function addRecipeCategory(label: string, emoji: string): Promise<boolean> {
+    if (!couple.value) return false
+    const cleanLabel = label.trim()
+    if (!cleanLabel) return false
+    const current = currentRecipeCategories()
+    return saveRecipeCategories([
+      ...current,
+      { id: crypto.randomUUID(), label: cleanLabel, emoji, color: nextRecipeCategoryColor(current.length) },
+    ])
+  }
+
+  async function updateRecipeCategory(id: string, label: string, emoji: string): Promise<boolean> {
+    if (!couple.value) return false
+    const cleanLabel = label.trim()
+    if (!cleanLabel) return false
+    return saveRecipeCategories(
+      currentRecipeCategories().map((c) => (c.id === id ? { ...c, label: cleanLabel, emoji } : c))
+    )
+  }
+
+  async function removeRecipeCategory(id: string): Promise<boolean> {
+    if (!couple.value) return false
+    return saveRecipeCategories(currentRecipeCategories().filter((c) => c.id !== id))
+  }
+
   // Löscht alle Aufgaben/Einkäufe/Ausgaben/Rezepte/etc. der Couple, aber NICHT
   // das Couple-Doc oder die Mitgliedschaft selbst — "App zurücksetzen", nicht
   // "Konto/Beziehung löschen".
@@ -349,10 +405,14 @@ export function useCouple() {
     regenerateInviteCode,
     updateMyIcon,
     addExpenseCategory,
+    updateExpenseCategory,
     removeExpenseCategory,
     addIdeaCategory,
     updateIdeaCategory,
     removeIdeaCategory,
+    addRecipeCategory,
+    updateRecipeCategory,
+    removeRecipeCategory,
     resetCoupleData
   }
 }

@@ -4,7 +4,7 @@
 
 ---
 
-Ich implementiere ein Redesign des Dashboards unserer Paar-App „Together" (Vue 3 + CSS Custom Properties, keine UI-Library; Design-Fundament in `src/app.css`). Im Ordner `design_handoff_dashboard_b_v2/` liegt ein vollständiges Handoff.
+Ich implementiere ein Redesign des Dashboards unserer Paar-App „TwoDo" (Vue 3 + CSS Custom Properties, keine UI-Library; Design-Fundament in `src/app.css`). Im Ordner `design_handoff_dashboard_b_v2/` liegt ein vollständiges Handoff.
 
 **Lies zuerst `design_handoff_dashboard_b_v2/README.md` komplett.** Die dortigen HTML/JSX-Dateien sind **Design-Referenzen**, kein Code zum Kopieren — bau die Designs mit den **bestehenden Vue-Patterns, Komponenten und Tokens** unseres Repos nach (Composition API, `<script setup>`, `ref`/`computed`). Fidelity ist **high** — Farben, Maße, Radien, Motion und Verhalten sind verbindlich; die exakten Werte stehen im README und inline in den `.jsx`-Dateien.
 

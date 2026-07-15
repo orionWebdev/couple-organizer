@@ -167,7 +167,7 @@ function selectNav(id: string) {
 
 .tabs-content {
   flex: 1;
-  padding-bottom: calc(120px + var(--safe-bottom));
+  padding-bottom: calc(128px + var(--safe-bottom));
   overflow-y: auto;
 }
 
@@ -199,7 +199,7 @@ function selectNav(id: string) {
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(92px + var(--safe-bottom));
+  height: calc(100px + var(--safe-bottom));
   z-index: 100;
   pointer-events: none;
 }
@@ -209,7 +209,7 @@ function selectNav(id: string) {
   left: 14px;
   right: 14px;
   bottom: calc(14px + var(--safe-bottom));
-  height: 58px;
+  height: 66px;
   background: var(--surface);
   border-radius: 24px;
   box-shadow: var(--shadow-float);

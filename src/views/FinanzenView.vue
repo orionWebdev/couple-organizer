@@ -385,8 +385,8 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
 }
 
 .tab-bar :deep(.seg-btn) {
-  padding: 9px 0;
-  font-size: 12px;
+  padding: 13px 0;
+  font-size: 13px;
 }
 
 .tab-area {

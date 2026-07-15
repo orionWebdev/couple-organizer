@@ -6,6 +6,7 @@ import { useCouple } from '@/composables/useCouple'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
 import { primaryTagMeta, recipeCategoryDef, resolveRecipeCategories } from '@/utils/recipeTags'
+import BottomSheet from '@/components/ui/BottomSheet.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
 import AiRecipeSheet from './AiRecipeSheet.vue'
 
@@ -219,51 +220,6 @@ defineExpose({ openCreateForm, showForm })
         </button>
       </div>
 
-      <div v-if="showForm" class="form-card">
-        <div class="form-card-head">
-          <div class="form-title">{{ editingId ? 'Rezept bearbeiten' : 'Neues Rezept' }}</div>
-          <button class="form-cancel" type="button" @click="resetForm">Abbrechen</button>
-        </div>
-        <input v-model="formName" class="app-field form-field" type="text" placeholder="Name" />
-        <input v-model="formDuration" class="app-field form-field" type="number" inputmode="numeric" placeholder="Dauer (Min.)" />
-
-        <div class="form-label">Zutaten</div>
-        <div v-for="(_, idx) in formIngredients" :key="idx" class="form-row">
-          <input v-model="formIngredients[idx]" class="app-field form-field form-field--row" type="text" placeholder="Zutat" />
-          <button class="row-remove" type="button" @click="removeIngredientRow(idx)">–</button>
-        </div>
-        <button class="row-add" type="button" @click="addIngredientRow">+ Zutat hinzufügen</button>
-
-        <div class="form-label">Schritte</div>
-        <div v-for="(_, idx) in formSteps" :key="idx" class="form-row">
-          <input v-model="formSteps[idx]" class="app-field form-field form-field--row" type="text" :placeholder="`Schritt ${idx + 1}`" />
-          <button class="row-remove" type="button" @click="removeStepRow(idx)">–</button>
-        </div>
-        <button class="row-add" type="button" @click="addStepRow">+ Schritt hinzufügen</button>
-
-        <div class="form-label">Kategorien</div>
-        <p v-if="!categories.length" class="cat-empty">
-          Noch keine Kategorien — anlegen könnt ihr sie in den Einstellungen.
-        </p>
-        <div v-else class="cat-badges">
-          <button
-            v-for="c in categories"
-            :key="c.id"
-            type="button"
-            class="cat-badge"
-            :class="{ 'cat-badge--active': formTags.has(c.id) }"
-            :style="formTags.has(c.id) ? { background: c.color, borderColor: c.color } : undefined"
-            @click="toggleFormTag(c.id)"
-          >
-            {{ c.emoji }} {{ c.label }}
-          </button>
-        </div>
-
-        <button class="btn-primary save-btn" :disabled="!formName.trim()" @click="saveRecipe">
-          {{ editingId ? 'Änderungen speichern' : 'Rezept speichern' }}
-        </button>
-      </div>
-
       <div v-if="filteredRecipes.length === 0" class="empty">
         {{ recipes.length === 0 ? 'Noch keine Rezepte gespeichert.' : 'Keine Rezepte gefunden.' }}
       </div>
@@ -295,6 +251,51 @@ defineExpose({ openCreateForm, showForm })
         </button>
       </div>
     </div>
+
+    <BottomSheet
+      :isOpen="showForm"
+      :title="editingId ? 'Rezept bearbeiten' : 'Neues Rezept'"
+      @close="resetForm"
+    >
+      <input v-model="formName" class="app-field form-field" type="text" placeholder="Name" />
+      <input v-model="formDuration" class="app-field form-field" type="number" inputmode="numeric" placeholder="Dauer (Min.)" />
+
+      <div class="form-label">Zutaten</div>
+      <div v-for="(_, idx) in formIngredients" :key="idx" class="form-row">
+        <input v-model="formIngredients[idx]" class="app-field form-field form-field--row" type="text" placeholder="Zutat" />
+        <button class="row-remove" type="button" @click="removeIngredientRow(idx)">–</button>
+      </div>
+      <button class="row-add" type="button" @click="addIngredientRow">+ Zutat hinzufügen</button>
+
+      <div class="form-label">Schritte</div>
+      <div v-for="(_, idx) in formSteps" :key="idx" class="form-row">
+        <input v-model="formSteps[idx]" class="app-field form-field form-field--row" type="text" :placeholder="`Schritt ${idx + 1}`" />
+        <button class="row-remove" type="button" @click="removeStepRow(idx)">–</button>
+      </div>
+      <button class="row-add" type="button" @click="addStepRow">+ Schritt hinzufügen</button>
+
+      <div class="form-label">Kategorien</div>
+      <p v-if="!categories.length" class="cat-empty">
+        Noch keine Kategorien — anlegen könnt ihr sie in den Einstellungen.
+      </p>
+      <div v-else class="cat-badges">
+        <button
+          v-for="c in categories"
+          :key="c.id"
+          type="button"
+          class="cat-badge"
+          :class="{ 'cat-badge--active': formTags.has(c.id) }"
+          :style="formTags.has(c.id) ? { background: c.color, borderColor: c.color } : undefined"
+          @click="toggleFormTag(c.id)"
+        >
+          {{ c.emoji }} {{ c.label }}
+        </button>
+      </div>
+
+      <button class="btn-primary save-btn" :disabled="!formName.trim()" @click="saveRecipe">
+        {{ editingId ? 'Änderungen speichern' : 'Rezept speichern' }}
+      </button>
+    </BottomSheet>
 
     <AiRecipeSheet
       :isOpen="showAiSheet"
@@ -481,45 +482,6 @@ defineExpose({ openCreateForm, showForm })
   font-size: 12px;
   color: var(--text-faint);
   line-height: 1.5;
-}
-
-.form-card {
-  background: var(--surface);
-  border-radius: 18px;
-  padding: 14px;
-  margin-bottom: 14px;
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border-softer);
-}
-
-.form-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.form-title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.form-cancel {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  color: var(--text-faint);
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-}
-
-.form-cancel:active {
-  color: var(--text);
 }
 
 .form-field {

@@ -5,13 +5,9 @@ import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useBelegung } from '@/composables/useBelegung'
 import { useExpenses } from '@/composables/useExpenses'
-import { useBucketList } from '@/composables/useBucketList'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
 import { buildExpensesCsv, buildBookingsIcs, saveOrShare } from '@/services/export'
-import { resolveExpenseCategories, EXPENSE_CATEGORY_ICON_CHOICES, categoryColor } from '@/utils/expenseCategories'
-import { resolveIdeaCategories, ideaCategory, IDEA_ICON_CHOICES } from '@/utils/ideen'
-import { RESOURCE_ICONS } from '@/utils/belegung'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import IconGridPicker from '@/components/ui/IconGridPicker.vue'
 import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
@@ -20,11 +16,17 @@ import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
 const router = useRouter()
 const { user, logout, updatePrefs, deleteAccount } = useAuth()
 const {
-  couple, isPremium, updateBudget, regenerateInviteCode, updateMyIcon,
-  addExpenseCategory, removeExpenseCategory,
-  addIdeaCategory, updateIdeaCategory, removeIdeaCategory,
-  resetCoupleData,
+  couple, isPremium, updateBudget, regenerateInviteCode, updateMyIcon, resetCoupleData,
 } = useCouple()
+
+// Die vier bearbeitbaren Listen liegen jeweils auf einer eigenen Unterseite
+// (/settings/kategorien/:type) — hier steht nur noch der Weg dorthin.
+const CATEGORY_LINKS = [
+  { type: 'ausgaben', icon: '💶', title: 'Ausgaben-Kategorien', hint: 'Finanzen & Einkauf' },
+  { type: 'rezepte', icon: '🍽️', title: 'Rezept-Kategorien', hint: 'Filter im Rezept-Wiki' },
+  { type: 'ideen', icon: '💡', title: 'Ideen-Kategorien', hint: 'Ideen für uns' },
+  { type: 'belegung', icon: '🚗', title: 'Geteilte Ressourcen', hint: 'Auto, E-Bike, Hund …' },
+] as const
 
 const AVATAR_ICONS = ['🦊', '🦉', '🐻', '🐨', '🐢', '🦄', '🐸', '🐙', '🌵', '🍩', '🌟', '🔥', '🎧', '🎨', '⚡', '🌈']
 
@@ -81,42 +83,33 @@ watch(couple, (c) => {
   budgetInput.value = c.monthlyBudget ? (c.monthlyBudget / 100).toFixed(2) : ''
 }, { immediate: true })
 
+// Gleiche Semantik wie im Dashboard-Sheet: ein leeres Feld entfernt das Budget
+// bewusst, eine unlesbare Eingabe ist ein Fehler und darf nicht stillschweigend
+// als "kein Budget" durchgehen.
 async function saveBudget() {
-  const euros = parseFloat(budgetInput.value.replace(',', '.'))
-  const ok = await updateBudget(isNaN(euros) || euros <= 0 ? null : Math.round(euros * 100))
+  const raw = budgetInput.value.trim().replace(',', '.')
+
+  if (raw === '') {
+    const ok = await updateBudget(null)
+    showToast(ok ? 'Budget entfernt' : 'Fehler beim Speichern')
+    return
+  }
+
+  const euros = parseFloat(raw)
+  if (isNaN(euros) || euros <= 0) {
+    showToast('Bitte einen Betrag eingeben')
+    return
+  }
+
+  const ok = await updateBudget(Math.round(euros * 100))
   showToast(ok ? 'Budget gespeichert' : 'Fehler beim Speichern')
 }
 
-// ── Finanzen: Kategorien ──────────────────────────────────────
-const categories = computed(() => resolveExpenseCategories(couple.value))
-const showCategoryForm = ref(false)
-const newCategoryName = ref('')
-const newCategoryIcon = ref(EXPENSE_CATEGORY_ICON_CHOICES[0])
-
-async function handleAddCategory() {
-  const ok = await addExpenseCategory(newCategoryName.value, newCategoryIcon.value)
-  if (ok) {
-    newCategoryName.value = ''
-    newCategoryIcon.value = EXPENSE_CATEGORY_ICON_CHOICES[0]
-    showCategoryForm.value = false
-    showToast('Kategorie hinzugefügt')
-  } else {
-    showToast('Fehler beim Hinzufügen')
-  }
-}
-
-async function handleRemoveCategory(id: string) {
-  const ok = await removeExpenseCategory(id)
-  showToast(ok ? 'Kategorie entfernt' : 'Das geht nicht — mindestens eine Kategorie muss bleiben')
-}
-
-// ── Belegung: Ressourcen ──────────────────────────────────────
-// Die geteilten Dinge (Auto, E-Bike, Hund …) werden nur hier verwaltet — die
-// Belegung selbst lebt als Timeline-Karte auf dem Dashboard.
-const coupleId = computed(() => user.value?.coupleId ?? null)
-const { resources, bookings, canAddResource, countBookings, addResource, updateResource, deleteResource } = useBelegung(coupleId)
-
 // ── Export (Premium) ──────────────────────────────────────────
+// Die Ressourcen/Belegungen werden auf /settings/kategorien/belegung gepflegt;
+// hier hängen sie nur noch am ICS-Export.
+const coupleId = computed(() => user.value?.coupleId ?? null)
+const { resources, bookings } = useBelegung(coupleId)
 const { expenses } = useExpenses(coupleId)
 const exporting = ref(false)
 
@@ -157,96 +150,6 @@ function handleExportBookings() {
     'text/calendar',
     bookings.value.length === 0
   )
-}
-
-interface ResourceForm { id: string | null; name: string; emoji: string }
-const resourceForm = ref<ResourceForm | null>(null)
-const pendingResourceDelete = ref<ResourceForm | null>(null)
-
-function startNewResource() {
-  if (!canAddResource.value) {
-    showPaywall('belegungResources')
-    return
-  }
-  resourceForm.value = { id: null, name: '', emoji: RESOURCE_ICONS[0] }
-}
-
-function startEditResource(resource: { id: string; name: string; emoji: string }) {
-  resourceForm.value = { id: resource.id, name: resource.name, emoji: resource.emoji }
-}
-
-async function saveResource() {
-  const form = resourceForm.value
-  if (!form?.name.trim()) return
-
-  const ok = form.id
-    ? !!(await updateResource(form.id, form.name, form.emoji))
-    : !!(await addResource(form.name, form.emoji))
-
-  if (ok) {
-    showToast(form.id ? 'Ressource gespeichert' : `${form.emoji} ${form.name.trim()} angelegt`)
-    resourceForm.value = null
-  } else {
-    showToast('Fehler beim Speichern')
-  }
-}
-
-// Löschen nimmt die Belegungen der Ressource mit — daher die Rückfrage.
-async function confirmResourceDelete() {
-  const form = pendingResourceDelete.value
-  if (!form?.id) return
-  const ok = await deleteResource(form.id)
-  showToast(ok ? 'Ressource gelöscht' : 'Fehler beim Löschen')
-  pendingResourceDelete.value = null
-  if (ok) resourceForm.value = null
-}
-
-// ── Planung: Ideen-Kategorien ─────────────────────────────────
-// Gleiches Formular-Muster wie die Ressourcen: Zeile antippen = bearbeiten,
-// ✕ = löschen. Löschen nimmt die Ideen NICHT mit — sie behalten ihre Kategorie
-// und erscheinen im Ideen-Widget nur noch unter "Alle".
-const { items: ideas } = useBucketList(coupleId)
-const ideaCategories = computed(() => resolveIdeaCategories(couple.value))
-
-function countIdeas(id: string): number {
-  return ideas.value.filter((i) => ideaCategory(i.category, ideaCategories.value) === id).length
-}
-
-interface IdeaCategoryForm { id: string | null; label: string; emoji: string }
-const ideaForm = ref<IdeaCategoryForm | null>(null)
-const pendingIdeaDelete = ref<IdeaCategoryForm | null>(null)
-
-function startNewIdeaCategory() {
-  ideaForm.value = { id: null, label: '', emoji: IDEA_ICON_CHOICES[0] }
-}
-
-function startEditIdeaCategory(cat: { id: string; label: string; emoji: string }) {
-  ideaForm.value = { id: cat.id, label: cat.label, emoji: cat.emoji }
-}
-
-async function saveIdeaCategory() {
-  const form = ideaForm.value
-  if (!form?.label.trim()) return
-
-  const ok = form.id
-    ? await updateIdeaCategory(form.id, form.label, form.emoji)
-    : await addIdeaCategory(form.label, form.emoji)
-
-  if (ok) {
-    showToast(form.id ? 'Kategorie gespeichert' : `${form.emoji} ${form.label.trim()} angelegt`)
-    ideaForm.value = null
-  } else {
-    showToast('Fehler beim Speichern')
-  }
-}
-
-async function confirmIdeaDelete() {
-  const form = pendingIdeaDelete.value
-  if (!form?.id) return
-  const ok = await removeIdeaCategory(form.id)
-  showToast(ok ? 'Kategorie gelöscht' : 'Das geht nicht — mindestens eine Kategorie muss bleiben')
-  pendingIdeaDelete.value = null
-  if (ok) ideaForm.value = null
 }
 
 // ── Konto / Gefahrenzone ──────────────────────────────────────
@@ -340,147 +243,45 @@ async function confirmDanger() {
         </div>
       </div>
 
+      <!-- Kategorien: je Liste eine eigene Unterseite -->
+      <div class="section-label section-gap">Kategorien</div>
+      <div class="card cat-card">
+        <button
+          v-for="link in CATEGORY_LINKS"
+          :key="link.type"
+          class="cat-link"
+          type="button"
+          @click="router.push(`/settings/kategorien/${link.type}`)"
+        >
+          <span class="cat-link-icon">{{ link.icon }}</span>
+          <span class="profile-text">
+            <span class="cat-link-title">{{ link.title }}</span>
+            <span class="profile-hint">{{ link.hint }}</span>
+          </span>
+          <span class="chevron">›</span>
+        </button>
+      </div>
+
       <!-- Finanzen -->
       <div class="section-label section-gap">Finanzen</div>
       <div class="card">
         <div class="field-label">Monatsbudget (€)</div>
         <div class="budget-row">
+          <!-- type="text" + inputmode="decimal", NICHT type="number": ein
+               Zahlenfeld verwirft "800,00" und liefert einen leeren String
+               zurück — das Feld leert sich beim Tippen und das Budget würde
+               beim Speichern gelöscht statt gesetzt. -->
           <input
             v-model="budgetInput"
             class="app-field"
-            type="number"
+            type="text"
             inputmode="decimal"
             placeholder="z. B. 800"
             @keyup.enter="saveBudget"
           />
           <button class="text-btn budget-save" type="button" @click="saveBudget">Speichern</button>
         </div>
-
-        <div class="field-label categories-label">Kategorien</div>
-        <div class="category-list">
-          <div v-for="c in categories" :key="c.id" class="category-row">
-            <span class="category-icon" :style="{ background: categoryColor(categories, c.id) }">{{ c.icon }}</span>
-            <span class="category-name">{{ c.name }}</span>
-            <button class="remove-btn" type="button" @click="handleRemoveCategory(c.id)" aria-label="Entfernen">✕</button>
-          </div>
-        </div>
-
-        <button v-if="!showCategoryForm" class="text-btn" type="button" @click="showCategoryForm = true">
-          + Kategorie hinzufügen
-        </button>
-        <template v-else>
-          <input
-            v-model="newCategoryName"
-            class="app-field cat-name-field"
-            type="text"
-            placeholder="Kategoriename"
-          />
-          <IconGridPicker
-            v-model="newCategoryIcon"
-            :icons="EXPENSE_CATEGORY_ICON_CHOICES"
-          />
-          <div class="cat-form-actions">
-            <button class="text-btn" type="button" @click="showCategoryForm = false">Abbrechen</button>
-            <button class="btn-primary cat-save-btn" type="button" :disabled="!newCategoryName.trim()" @click="handleAddCategory">
-              Kategorie speichern
-            </button>
-          </div>
-        </template>
-      </div>
-
-      <!-- Belegung: geteilte Ressourcen -->
-      <div class="section-label section-gap">Belegung</div>
-      <div class="card">
-        <div class="field-label">Ressourcen</div>
-        <p v-if="!resources.length" class="toggle-hint resource-empty">
-          Noch nichts angelegt — z. B. Auto, E-Bike, Parkplatz oder „Gassi“.
-        </p>
-        <div v-else class="category-list">
-          <div v-for="r in resources" :key="r.id" class="category-row">
-            <span class="resource-icon">{{ r.emoji }}</span>
-            <button class="resource-btn" type="button" @click="startEditResource(r)">
-              <span class="category-name">{{ r.name }}</span>
-              <span class="resource-count">
-                {{ countBookings(r.id) }} {{ countBookings(r.id) === 1 ? 'Belegung' : 'Belegungen' }}
-              </span>
-            </button>
-            <button
-              class="remove-btn"
-              type="button"
-              aria-label="Entfernen"
-              @click="pendingResourceDelete = { id: r.id, name: r.name, emoji: r.emoji }"
-            >✕</button>
-          </div>
-        </div>
-
-        <button v-if="!resourceForm" class="text-btn" type="button" @click="startNewResource">
-          + Ressource hinzufügen
-        </button>
-        <template v-else>
-          <input
-            v-model="resourceForm.name"
-            class="app-field cat-name-field"
-            type="text"
-            placeholder="z. B. Auto, Wohnmobil, Bohrmaschine …"
-            @keyup.enter="saveResource"
-          />
-          <IconGridPicker v-model="resourceForm.emoji" :icons="RESOURCE_ICONS" :columns="7" />
-          <div class="cat-form-actions">
-            <button class="text-btn" type="button" @click="resourceForm = null">Abbrechen</button>
-            <button
-              class="btn-primary cat-save-btn"
-              type="button"
-              :disabled="!resourceForm.name.trim()"
-              @click="saveResource"
-            >{{ resourceForm.id ? 'Speichern' : 'Ressource anlegen' }}</button>
-          </div>
-        </template>
-      </div>
-
-      <!-- Planung: Ideen-Kategorien -->
-      <div class="section-label section-gap">Ideen</div>
-      <div class="card">
-        <div class="field-label">Kategorien</div>
-        <div class="category-list">
-          <div v-for="c in ideaCategories" :key="c.id" class="category-row">
-            <span class="resource-icon">{{ c.emoji }}</span>
-            <button class="resource-btn" type="button" @click="startEditIdeaCategory(c)">
-              <span class="category-name">{{ c.label }}</span>
-              <span class="resource-count">
-                {{ countIdeas(c.id) }} {{ countIdeas(c.id) === 1 ? 'Idee' : 'Ideen' }}
-              </span>
-            </button>
-            <button
-              class="remove-btn"
-              type="button"
-              aria-label="Entfernen"
-              @click="pendingIdeaDelete = { id: c.id, label: c.label, emoji: c.emoji }"
-            >✕</button>
-          </div>
-        </div>
-
-        <button v-if="!ideaForm" class="text-btn" type="button" @click="startNewIdeaCategory">
-          + Kategorie hinzufügen
-        </button>
-        <template v-else>
-          <input
-            v-model="ideaForm.label"
-            class="app-field cat-name-field"
-            type="text"
-            placeholder="z. B. Konzerte, Wandern, Museen …"
-            @keyup.enter="saveIdeaCategory"
-          />
-          <IconGridPicker v-model="ideaForm.emoji" :icons="IDEA_ICON_CHOICES" />
-          <div class="cat-form-actions">
-            <button class="text-btn" type="button" @click="ideaForm = null">Abbrechen</button>
-            <button
-              class="btn-primary cat-save-btn"
-              type="button"
-              :disabled="!ideaForm.label.trim()"
-              @click="saveIdeaCategory"
-            >{{ ideaForm.id ? 'Speichern' : 'Kategorie anlegen' }}</button>
-          </div>
-        </template>
+        <p class="field-hint">Leer lassen entfernt das Budget.</p>
       </div>
 
       <!-- Sprache -->
@@ -515,52 +316,6 @@ async function confirmDanger() {
         <span class="reset-avatar-badge">{{ myInitial }}</span>
         Zurück zu Initialen
       </button>
-    </BottomSheet>
-
-    <BottomSheet
-      :isOpen="!!pendingResourceDelete"
-      title="Ressource löschen?"
-      @close="pendingResourceDelete = null"
-    >
-      <p class="confirm-text">
-        „{{ pendingResourceDelete?.name }}“ löschen?
-        <template v-if="pendingResourceDelete?.id && countBookings(pendingResourceDelete.id)">
-          Die {{ countBookings(pendingResourceDelete.id) }}
-          {{ countBookings(pendingResourceDelete.id) === 1 ? 'zugehörige Belegung wird' : 'zugehörigen Belegungen werden' }}
-          mit gelöscht.
-        </template>
-      </p>
-      <div class="confirm-actions">
-        <button class="text-btn confirm-cancel" type="button" @click="pendingResourceDelete = null">
-          Abbrechen
-        </button>
-        <button class="btn-primary confirm-yes" type="button" @click="confirmResourceDelete">
-          Ja, löschen
-        </button>
-      </div>
-    </BottomSheet>
-
-    <BottomSheet
-      :isOpen="!!pendingIdeaDelete"
-      title="Kategorie löschen?"
-      @close="pendingIdeaDelete = null"
-    >
-      <p class="confirm-text">
-        „{{ pendingIdeaDelete?.label }}“ löschen?
-        <template v-if="pendingIdeaDelete?.id && countIdeas(pendingIdeaDelete.id)">
-          Die {{ countIdeas(pendingIdeaDelete.id) }}
-          {{ countIdeas(pendingIdeaDelete.id) === 1 ? 'zugehörige Idee bleibt' : 'zugehörigen Ideen bleiben' }}
-          erhalten, {{ countIdeas(pendingIdeaDelete.id) === 1 ? 'wird' : 'werden' }} aber ohne Kategorie angezeigt.
-        </template>
-      </p>
-      <div class="confirm-actions">
-        <button class="text-btn confirm-cancel" type="button" @click="pendingIdeaDelete = null">
-          Abbrechen
-        </button>
-        <button class="btn-primary confirm-yes" type="button" @click="confirmIdeaDelete">
-          Ja, löschen
-        </button>
-      </div>
     </BottomSheet>
 
     <BottomSheet :isOpen="!!pendingDanger" title="Bist du sicher?" @close="pendingDanger = null">
@@ -814,8 +569,50 @@ async function confirmDanger() {
   margin-bottom: 8px;
 }
 
-.categories-label {
-  margin-top: 16px;
+.field-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-meta);
+}
+
+/* Kategorien-Sektion: vier Zeilen, jede führt auf ihre eigene Unterseite. */
+.cat-card {
+  padding: 4px 14px;
+}
+
+.cat-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cat-link + .cat-link {
+  border-top: 1px solid var(--border-softer);
+}
+
+.cat-link-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: var(--surface-deep);
+}
+
+.cat-link-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .budget-row {
@@ -831,112 +628,6 @@ async function confirmDanger() {
 .budget-save {
   margin-top: 0;
   flex-shrink: 0;
-}
-
-.category-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.category-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.category-icon {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
-}
-
-.category-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.remove-btn {
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: none;
-  background: var(--danger-tint);
-  color: var(--danger);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.resource-empty {
-  margin: 0 0 4px;
-}
-
-.resource-icon {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: var(--surface-deep);
-  font-size: 16px;
-}
-
-/* Zeile antippen = bearbeiten (Name + Icon), ✕ = löschen */
-.resource-btn {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-
-.resource-count {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--text-meta);
-}
-
-.cat-name-field {
-  margin-top: 12px;
-  margin-bottom: 10px;
-}
-
-.cat-form-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.cat-form-actions .text-btn {
-  margin-top: 0;
-}
-
-.cat-save-btn {
-  width: auto;
-  padding: 10px 18px;
 }
 
 .account-card {

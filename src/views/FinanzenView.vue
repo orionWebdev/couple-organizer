@@ -25,6 +25,7 @@ const coupleId = computed(() => user.value?.coupleId ?? null)
 const {
   expenses,
   balanceInfo,
+  openMonthlyExpenseIds,
   loading,
   activeEventSummaries,
   eventSummaries,
@@ -137,12 +138,12 @@ async function onDeleteExpense(id: string) {
   showToast('Ausgabe gelöscht')
 }
 
+// Der gemeinsame Saldo ist der Saldo der Monatsausgaben. Events bleiben davon
+// unberührt — die werden im Event selbst über "Abschließen & Ausgleichen"
+// verrechnet.
 async function onSettle() {
   showSettle.value = false
-  const ids = expenses.value
-    .filter(e => !e.isPaid)
-    .map(e => e.id)
-  await markAllPaid(ids)
+  await markAllPaid(openMonthlyExpenseIds.value)
   showToast('Saldo ausgeglichen')
 }
 
@@ -340,7 +341,8 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
     <!-- Settle confirmation -->
     <BottomSheet :isOpen="showSettle" title="Saldo begleichen?" @close="showSettle = false">
       <p class="settle-text">
-        Alle offenen Ausgaben werden als beglichen markiert. Der Saldo wird auf 0 gesetzt.
+        Alle offenen Monatsausgaben werden als beglichen markiert. Der Saldo wird auf 0 gesetzt.
+        Events bleiben davon unberührt — die rechnet ihr im Event selbst ab.
       </p>
       <button class="btn-primary" @click="onSettle">Begleichen</button>
       <button class="cancel-btn" @click="showSettle = false">Abbrechen</button>

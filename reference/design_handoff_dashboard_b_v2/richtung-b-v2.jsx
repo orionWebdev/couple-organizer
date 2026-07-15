@@ -256,7 +256,8 @@
   function Inner({ scenarioName, toast, setToast }) {
     const [data, setData] = useState(() => TG.scenario(scenarioName));
     const [tab, setTab] = useState("start");
-    const [screen, setScreen] = useState(null); // 'belegung' | 'settings'
+    const [screen, setScreen] = useState(null); // 'belegung' | 'settings' | 'reise'
+    const [reiseId, setReiseId] = useState(null);
     const flash = m => setToast(m);
     const isEmpty = scenarioName === "empty";
 
@@ -267,7 +268,13 @@
     function mutPlan(fn) { setData(d => Object.assign({}, d, { planung: fn(d.planung || { ideen: [], reisen: [], notizen: [] }) })); }
     const addIdea = i => mutPlan(p => Object.assign({}, p, { ideen: p.ideen.concat([i]) }));
     const toggleIdea = id => mutPlan(p => Object.assign({}, p, { ideen: p.ideen.map(x => x.id === id ? Object.assign({}, x, { done: !x.done }) : x) }));
-    const addReise = t => mutPlan(p => Object.assign({}, p, { reisen: p.reisen.concat([{ id: "r" + Date.now(), title: t, when: "offen", emoji: "🧳" }]) }));
+    const addReise = t => mutPlan(p => Object.assign({}, p, { reisen: p.reisen.concat([{ id: "r" + Date.now(), title: t, when: "offen", emoji: "🧳", todos: [], programm: [], notiz: "" }]) }));
+    const mutReise = (id, fn) => mutPlan(p => Object.assign({}, p, { reisen: p.reisen.map(r => r.id === id ? fn(r) : r) }));
+    const toggleTodo = (id, tid) => mutReise(id, r => Object.assign({}, r, { todos: (r.todos || []).map(t => t.id === tid ? Object.assign({}, t, { done: !t.done }) : t) }));
+    const addTodo = (id, text) => mutReise(id, r => Object.assign({}, r, { todos: (r.todos || []).concat([{ id: "t" + Date.now(), text: text, done: false }]) }));
+    const addProgramm = (id, text) => mutReise(id, r => Object.assign({}, r, { programm: (r.programm || []).concat([{ id: "p" + Date.now(), text: text }]) }));
+    const setNotiz = (id, text) => mutReise(id, r => Object.assign({}, r, { notiz: text }));
+    const delReise = id => { mutPlan(p => Object.assign({}, p, { reisen: p.reisen.filter(r => r.id !== id) })); setScreen(null); flash("Reise gelöscht"); };
     const addNotiz = t => mutPlan(p => Object.assign({}, p, { notizen: p.notizen.concat([{ id: "n" + Date.now(), text: t }]) }));
 
     const headerFor = {
@@ -300,6 +307,7 @@
 
           {tab === "planung" &&
             <PlanungTab data={data} flash={flash} onOpenBelegung={() => setScreen("belegung")}
+              onOpenReise={r => { setReiseId(r.id); setScreen("reise"); }}
               onAddIdea={addIdea} onToggleIdea={toggleIdea} onAddReise={addReise} onAddNotiz={addNotiz} />}
 
           {tab === "haushalt" && <Stub label="Haushalt" emoji="🧽" />}
@@ -315,6 +323,13 @@
             onClose={() => setScreen(null)} onSubmit={addBooking} onDelete={delBooking} />}
         {screen === "settings" &&
           <SettingsSheet resources={data.resources} bookings={data.bookings} onAddResource={addResource} onClose={() => setScreen(null)} />}
+        {screen === "reise" && window.ReiseDetail &&
+          React.createElement(window.ReiseDetail, {
+            reise: (data.planung && data.planung.reisen || []).find(r => r.id === reiseId),
+            onClose: () => setScreen(null),
+            onToggleTodo: toggleTodo, onAddTodo: addTodo, onAddProgramm: addProgramm,
+            onSetNotiz: setNotiz, onDelete: delReise
+          })}
       </PhoneV2>
     );
   }
@@ -329,7 +344,7 @@
       <div style={{ paddingTop: 4 }}>
         <div style={{ background: "linear-gradient(180deg, var(--dashboard-tint), var(--surface))", border: "1px solid var(--border-softer)", borderRadius: "var(--radius-card-lg)", padding: "22px 20px", boxShadow: "var(--shadow-card)" }}>
           <div style={{ fontSize: 40 }}>👋</div>
-          <div style={{ fontFamily: "var(--font-headline)", fontWeight: 700, fontSize: 21, marginTop: 4 }}>Willkommen bei Together</div>
+          <div style={{ fontFamily: "var(--font-headline)", fontWeight: 700, fontSize: 21, marginTop: 4 }}>Willkommen bei TwoDo</div>
           <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-secondary)", marginTop: 4, lineHeight: 1.45 }}>Drei kleine Schritte, dann füllt sich euer Zuhause.</div>
         </div>
         <div className="section-label" style={{ margin: "22px 0 10px" }}>Einrichten · 0 / 3</div>

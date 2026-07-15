@@ -1,4 +1,4 @@
-/* Together — Redesign · gemeinsame Bausteine (Phone, Nav, Sheets, Belegung-Screen)
+/* TwoDo — Redesign · gemeinsame Bausteine (Phone, Nav, Sheets, Belegung-Screen)
    global React, TG */
 (function () {
   const { useState, useEffect } = React;

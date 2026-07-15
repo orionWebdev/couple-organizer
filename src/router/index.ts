@@ -46,12 +46,12 @@ const router = createRouter({
           component: () => import('@/views/PlanungView.vue')
         },
         {
-          // Der Wochenkalender der Belegung — eigene Route (Dashboard und
+          // Der Monatskalender der Belegung — eigene Route (Dashboard und
           // Planung-Tab öffnen ihn beide), aber kein eigener Nav-Slot: die
           // Bubble bleibt auf "Planung".
           path: 'belegung',
           name: 'belegung',
-          component: () => import('@/views/WochenkalenderView.vue')
+          component: () => import('@/views/KalenderView.vue')
         },
         {
           path: 'einkaufen',
@@ -62,6 +62,14 @@ const router = createRouter({
           path: 'settings',
           name: 'settings',
           component: () => import('@/views/SettingsView.vue')
+        },
+        {
+          // Ausgaben-, Ideen-, Rezept-Kategorien und die geteilten Ressourcen —
+          // eine Unterseite je Liste, damit die Settings-Seite nicht zur
+          // endlosen Liste wird. Wie /settings ohne eigenen Nav-Slot.
+          path: 'settings/kategorien/:type',
+          name: 'kategorien',
+          component: () => import('@/views/KategorienView.vue')
         },
         {
           path: 'premium',

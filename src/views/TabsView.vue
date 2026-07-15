@@ -34,7 +34,7 @@ const NAV_ITEMS: readonly NavItem[] = [
 ]
 
 // Routen ohne eigenen Nav-Slot leihen sich den Slot ihres Bereichs: der
-// Wochenkalender gehört zur Planung. Die Einstellungen (Profil-Avatare im
+// Belegungs-Kalender gehört zur Planung. Die Einstellungen (Profil-Avatare im
 // Header) haben keinen Bereich — dort bleibt die Bubble auf "Start".
 const SLOT_ALIASES: Record<string, string> = { belegung: 'planung' }
 

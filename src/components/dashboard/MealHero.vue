@@ -2,12 +2,14 @@
 import { computed } from 'vue'
 import type { Couple } from '@/types'
 import type { WeekDay } from '@/composables/useMealPlan'
-import { primaryTagMeta } from '@/utils/recipeTags'
+import { primaryTagMeta, resolveRecipeCategories } from '@/utils/recipeTags'
 
 const props = defineProps<{
   day: WeekDay | null
   couple: Couple | null
 }>()
+
+const recipeCategories = computed(() => resolveRecipeCategories(props.couple))
 
 const emit = defineEmits<{
   (e: 'setCook', assignee: string): void
@@ -15,7 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const recipe = computed(() => props.day?.recipe ?? null)
-const icon = computed(() => primaryTagMeta(recipe.value?.tags ?? []))
+const icon = computed(() => primaryTagMeta(recipe.value?.tags ?? [], recipeCategories.value))
 const cook = computed(() => props.day?.entry?.cookAssignee ?? null)
 
 // "🕒 25 Min · 4 Zutaten" — beide Teile sind optional, ein Rezept ohne Zeit oder

@@ -1,4 +1,4 @@
-/* Together — Redesign-Exploration · Datenmodell, Szenarien & Helfer
+/* TwoDo — Redesign-Exploration · Datenmodell, Szenarien & Helfer
    Plain JS, hängt an window.TG. Kein Produktionscode — nur die Prototypen-Daten.
 
    Kern-Idee zur Belegung: Eine Serie ist EIN Datensatz (eine Regel).
@@ -46,8 +46,27 @@
         { id: "i6", cat: "date",  title: "Töpferkurs ausprobieren",    by: "b", done: false }
       ],
       reisen: [
-        { id: "r1", title: "Wochenende Amsterdam", when: "noch offen", emoji: "🚲" },
-        { id: "r2", title: "Wandern Zugspitze",    when: "Sept.",      emoji: "⛰️" }
+        { id: "r1", title: "Wochenende Amsterdam", when: "noch offen", emoji: "🚲",
+          todos: [
+            { id: "t1", text: "Hotel buchen", done: false },
+            { id: "t2", text: "Zugtickets buchen", done: true },
+            { id: "t3", text: "Fahrräder leihen", done: false }
+          ],
+          programm: [
+            { id: "p1", text: "Van-Gogh-Museum" },
+            { id: "p2", text: "Grachtenfahrt bei Sonnenuntergang" },
+            { id: "p3", text: "Foodhallen — Snacks testen" }
+          ],
+          notiz: "Freitag früh los, um dem Berufsverkehr zu entgehen." },
+        { id: "r2", title: "Wandern Zugspitze", when: "Sept.", emoji: "⛰️",
+          todos: [
+            { id: "t4", text: "Hütte reservieren", done: false },
+            { id: "t5", text: "Wanderschuhe checken", done: false }
+          ],
+          programm: [
+            { id: "p4", text: "Sonnenaufgang am Gipfel" }
+          ],
+          notiz: "" }
       ],
       notizen: [
         { id: "n1", text: "WLAN-Passwort Ferienwohnung: sonne2025" },

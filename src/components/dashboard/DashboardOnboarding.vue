@@ -24,7 +24,7 @@ const doneCount = computed(() => steps.value.filter((s) => s.done).length)
   <div class="onboarding">
     <div class="welcome">
       <div class="welcome-emoji">👋</div>
-      <div class="welcome-title">Willkommen bei Together</div>
+      <div class="welcome-title">Willkommen bei TwoDo</div>
       <div class="welcome-text">Drei kleine Schritte, dann füllt sich euer Zuhause.</div>
     </div>
 

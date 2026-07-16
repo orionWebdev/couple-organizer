@@ -34,7 +34,7 @@ async function handleRestore() {
   <div class="page">
     <header class="page-header">
       <button class="back-btn" type="button" aria-label="Zurück" @click="router.back()">‹</button>
-      <h1 class="page-title">Together Plus</h1>
+      <h1 class="page-title">TwoDo Plus</h1>
       <ProfileButton />
     </header>
 
@@ -49,20 +49,20 @@ async function handleRestore() {
       </div>
 
       <template v-if="isPremium">
-        <p class="status-title">Together Plus ist aktiv</p>
+        <p class="status-title">TwoDo Plus ist aktiv</p>
         <p class="status-sub">
           <template v-if="activeUntil">Verlängert sich am {{ activeUntil }}.</template>
           <template v-else>Für euch beide freigeschaltet.</template>
         </p>
       </template>
       <template v-else>
-        <p class="status-title">Ihr nutzt Together kostenlos</p>
+        <p class="status-title">Ihr nutzt TwoDo kostenlos</p>
         <p class="status-sub">Alle Kernbereiche sind frei — Plus schaltet KI, Auswertungen und unbegrenzte Listen frei.</p>
       </template>
     </div>
 
     <button v-if="!isPremium" class="cta" @click="showPaywall('export')">
-      Together Plus ansehen
+      TwoDo Plus ansehen
     </button>
 
     <div class="actions">

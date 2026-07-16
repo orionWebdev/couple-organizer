@@ -1,4 +1,4 @@
-# Together → Google Play Store & Premium: Fahrplan
+# TwoDo → Google Play Store & Premium: Fahrplan
 
 Lebendes Dokument. Stand: **12.07.2026**.
 Wenn du mit Claude Code an diesem Thema weiterarbeitest: **diese Datei zuerst lesen** — sie sagt, was steht, was fehlt und wo die Fallstricke liegen. Die technischen Details der fertigen Teile stehen in `CLAUDE.md`.

@@ -9,8 +9,8 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Together" />
-    <title>Together</title>
+    <meta name="apple-mobile-web-app-title" content="TwoDo" />
+    <title>TwoDo</title>
 
     <link rel="preload" href="/fonts/fredoka-var.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/nunito-var.woff2" as="font" type="font/woff2" crossorigin />
@@ -99,6 +99,10 @@
         opacity: 0;
         animation: splashWordIn 1400ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
       }
+      /* Wortmarke „TwoDo": erste Silbe Terrakotta, zweite Türkis — dieselben
+         Farben wie die beiden Splash-Kreise (Tokens gibt es hier noch nicht). */
+      .splash-word .w-two { color: oklch(0.7 0.15 38); }
+      .splash-word .w-do { color: oklch(0.69 0.1 195); }
       .splash-tag {
         font-family: 'Nunito', system-ui, sans-serif;
         font-weight: 600;
@@ -175,7 +179,7 @@
           <div class="splash-circle left"></div>
           <div class="splash-circle right"></div>
         </div>
-        <div class="splash-word">Together</div>
+        <div class="splash-word"><span class="w-two">Two</span><span class="w-do">Do</span></div>
         <div class="splash-tag">Euer Zuhause, gemeinsam.</div>
       </div>
       <div class="splash-dots"><i></i><i></i><i></i></div>

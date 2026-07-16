@@ -18,7 +18,7 @@ onMounted(async () => {
 })
 
 function shareText() {
-  return `Sei bei Together dabei! Lade die App und gib diesen Einladungscode ein: ${props.code}`
+  return `Sei bei TwoDo dabei! Lade die App und gib diesen Einladungscode ein: ${props.code}`
 }
 
 async function copyCode() {
@@ -36,7 +36,7 @@ async function share() {
     return
   }
   try {
-    await Share.share({ title: 'Together', text: shareText(), dialogTitle: 'Einladungscode teilen' })
+    await Share.share({ title: 'TwoDo', text: shareText(), dialogTitle: 'Einladungscode teilen' })
   } catch {
     // Abbruch durch den Nutzer — kein Fehler.
   }

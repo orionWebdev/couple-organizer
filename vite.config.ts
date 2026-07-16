@@ -24,8 +24,8 @@ export default defineConfig(({ mode }) => {
         includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
         manifest: {
           id: '/',
-          name: 'Together',
-          short_name: 'Together',
+          name: 'TwoDo',
+          short_name: 'TwoDo',
           description: 'Euer Zuhause, gemeinsam.',
           lang: 'de',
           dir: 'ltr',

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-"Together" (user-facing brand + PWA manifest name; the repo/internal name is still "Couple Organizer"/"Paarplaner") — a mobile-first PWA for couples to manage shared finances, household chores, shopping lists, and weekly meal planning (with Gemini-assisted recipe suggestions). Vue 3 + TypeScript + Vite on Firebase (Auth + Firestore), plus a thin Cloud Functions layer (`functions/`) that exists for exactly two reasons: it holds the Gemini API key server-side, and it is the only writer of the premium entitlement.
+"TwoDo" (user-facing brand + PWA manifest name — a pun on "to do" + "two"; the repo/internal name is still "Couple Organizer"/"Paarplaner") — a mobile-first PWA for couples to manage shared finances, household chores, shopping lists, and weekly meal planning (with Gemini-assisted recipe suggestions). Vue 3 + TypeScript + Vite on Firebase (Auth + Firestore), plus a thin Cloud Functions layer (`functions/`) that exists for exactly two reasons: it holds the Gemini API key server-side, and it is the only writer of the premium entitlement.
 
 The same codebase ships as a **web PWA** and as an **Android app via Capacitor** (Google Play, subscription via RevenueCat → Play Billing). The only platform forks are `src/services/platform.ts`, the `native` Vite mode, and the dynamically imported `src/native/bootstrap.ts`.
 
@@ -144,11 +144,11 @@ Resources (`name` + emoji from `RESOURCE_ICONS`, 7-column `IconGridPicker`) are 
 
 The three category lists on the couple doc follow the same shape (`add*`/`update*`/`remove*` in `useCouple.ts`, `resolve*(couple)` in the matching `src/utils/*.ts`, absent field = the DEFAULT set). Adding a fourth kind means: type in `src/types/index.ts`, defaults + resolver in a util, CRUD in `useCouple.ts`, one entry in `META` — nothing in Settings itself.
 
-### Branding ("Together")
+### Branding ("TwoDo")
 
-The brand (source: `reference/design_handoff_together_branding/`) is the "Overlap" mark: two circles (`cx=46`/`cx=74`, `cy=45`, `r=33` in a `0 0 120 90` viewBox) in the two person colors — terracotta `--haushalt`/`--chris` and turquoise `--finanzen`/`--sarah`. `mix-blend-mode: multiply` sits on **each circle** (inside an `isolation: isolate` group), not on the group as the handoff's HTML prototype has it — only that way does the intersection darken into the "shared space" the design intends.
+The brand (source: `reference/design_handoff_together_branding/` — the folder name predates the rename) is the "Overlap" mark: two circles (`cx=46`/`cx=74`, `cy=45`, `r=33` in a `0 0 120 90` viewBox) in the two person colors — terracotta `--haushalt`/`--chris` and turquoise `--finanzen`/`--sarah`. `mix-blend-mode: multiply` sits on **each circle** (inside an `isolation: isolate` group), not on the group as the handoff's HTML prototype has it — only that way does the intersection darken into the "shared space" the design intends. The wordmark is "TwoDo" split by colour — first syllable "Two" in `colorA`, "Do" in `colorB` (`splitAt`, default 3); the symbol itself is unchanged from the former "Together" mark.
 
-`src/components/brand/TogetherLogo.vue` is the reusable mark (props `height`, `variant: mark|horizontal|vertical`, `word`, `tagline`, `colorA`/`colorB`, `wordColor`, `blendMode`); all sizes derive from `height`. It's used in `LoginView.vue` and `CoupleSetupView.vue`.
+`src/components/brand/TwoDoLogo.vue` is the reusable mark (props `height`, `variant: mark|horizontal|vertical`, `word`, `tagline`, `colorA`/`colorB`, `blendMode`, `splitAt`); all sizes derive from `height`. It's used in `LoginView.vue` and `CoupleSetupView.vue`.
 
 The splash screen lives in `index.html` (inline markup + `<style>`, values written out literally rather than as tokens), **not** in a Vue component: `main.ts` only mounts the app after `authReady`, so the wait it covers happens before the first Vue render. `hideSplash()` in `main.ts` holds it for at least 2 s (so the build-up animation reaches the claim), then fades and removes it; if auth takes longer, the mark keeps breathing and the dots keep blinking. `App.vue` therefore has no loading state of its own.
 
@@ -184,7 +184,7 @@ Two things bite here and are easy to miss:
 - **CORS**: the Android WebView's origin is `https://localhost`, which is *not* in the callables' default allowlist. It (and `capacitor://localhost`) must stay in `CORS_ORIGINS` (`functions/src/lib/config.ts`) or every call from the app fails at the preflight.
 - **Quotas** (`functions/src/lib/rateLimit.ts`) are counted per *couple* in `usage/{coupleId}`, incremented inside a transaction *before* the Gemini call (a failed call still costs a unit — the right trade when real money is on the other end). `functions/src/lib/limits.ts` and `src/utils/premium.ts` hold the same numbers and must stay in sync; only the server one is enforced.
 
-### Premium ("Together Plus")
+### Premium ("TwoDo Plus")
 
 **The subscription belongs to the couple, not the person.** `plan`/`premiumUntil`/`premiumStore`/`rcAppUserId` live on the `couples/{coupleId}` doc, and the RevenueCat App User ID is `couple_<coupleId>` — so whichever partner buys, both are premium instantly through the existing `onSnapshot`, and either can restore on a new device. `firestore.rules` makes those fields immutable from any client (`entitlementUntouched()`); the Admin SDK bypasses rules, so the webhook is the only writer.
 

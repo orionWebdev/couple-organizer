@@ -29,19 +29,19 @@ interface PaywallCopy {
 export const PAYWALL_COPY: Record<PremiumFeature, PaywallCopy> = {
   shoppingLists: {
     title: 'Mehr Einkaufslisten',
-    body: `Mit Together Plus legt ihr beliebig viele Listen an — Wocheneinkauf, Baumarkt, Vorrat. Kostenlos sind ${FREE_LIMITS.shoppingLists} Listen.`
+    body: `Mit TwoDo Plus legt ihr beliebig viele Listen an — Wocheneinkauf, Baumarkt, Vorrat. Kostenlos sind ${FREE_LIMITS.shoppingLists} Listen.`
   },
   belegungResources: {
     title: 'Mehr geteilte Ressourcen',
-    body: `Auto, E-Bike, Waschmaschine, Hund — mit Together Plus tragt ihr beliebig viele Ressourcen ein. Kostenlos ist ${FREE_LIMITS.belegungResources}.`
+    body: `Auto, E-Bike, Waschmaschine, Hund — mit TwoDo Plus tragt ihr beliebig viele Ressourcen ein. Kostenlos ist ${FREE_LIMITS.belegungResources}.`
   },
   recipeCount: {
     title: 'Unbegrenztes Rezept-Wiki',
-    body: `Euer Rezeptbuch wächst mit euch. Kostenlos speichert ihr ${FREE_LIMITS.recipeCount} Rezepte, mit Together Plus so viele ihr wollt.`
+    body: `Euer Rezeptbuch wächst mit euch. Kostenlos speichert ihr ${FREE_LIMITS.recipeCount} Rezepte, mit TwoDo Plus so viele ihr wollt.`
   },
   choreHistory: {
     title: 'Kompletter Verlauf',
-    body: `Kostenlos seht ihr die letzten ${FREE_LIMITS.choreHistoryMonths} Monate. Together Plus zeigt euren gesamten Haushalts-Verlauf.`
+    body: `Kostenlos seht ihr die letzten ${FREE_LIMITS.choreHistoryMonths} Monate. TwoDo Plus zeigt euren gesamten Haushalts-Verlauf.`
   },
   financeCoach: {
     title: 'Finanz-Coach',
@@ -49,10 +49,10 @@ export const PAYWALL_COPY: Record<PremiumFeature, PaywallCopy> = {
   },
   aiRecipes: {
     title: 'KI-Rezeptvorschläge',
-    body: `Kostenlos sind ${FREE_LIMITS.aiRecipesPerMonth} Vorschläge pro Monat. Mit Together Plus schlägt euch die KI jeden Tag etwas Neues vor.`
+    body: `Kostenlos sind ${FREE_LIMITS.aiRecipesPerMonth} Vorschläge pro Monat. Mit TwoDo Plus schlägt euch die KI jeden Tag etwas Neues vor.`
   },
   export: {
     title: 'Daten exportieren',
-    body: 'Ausgaben als CSV, Belegungen als Kalender-Datei — mit Together Plus nehmt ihr eure Daten überall mit hin.'
+    body: 'Ausgaben als CSV, Belegungen als Kalender-Datei — mit TwoDo Plus nehmt ihr eure Daten überall mit hin.'
   }
 }

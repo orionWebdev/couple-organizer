@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Together — Overlap-Marke. Farben = gerenderte sRGB-Werte von --haushalt/--finanzen;
+  <!-- TwoDo — Overlap-Marke. Farben = gerenderte sRGB-Werte von --haushalt/--finanzen;
        die Überschneidung ist als eigene Fläche ausgezeichnet (Multiply beider Farben),
        weil mix-blend-mode im Favicon-Kontext nicht überall greift. -->
   <rect width="100" height="100" rx="22" fill="#ffffff"/>

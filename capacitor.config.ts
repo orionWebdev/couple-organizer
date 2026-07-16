@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
   appId: 'app.zweiklang.pwa',
-  appName: 'Together',
+  appName: 'TwoDo',
   webDir: 'dist',
 
   server: {

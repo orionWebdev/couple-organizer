@@ -174,7 +174,7 @@ const activeInsight = computed<InsightState | null>(() =>
         <span class="insight-icon">🔒</span>
         <span class="insight-locked-body">
           <span class="insight-text">Der Finanz-Coach erkennt, wo eure Ausgaben diesen Monat aus dem Rahmen fallen.</span>
-          <span class="insight-cta">Mit Together Plus freischalten</span>
+          <span class="insight-cta">Mit TwoDo Plus freischalten</span>
         </span>
       </button>
       <div v-else class="insight-card">

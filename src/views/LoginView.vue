@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useRouter } from 'vue-router'
-import TogetherLogo from '@/components/brand/TogetherLogo.vue'
+import TwoDoLogo from '@/components/brand/TwoDoLogo.vue'
 
 const { login, register } = useAuth()
 const router = useRouter()
@@ -36,7 +36,7 @@ async function submit() {
   <div class="login-page">
     <div class="login-inner">
       <div class="login-header">
-        <TogetherLogo variant="vertical" :height="72" tagline="Euer Zuhause, gemeinsam." />
+        <TwoDoLogo variant="vertical" :height="72" tagline="Euer Zuhause, gemeinsam." />
       </div>
 
       <form class="login-form" @submit.prevent="submit">

@@ -9,18 +9,19 @@ const props = withDefaults(
     tagline?: string
     colorA?: string
     colorB?: string
-    wordColor?: string
     blendMode?: 'multiply' | 'screen' | 'normal'
+    splitAt?: number
   }>(),
   {
     height: 64,
     variant: 'horizontal',
-    word: 'Together',
+    word: 'TwoDo',
     tagline: '',
     colorA: 'var(--haushalt)',
     colorB: 'var(--finanzen)',
-    wordColor: 'var(--text)',
     blendMode: 'multiply',
+    // „TwoDo" teilt sich nach „Two" (3 Zeichen): erste Silbe colorA, zweite colorB.
+    splitAt: 3,
   }
 )
 
@@ -28,6 +29,8 @@ const markWidth = computed(() => Math.round(props.height * (120 / 90)))
 const showText = computed(() => props.variant !== 'mark' && !!props.word)
 const wordSize = computed(() => Math.round(props.height * 0.62))
 const tagSize = computed(() => Math.max(11, Math.round(props.height * 0.2)))
+const wordHead = computed(() => props.word.slice(0, props.splitAt))
+const wordTail = computed(() => props.word.slice(props.splitAt))
 const gap = computed(() =>
   Math.round(props.height * (props.variant === 'vertical' ? 0.28 : 0.3))
 )
@@ -44,7 +47,7 @@ const gap = computed(() =>
       :height="height"
       viewBox="0 0 120 90"
       role="img"
-      :aria-label="word ? `${word} Logo` : 'Together Logo'"
+      :aria-label="word ? `${word} Logo` : 'TwoDo Logo'"
     >
       <!-- Blend liegt auf den Kreisen, nicht auf der Gruppe: nur so dunkelt die
            Überschneidung ein („geteilter Raum"). isolation hält den Blend im Symbol. -->
@@ -55,8 +58,8 @@ const gap = computed(() =>
     </svg>
 
     <div v-if="showText" class="logo-text" :style="{ gap: `${Math.round(height * 0.06)}px` }">
-      <span class="logo-word" :style="{ fontSize: `${wordSize}px`, color: wordColor }">
-        {{ word }}
+      <span class="logo-word" :style="{ fontSize: `${wordSize}px` }">
+        <span :style="{ color: colorA }">{{ wordHead }}</span><span :style="{ color: colorB }">{{ wordTail }}</span>
       </span>
       <span v-if="tagline" class="logo-tagline" :style="{ fontSize: `${tagSize}px` }">
         {{ tagline }}

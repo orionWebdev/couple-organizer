@@ -4,7 +4,7 @@ import { useCouple } from '@/composables/useCouple'
 import { useAuth } from '@/composables/useAuth'
 import { useRouter } from 'vue-router'
 import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
-import TogetherLogo from '@/components/brand/TogetherLogo.vue'
+import TwoDoLogo from '@/components/brand/TwoDoLogo.vue'
 
 const { createCouple, joinCouple, loading, error } = useCouple()
 const { logout } = useAuth()
@@ -44,7 +44,7 @@ async function handleLogout() {
   <div class="setup-page">
     <div class="setup-inner">
       <div class="setup-header">
-        <TogetherLogo variant="vertical" :height="60" />
+        <TwoDoLogo variant="vertical" :height="60" />
         <p class="setup-sub">Verbinde dich mit deiner Person</p>
       </div>
 

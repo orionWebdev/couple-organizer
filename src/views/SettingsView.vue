@@ -136,7 +136,7 @@ async function runExport(filename: string, content: string, mimeType: string, em
 
 function handleExportExpenses() {
   return runExport(
-    'together-ausgaben.csv',
+    'twodo-ausgaben.csv',
     buildExpensesCsv(expenses.value, couple.value),
     'text/csv',
     expenses.value.length === 0
@@ -145,7 +145,7 @@ function handleExportExpenses() {
 
 function handleExportBookings() {
   return runExport(
-    'together-belegungen.ics',
+    'twodo-belegungen.ics',
     buildBookingsIcs(bookings.value, resources.value, couple.value),
     'text/calendar',
     bookings.value.length === 0
@@ -203,12 +203,12 @@ async function confirmDanger() {
         <span class="chevron">›</span>
       </div>
 
-      <!-- Together Plus -->
+      <!-- TwoDo Plus -->
       <div class="section-label section-gap">Abo</div>
       <div class="card plus-card" @click="router.push('/premium')">
         <span class="plus-badge" :class="{ 'plus-badge--active': isPremium }">{{ isPremium ? '💛' : '✨' }}</span>
         <div class="profile-text">
-          <span class="profile-name">{{ isPremium ? 'Together Plus aktiv' : 'Together Plus' }}</span>
+          <span class="profile-name">{{ isPremium ? 'TwoDo Plus aktiv' : 'TwoDo Plus' }}</span>
           <span class="profile-hint">{{ isPremium ? 'Abo verwalten' : 'KI, Auswertungen & mehr freischalten' }}</span>
         </div>
         <span class="chevron">›</span>

@@ -45,7 +45,7 @@ async function handlePurchase() {
   const ok = await purchase(pkg)
   if (ok) {
     hidePaywall()
-    showToast('Willkommen bei Together Plus 💛')
+    showToast('Willkommen bei TwoDo Plus 💛')
   }
 }
 
@@ -98,7 +98,7 @@ async function handleRestore() {
         <p class="paywall-note">Ein Abo für euch beide: sobald einer bucht, ist auch bei deinem Partner alles freigeschaltet. Jederzeit im Play Store kündbar.</p>
 
         <button class="cta" :disabled="purchasing || !activePackage" @click="handlePurchase">
-          {{ purchasing ? 'Wird gebucht …' : 'Together Plus holen' }}
+          {{ purchasing ? 'Wird gebucht …' : 'TwoDo Plus holen' }}
         </button>
 
         <button class="link-btn" :disabled="restoring" @click="handleRestore">
@@ -109,7 +109,7 @@ async function handleRestore() {
       <!-- Web: Play Billing gibt es nur in der App. isPremium gilt hier
            trotzdem — wer in der App bucht, hat auch im Browser Premium. -->
       <p v-else-if="!canPurchase" class="paywall-note paywall-note--web">
-        Together Plus buchst du in der Android-App. Dein Abo gilt danach automatisch auch hier im Browser.
+        TwoDo Plus buchst du in der Android-App. Dein Abo gilt danach automatisch auch hier im Browser.
       </p>
 
       <p v-else class="paywall-note paywall-note--web">

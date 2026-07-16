@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
   appId: 'de.keyperformance.together',
-  appName: 'Together',
+  appName: 'TwoDo',
   webDir: 'dist',
 
   server: {

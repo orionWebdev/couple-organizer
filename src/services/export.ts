@@ -49,7 +49,7 @@ export function buildBookingsIcs(
     const summary = `${resourceName(b.resourceId)} — ${nameOf(couple, b.owner)}`
     const lines = [
       'BEGIN:VEVENT',
-      `UID:${b.id}@together.app`,
+      `UID:${b.id}@twodo.app`,
       `SUMMARY:${summary}`,
       b.allDay
         ? `DTSTART;VALUE=DATE:${b.date.replace(/-/g, '')}`
@@ -63,7 +63,7 @@ export function buildBookingsIcs(
     return lines.filter(Boolean).join('\r\n')
   })
 
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Together//DE', ...events, 'END:VCALENDAR'].join('\r\n')
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//TwoDo//DE', ...events, 'END:VCALENDAR'].join('\r\n')
 }
 
 export async function saveOrShare(filename: string, content: string, mimeType: string): Promise<void> {

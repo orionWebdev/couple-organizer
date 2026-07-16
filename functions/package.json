@@ -1,5 +1,5 @@
 {
-  "name": "together-functions",
+  "name": "twodo-functions",
   "private": true,
   "type": "commonjs",
   "main": "lib/index.js",

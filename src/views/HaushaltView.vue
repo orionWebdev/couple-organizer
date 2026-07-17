@@ -11,7 +11,6 @@ import TaskSheet from '@/components/haushalt/TaskSheet.vue'
 import HaushaltZuweisungen from '@/components/haushalt/HaushaltZuweisungen.vue'
 import HaushaltAlle from '@/components/haushalt/HaushaltAlle.vue'
 import HaushaltUebersicht from '@/components/haushalt/HaushaltUebersicht.vue'
-import HaushaltVerlauf from '@/components/haushalt/HaushaltVerlauf.vue'
 import { isSameDay } from '@/utils/chores'
 import type { Chore, ChoreAssignee, ChoreHistoryEntry } from '@/types'
 
@@ -48,7 +47,7 @@ const todayCounts = computed(() => {
   return counts
 })
 
-type Tab = 'zuweisungen' | 'alle' | 'uebersicht' | 'verlauf'
+type Tab = 'zuweisungen' | 'alle' | 'uebersicht'
 // Standard-Landing im Haushalt ist „Zuweisungen" — direkter Blick auf die
 // eigenen offenen Aufgaben.
 const tab = ref<Tab>('zuweisungen')
@@ -56,11 +55,10 @@ const tabOptions = [
   { label: 'Zuweisungen', value: 'zuweisungen' },
   { label: 'Alle', value: 'alle' },
   { label: 'Übersicht', value: 'uebersicht' },
-  { label: 'Verlauf', value: 'verlauf' },
 ]
 
 // Reihenfolge muss die sichtbare Tab-Reihenfolge widerspiegeln.
-const order: Tab[] = ['zuweisungen', 'alle', 'uebersicht', 'verlauf']
+const order: Tab[] = ['zuweisungen', 'alle', 'uebersicht']
 const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(order, tab)
 
 const showSheet = ref(false)
@@ -174,15 +172,9 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
           @seed="onSeed"
         />
         <HaushaltUebersicht
-          v-else-if="tab === 'uebersicht'"
+          v-else
           key="uebersicht"
           :chores="chores"
-          :history="history"
-          :couple="couple"
-        />
-        <HaushaltVerlauf
-          v-else
-          key="verlauf"
           :history="history"
           :couple="couple"
           @assign="onHistoryAssign"

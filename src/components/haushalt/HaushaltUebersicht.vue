@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
-import type { Chore, ChoreHistoryEntry, Couple } from '@/types'
+import type { Chore, ChoreAssignee, ChoreHistoryEntry, Couple } from '@/types'
 import { personVisual } from '@/utils/chores'
 import { pointsForHistory } from '@/utils/points'
+import HaushaltVerlauf from './HaushaltVerlauf.vue'
 
 const props = defineProps<{
   chores: readonly Chore[]
   history: readonly ChoreHistoryEntry[]
   couple: Couple | null
+}>()
+
+const emit = defineEmits<{
+  assign: [entry: ChoreHistoryEntry, assignee: ChoreAssignee]
+  delete: [entry: ChoreHistoryEntry]
 }>()
 
 function toMillis(timestamp: unknown): number {
@@ -171,34 +177,26 @@ const statRows = computed(() => {
       </div>
     </div>
 
-    <template v-if="statRows.length > 0">
-      <div class="stats-card">
-        <div class="section-label">Diesen Monat gemeinsam</div>
-        <div class="stats-bar">
-          <div class="stats-bar-chris" :style="{ width: statsChrisW + '%' }" />
-          <div class="stats-bar-sarah" :style="{ width: statsSarahW + '%' }" />
-        </div>
-        <div class="stats-legend">
-          <span class="legend-item"><i class="legend-dot legend-dot--chris" />{{ couple?.memberNames[personA ?? ''] ?? 'Person A' }} · {{ statsChrisTotal }}</span>
-          <span class="legend-item">{{ couple?.memberNames[personB ?? ''] ?? 'Person B' }} · {{ statsSarahTotal }}<i class="legend-dot legend-dot--sarah" /></span>
-        </div>
+    <div v-if="statRows.length > 0" class="stats-card">
+      <div class="section-label">Diesen Monat gemeinsam</div>
+      <div class="stats-bar">
+        <div class="stats-bar-chris" :style="{ width: statsChrisW + '%' }" />
+        <div class="stats-bar-sarah" :style="{ width: statsSarahW + '%' }" />
       </div>
+      <div class="stats-legend">
+        <span class="legend-item"><i class="legend-dot legend-dot--chris" />{{ couple?.memberNames[personA ?? ''] ?? 'Person A' }} · {{ statsChrisTotal }}</span>
+        <span class="legend-item">{{ couple?.memberNames[personB ?? ''] ?? 'Person B' }} · {{ statsSarahTotal }}<i class="legend-dot legend-dot--sarah" /></span>
+      </div>
+    </div>
 
-      <div class="section-label rows-label">Nach Aufgabe</div>
-      <div class="stat-rows">
-        <div v-for="row in statRows" :key="row.name" class="stat-row">
-          <div class="stat-row-head">
-            <span class="stat-row-name">{{ row.name }}</span>
-            <span class="stat-row-total">{{ row.total }}×</span>
-          </div>
-          <div class="stat-row-bar">
-            <div class="stat-row-chris" :style="{ width: row.chrisW + '%' }" />
-            <div class="stat-row-sarah" :style="{ width: row.sarahW + '%' }" />
-          </div>
-        </div>
-      </div>
-    </template>
-    <div v-else class="empty">Noch keine erledigten Aufgaben diesen Monat.</div>
+    <div class="section-label rows-label">Verlauf</div>
+    <HaushaltVerlauf
+      class="verlauf-embed"
+      :history="history"
+      :couple="couple"
+      @assign="(entry, assignee) => emit('assign', entry, assignee)"
+      @delete="(entry) => emit('delete', entry)"
+    />
   </div>
 </template>
 
@@ -401,53 +399,10 @@ const statRows = computed(() => {
   margin-bottom: 8px;
 }
 
-.stat-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.stat-row {
-  padding: 11px 13px;
-  background: var(--surface);
-  border: 1px solid var(--border-softer);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-}
-
-.stat-row-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.stat-row-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.stat-row-total {
-  font-size: 11.5px;
-  color: var(--text-meta);
-}
-
-.stat-row-bar {
-  height: 8px;
-  border-radius: 5px;
-  overflow: hidden;
-  display: flex;
-  background: var(--surface-deep);
-}
-
-.stat-row-chris { background: var(--chris); }
-.stat-row-sarah { background: var(--sarah); }
-
-.empty {
-  text-align: center;
-  padding: 40px 0;
-  color: var(--text-faint);
-  font-size: 13.5px;
+/* Der Verlauf bringt sein eigenes seitliches Padding mit (.verlauf-embed landet
+   auf dessen Wurzel) — hier neutralisieren, damit die Timeline bündig zu den
+   Karten darüber sitzt. */
+.verlauf-embed {
+  padding: 0;
 }
 </style>

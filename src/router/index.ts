@@ -46,14 +46,6 @@ const router = createRouter({
           component: () => import('@/views/PlanungView.vue')
         },
         {
-          // Der Monatskalender der Belegung — eigene Route (Dashboard und
-          // Planung-Tab öffnen ihn beide), aber kein eigener Nav-Slot: die
-          // Bubble bleibt auf "Planung".
-          path: 'belegung',
-          name: 'belegung',
-          component: () => import('@/views/KalenderView.vue')
-        },
-        {
           path: 'einkaufen',
           name: 'einkaufen',
           component: () => import('@/views/EinkaufenView.vue')

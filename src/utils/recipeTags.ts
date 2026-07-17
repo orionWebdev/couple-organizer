@@ -23,6 +23,9 @@ export const DEFAULT_RECIPE_CATEGORIES: readonly RecipeCategoryDef[] = [
 export const RECIPE_ICON_CHOICES: readonly string[] = [
   '⏱️', '🧺', '🔀', '🕯️', '🌱', '🥩', '🍝', '🥡',
   '🍲', '🥗', '🍛', '🌮', '🍜', '🥘', '🍰', '🥞',
+  // Länderküchen – die bekanntesten/beliebtesten als Flagge
+  '🇩🇪', '🇮🇹', '🇯🇵', '🇫🇷', '🇪🇸', '🇬🇷', '🇨🇳', '🇮🇳',
+  '🇹🇭', '🇲🇽', '🇹🇷', '🇻🇳', '🇰🇷', '🇺🇸', '🇱🇧', '🇲🇦',
 ]
 
 // Neue Kategorien bekommen ihre Farbe beim Anlegen aus dieser Palette (das

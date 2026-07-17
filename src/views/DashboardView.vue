@@ -63,7 +63,7 @@ function goToPlanung() {
 }
 
 function goToKalender() {
-  router.push('/belegung')
+  router.push('/planung?tab=kalender')
 }
 
 // ── Finanzen ──────────────────────────────────────────────────

@@ -33,10 +33,11 @@ const NAV_ITEMS: readonly NavItem[] = [
   { id: 'einkaufen', label: 'Essen', icon: '🍽️', color: 'var(--food)', href: '/einkaufen' },
 ]
 
-// Routen ohne eigenen Nav-Slot leihen sich den Slot ihres Bereichs: der
-// Belegungs-Kalender gehört zur Planung. Die Einstellungen (Profil-Avatare im
-// Header) haben keinen Bereich — dort bleibt die Bubble auf "Start".
-const SLOT_ALIASES: Record<string, string> = { belegung: 'planung' }
+// Routen ohne eigenen Nav-Slot leihen sich den Slot ihres Bereichs. Aktuell
+// gibt es keine — der Belegungs-Kalender ist ein Tab innerhalb der Planung. Die
+// Einstellungen (Profil-Avatare im Header) haben keinen Bereich — dort bleibt
+// die Bubble auf "Start".
+const SLOT_ALIASES: Record<string, string> = {}
 
 const activeId = computed(() => {
   const seg = route.path.split('/')[1] || 'dashboard'

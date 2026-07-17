@@ -11,7 +11,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <SectionCard icon="📝" title="Notizen" :count="notes.length">
+  <SectionCard title="Notizen" :count="notes.length">
     <template #action>
       <button class="add-btn" type="button" aria-label="Notiz hinzufügen" @click="emit('add')">＋</button>
     </template>

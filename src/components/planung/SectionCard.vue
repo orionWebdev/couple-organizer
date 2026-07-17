@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  icon: string
+  icon?: string
   title: string
   count?: string | number
 }>()
@@ -9,7 +9,7 @@ defineProps<{
 <template>
   <section class="section-card">
     <div class="section-head">
-      <span class="section-icon">{{ icon }}</span>
+      <span v-if="icon" class="section-icon">{{ icon }}</span>
       <span class="section-title">{{ title }}</span>
       <span v-if="count != null" class="section-count">{{ count }}</span>
       <slot name="action" />

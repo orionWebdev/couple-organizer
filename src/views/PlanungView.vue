@@ -1,39 +1,49 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
-import { useBelegung } from '@/composables/useBelegung'
 import { useBucketList } from '@/composables/useBucketList'
 import { usePlanung } from '@/composables/usePlanung'
+import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
 import type { BucketListItem, IdeaCategory, Note, Trip } from '@/types'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
+import SegmentToggle from '@/components/ui/SegmentToggle.vue'
+import FabButton from '@/components/ui/FabButton.vue'
+import BelegungKalender from '@/components/planung/BelegungKalender.vue'
 import SectionCard from '@/components/planung/SectionCard.vue'
-import BelegungBlock from '@/components/planung/BelegungBlock.vue'
 import IdeenBlock from '@/components/planung/IdeenBlock.vue'
 import ReisenBlock from '@/components/planung/ReisenBlock.vue'
 import NotizenBlock from '@/components/planung/NotizenBlock.vue'
 import AddIdeaSheet from '@/components/planung/AddIdeaSheet.vue'
 import QuickAddSheet from '@/components/planung/QuickAddSheet.vue'
 
-const router = useRouter()
+const route = useRoute()
 const { user } = useAuth()
 const { couple } = useCouple()
 const coupleId = computed(() => user.value?.coupleId ?? null)
 
-const { bookings, resourceById, loading: belegungLoading } = useBelegung(coupleId)
 const { items: ideen, loading: ideenLoading, addItem, toggleDone, deleteItem } = useBucketList(coupleId)
 const {
   trips, notes, loading: planungLoading,
   addTrip, deleteTrip, addNote, deleteNote,
 } = usePlanung(coupleId)
 
-const loading = computed(() => belegungLoading.value || ideenLoading.value || planungLoading.value)
+const listsLoading = computed(() => ideenLoading.value || planungLoading.value)
 
-function openKalender() {
-  router.push('/belegung')
-}
+// ── Tabs: Kalender · Listen ───────────────────────────────────
+type Tab = 'kalender' | 'listen'
+const tabOptions = [
+  { label: 'Kalender', value: 'kalender' },
+  { label: 'Listen', value: 'listen' },
+]
+const tab = ref<Tab>(route.query.tab === 'listen' ? 'listen' : 'kalender')
+
+const tabOrder: Tab[] = ['kalender', 'listen']
+const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
+
+const kalenderRef = ref<InstanceType<typeof BelegungKalender> | null>(null)
 
 // ── Sheets ────────────────────────────────────────────────────
 type Sheet = 'idea' | 'trip' | 'note' | null
@@ -76,49 +86,71 @@ async function onDeleteNote(note: Note) {
   showToast(ok ? 'Notiz gelöscht' : 'Fehler beim Löschen')
 }
 
-// Leerzustand: noch gar nichts geplant — dann nur eine Einladung statt drei
+// Leerzustand: noch gar keine Liste — dann nur eine Einladung statt drei
 // leerer Karten.
-const isEmpty = computed(() =>
-  !ideen.value.length && !trips.value.length && !notes.value.length && !bookings.value.length
+const listsEmpty = computed(() =>
+  !ideen.value.length && !trips.value.length && !notes.value.length
 )
 </script>
 
 <template>
   <div class="planung-page area-planung">
     <div class="page-header">
-      <div>
-        <h1 class="page-title">Planung</h1>
-        <p class="page-subtitle">Belegung · Ideen · Reisen</p>
-      </div>
+      <h1 class="page-title">Planung</h1>
       <ProfileButton :size="34" />
     </div>
 
-    <div v-if="loading" class="loading-msg">Laden…</div>
+    <div class="tab-bar-wrap">
+      <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
+    </div>
 
-    <div v-else class="planung-body">
-      <BelegungBlock
-        :bookings="bookings"
-        :resourceById="resourceById"
-        :couple="couple"
-        @open="openKalender"
+    <div
+      class="tab-area"
+      @touchstart.passive="onTouchStart"
+      @touchmove.passive="onTouchMove"
+      @touchend.passive="onTouchEnd"
+      @touchcancel.passive="onTouchEnd"
+    >
+      <div class="tab-content">
+        <Transition name="tab-fade" mode="out-in">
+          <!-- Kalender -->
+          <div v-if="tab === 'kalender'" key="kalender" class="tab-scroll">
+            <BelegungKalender ref="kalenderRef" />
+          </div>
+
+          <!-- Listen: Ideen · Reisen · Notizen -->
+          <div v-else key="listen" class="tab-scroll">
+            <div v-if="listsLoading" class="loading-msg">Laden…</div>
+
+            <div v-else class="listen-body">
+              <SectionCard v-if="listsEmpty" title="Was habt ihr vor?">
+                <p class="empty-text">Ideen, Reisen und Notizen sammeln sich hier.</p>
+                <button class="empty-btn" type="button" @click="sheet = 'idea'">＋ Erste Idee</button>
+              </SectionCard>
+
+              <template v-else>
+                <IdeenBlock
+                  :items="ideen"
+                  :couple="couple"
+                  @add="sheet = 'idea'"
+                  @toggle="onToggleIdea"
+                  @delete="onDeleteIdea"
+                />
+                <ReisenBlock :trips="trips" @add="sheet = 'trip'" @delete="onDeleteTrip" />
+                <NotizenBlock :notes="notes" @add="sheet = 'note'" @delete="onDeleteNote" />
+              </template>
+            </div>
+          </div>
+        </Transition>
+      </div>
+
+      <!-- Außerhalb der Transition (verhindert das FAB-Slow-Slide-Problem,
+           siehe EinkaufenView), aber innerhalb der Swipe-Zone. -->
+      <FabButton
+        v-if="tab === 'kalender'"
+        label="Belegung anlegen"
+        @click="kalenderRef?.openNew()"
       />
-
-      <SectionCard v-if="isEmpty" icon="🗺️" title="Was habt ihr vor?">
-        <p class="empty-text">Belegungen, Ideen, Reisen und Notizen sammeln sich hier.</p>
-        <button class="empty-btn" type="button" @click="sheet = 'idea'">＋ Erste Idee</button>
-      </SectionCard>
-
-      <template v-else>
-        <IdeenBlock
-          :items="ideen"
-          :couple="couple"
-          @add="sheet = 'idea'"
-          @toggle="onToggleIdea"
-          @delete="onDeleteIdea"
-        />
-        <ReisenBlock :trips="trips" @add="sheet = 'trip'" @delete="onDeleteTrip" />
-        <NotizenBlock :notes="notes" @add="sheet = 'note'" @delete="onDeleteNote" />
-      </template>
     </div>
 
     <AddIdeaSheet
@@ -153,30 +185,82 @@ const isEmpty = computed(() =>
 
 <style scoped>
 .planung-page {
-  min-height: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: calc(var(--safe-top) + 20px) var(--screen-pad) 8px;
+  padding: calc(var(--safe-top) + 20px) var(--screen-pad) 20px;
 }
 
 .page-title {
   font-family: var(--font-headline);
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text);
   margin: 0;
 }
 
-.page-subtitle {
-  margin: 2px 0 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-secondary);
+.tab-bar-wrap {
+  padding: 0 var(--screen-pad);
+  margin-bottom: 20px;
+}
+
+.tab-bar {
+  display: flex;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.tab-bar :deep(.seg-btn) {
+  padding: 13px 0;
+  font-size: 13px;
+}
+
+.tab-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  touch-action: pan-y;
+}
+
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sanfter Übergang beim Tab-Wechsel (gleiches Muster wie EinkaufenView) */
+.tab-fade-enter-active {
+  transition: opacity 220ms var(--ease-standard), transform 220ms var(--ease-standard);
+}
+
+.tab-fade-leave-active {
+  transition: opacity 140ms var(--ease-in), transform 140ms var(--ease-in);
+}
+
+.tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.tab-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.tab-scroll {
+  flex: 1;
+  overflow-y: auto;
+  /* Nur vertikal scrollen — horizontale Gesten gehören dem Tab-Swipe. */
+  touch-action: pan-y;
 }
 
 .loading-msg {
@@ -186,11 +270,11 @@ const isEmpty = computed(() =>
   text-align: center;
 }
 
-.planung-body {
+.listen-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 8px var(--screen-pad) 24px;
+  padding: 0 var(--screen-pad) 24px;
 }
 
 .empty-text {

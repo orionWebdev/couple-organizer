@@ -30,12 +30,12 @@ const openCount = computed(() => props.items.filter((i) => !i.done).length)
 </script>
 
 <template>
-  <SectionCard icon="💡" title="Ideen für uns" :count="`${openCount} offen`">
+  <SectionCard title="Ideen für uns" :count="`${openCount} offen`">
     <template #action>
       <button class="add-btn" type="button" aria-label="Idee hinzufügen" @click="emit('add')">＋</button>
     </template>
 
-    <div class="filters">
+    <div class="filters" data-hswipe-skip>
       <button
         class="cat-filter"
         :class="{ 'cat-filter--on': filter === 'all' }"

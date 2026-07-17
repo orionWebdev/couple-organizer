@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useBelegung, type BookingDraft } from '@/composables/useBelegung'
@@ -12,12 +11,10 @@ import {
 } from '@/utils/belegung'
 import { dateKey } from '@/utils/mealplan'
 import type { Booking } from '@/types'
-import FabButton from '@/components/ui/FabButton.vue'
 import BookingRow from '@/components/belegung/BookingRow.vue'
 import NewBookingSheet from '@/components/belegung/NewBookingSheet.vue'
 import BookingDetailSheet from '@/components/belegung/BookingDetailSheet.vue'
 
-const router = useRouter()
 const { user } = useAuth()
 const { couple } = useCouple()
 const coupleId = computed(() => user.value?.coupleId ?? null)
@@ -102,6 +99,7 @@ async function onDelete() {
   showToast(ok ? 'Gelöscht' : 'Fehler beim Löschen')
 }
 
+// Nach außen (Planung-Tab rendert den FAB außerhalb der Tab-Transition).
 function openNew() {
   if (!resources.value.length) {
     showToast('Legt zuerst eine Ressource an (Einstellungen)')
@@ -109,18 +107,12 @@ function openNew() {
   }
   showNew.value = true
 }
+
+defineExpose({ openNew })
 </script>
 
 <template>
-  <div class="kalender-page area-planung">
-    <div class="page-header">
-      <button class="back-btn" type="button" aria-label="Zurück" @click="router.back()">‹</button>
-      <div>
-        <h1 class="page-title">Belegung</h1>
-        <p class="page-subtitle">Geteilte Ressourcen · Kalender</p>
-      </div>
-    </div>
-
+  <div class="kalender">
     <div class="month-nav">
       <button class="nav-btn" type="button" aria-label="Vorheriger Monat" @click="shiftMonth(-1)">‹</button>
       <span class="month-label">{{ monthLabel(anchor) }}</span>
@@ -213,8 +205,6 @@ function openNew() {
       </div>
     </div>
 
-    <FabButton label="Belegung anlegen" @click="openNew" />
-
     <NewBookingSheet
       :isOpen="showNew"
       :resources="resources"
@@ -237,53 +227,16 @@ function openNew() {
 </template>
 
 <style scoped>
-.kalender-page {
-  min-height: 100%;
-  padding-bottom: 24px;
-}
-
-.page-header {
+.kalender {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: calc(var(--safe-top) + 16px) var(--screen-pad) 8px;
-}
-
-.back-btn {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--border-soft);
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--text-secondary);
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.page-title {
-  margin: 0;
-  font-family: var(--font-headline);
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.05;
-  color: var(--text);
-}
-
-.page-subtitle {
-  margin: 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  flex-direction: column;
 }
 
 .month-nav {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px var(--screen-pad) 0;
+  padding: 0 var(--screen-pad);
 }
 
 .nav-btn {

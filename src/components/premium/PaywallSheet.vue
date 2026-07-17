@@ -221,7 +221,9 @@ async function handleRestore() {
   width: 100%;
   padding: 16px;
   border: none;
-  border-radius: var(--radius-card);
+  /* Button, kein Kartencontainer: folgt der Button-Skala (18px), nicht dem auf
+     26px angehobenen --radius-card. */
+  border-radius: 18px;
   background: var(--haushalt);
   color: #fff;
   font-size: 16px;

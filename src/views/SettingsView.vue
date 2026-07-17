@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
+import { useTheme, type ThemePreference } from '@/composables/useTheme'
 import { useBelegung } from '@/composables/useBelegung'
 import { useExpenses } from '@/composables/useExpenses'
 import { showToast } from '@/composables/useToast'
@@ -10,6 +11,7 @@ import { showPaywall } from '@/composables/usePaywall'
 import { buildExpensesCsv, buildBookingsIcs, saveOrShare } from '@/services/export'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import IconGridPicker from '@/components/ui/IconGridPicker.vue'
+import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
 import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
 
@@ -64,6 +66,19 @@ const notifyPush = computed(() => user.value?.notifyPush ?? true)
 async function togglePush(value: boolean) {
   await updatePrefs({ notifyPush: value })
 }
+
+// ── Darstellung ───────────────────────────────────────────────
+const { theme, setTheme } = useTheme()
+const THEME_OPTIONS = [
+  { label: 'System', value: 'system' },
+  { label: 'Hell', value: 'light' },
+  { label: 'Dunkel', value: 'dark' },
+]
+
+const themePref = computed({
+  get: () => theme.value as string,
+  set: (value: string) => { setTheme(value as ThemePreference) },
+})
 
 // ── Sprache ───────────────────────────────────────────────────
 const languageEnglish = computed(() => user.value?.languageEnglish ?? false)
@@ -284,6 +299,14 @@ async function confirmDanger() {
         <p class="field-hint">Leer lassen entfernt das Budget.</p>
       </div>
 
+      <!-- Darstellung -->
+      <div class="section-label section-gap">Darstellung</div>
+      <div class="card">
+        <div class="field-label">Design</div>
+        <SegmentToggle v-model="themePref" :options="THEME_OPTIONS" class="theme-seg" />
+        <p class="field-hint">„System“ folgt der Einstellung deines Geräts.</p>
+      </div>
+
       <!-- Sprache -->
       <div class="section-label section-gap">Sprache</div>
       <div class="card">
@@ -387,7 +410,7 @@ async function confirmDanger() {
   border: 1px solid var(--border-softer);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  padding: 14px;
+  padding: 18px;
 }
 
 .profile-card {
@@ -458,7 +481,7 @@ async function confirmDanger() {
   justify-content: center;
   font-size: 24px;
   background: var(--surface-deep);
-  border: 2px solid #fff;
+  border: 2px solid var(--surface);
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 
@@ -537,7 +560,7 @@ async function confirmDanger() {
   font-size: 13px;
   color: #fff;
   background: var(--accent);
-  border: 2px solid #fff;
+  border: 2px solid var(--surface);
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 
@@ -613,6 +636,21 @@ async function confirmDanger() {
   font-size: 13.5px;
   font-weight: 700;
   color: var(--text);
+}
+
+/* Der Segment-Toggle steht sonst auf --bg; hier liegt er in einer Karte, also
+   eingelassen statt erhaben. `.card`-Präfix, damit die Regel die Scoped-Styles
+   von SegmentToggle sicher schlägt (gleiche Spezifität würde die Quellreihen-
+   folge im Bundle entscheiden). */
+.card .theme-seg {
+  width: 100%;
+  border-radius: 12px;
+  background: var(--surface-deep);
+  box-shadow: none;
+}
+
+.card .theme-seg :deep(.seg-btn) {
+  padding: 11px 0;
 }
 
 .budget-row {

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TwoDo — Redesign Modern</title>
+<link rel="stylesheet" href="./styles.css">
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { background: #e7e0d4; display: flex; align-items: center; justify-content: center; gap: 40px; padding: 40px 24px; font-family: var(--font-body); color: var(--text); }
+  * { -webkit-tap-highlight-color: transparent; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  /* ── Intro / Steuerung links ─────────────────────────────────── */
+  .intro { max-width: 340px; }
+  .intro h1 { font-family: var(--font-headline); font-weight: 700; font-size: 30px; line-height: 1.1; margin: 0 0 14px; letter-spacing: -0.5px; }
+  .intro h1 span { color: var(--haushalt); }
+  .intro p { font-size: 15px; font-weight: 600; line-height: 1.6; color: var(--text-secondary); margin: 0 0 16px; }
+  .intro .pts { list-style: none; padding: 0; margin: 0 0 24px; display: flex; flex-direction: column; gap: 10px; }
+  .intro .pts li { display: flex; gap: 10px; font-size: 14px; font-weight: 700; align-items: flex-start; }
+  .intro .pts li b { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; background: var(--haushalt); color: #fff; font-size: 13px; flex: none; margin-top: 1px; }
+  .darkbtn { display: inline-flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 999px; padding: 10px 18px 10px 12px; font-family: var(--font-body); font-weight: 800; font-size: 14px; color: var(--text); cursor: pointer; box-shadow: var(--shadow-card); transition: transform .15s var(--ease-overshoot); }
+  .darkbtn:active { transform: scale(0.96); }
+  .darkbtn .knob { width: 40px; height: 24px; border-radius: 999px; background: var(--border); position: relative; transition: background .3s var(--ease-standard); }
+  .darkbtn .knob i { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); display: grid; place-items: center; font-size: 11px; transition: transform .3s var(--ease-overshoot); }
+
+  /* ══ Phone ════════════════════════════════════════════════════ */
+  .app { --sbg: var(--bg); --scard: var(--surface); --sdeep: var(--surface-deep); --sline: var(--border-softer); --stext: var(--text); --smeta: var(--text-secondary); --sfaint: var(--text-faint);
+    position: relative; width: 400px; height: 858px; border-radius: 46px; background: #0e0c0a; padding: 12px; box-shadow: 0 40px 80px rgba(50,35,20,.34), 0 0 0 2px rgba(0,0,0,.06); flex: none; }
+  .screen { position: relative; width: 100%; height: 100%; border-radius: 36px; overflow: hidden; background: var(--sbg); display: flex; flex-direction: column;
+    transition: background .4s var(--ease-standard), color .4s var(--ease-standard); }
+
+  /* Dark-Overrides (warme Neutrals) */
+  .app.dark .screen { --sbg: #17130f; --scard: #221c17; --sdeep: #2b241d; --sline: #322a22; --stext: #f3ece2; --smeta: #b0a494; --sfaint: #7d7365; }
+  .app.dark { background: #000; }
+
+  /* Statusbar */
+  .sb { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px 6px; font-size: 15px; font-weight: 800; color: var(--stext); flex: none; }
+  .sb .r { display: flex; gap: 7px; align-items: center; font-size: 15px; }
+
+  /* Scroll-Bühne */
+  .stage { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 6px 20px 130px; }
+  .view { display: none; flex-direction: column; gap: 18px; }
+  .view.on { display: flex; }
+  .view.on > * { opacity: 0; animation: rise .5s var(--ease-overshoot) forwards; }
+  .view.on > *:nth-child(1) { animation-delay: .02s; }
+  .view.on > *:nth-child(2) { animation-delay: .07s; }
+  .view.on > *:nth-child(3) { animation-delay: .12s; }
+  .view.on > *:nth-child(4) { animation-delay: .17s; }
+  .view.on > *:nth-child(5) { animation-delay: .22s; }
+  .view.on > *:nth-child(6) { animation-delay: .27s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Kopf jeder Ansicht */
+  .head { display: flex; align-items: center; gap: 14px; padding: 8px 2px 2px; }
+  .head .hi { font-family: var(--font-headline); font-weight: 700; font-size: 27px; line-height: 1.1; letter-spacing: -0.4px; color: var(--stext); }
+  .head .dt { font-size: 14.5px; font-weight: 700; color: var(--smeta); margin-top: 3px; }
+  .head .grow { flex: 1; }
+  .av { width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-family: var(--font-headline); font-weight: 700; font-size: 20px; flex: none; }
+  .av.m { background: var(--chris); } .av.b { background: var(--sarah); }
+  .av.s { width: 34px; height: 34px; font-size: 15px; }
+  .av.xs { width: 28px; height: 28px; font-size: 13px; }
+  .iconbtn { width: 50px; height: 50px; border-radius: 50%; background: var(--scard); display: grid; place-items: center; font-size: 22px; flex: none; box-shadow: var(--shadow-card); border: 1px solid var(--sline); }
+
+  /* Karten */
+  .card { background: var(--scard); border: 1px solid var(--sline); border-radius: 26px; padding: 20px; box-shadow: 0 6px 18px rgba(60,45,30,.06); transition: background .4s var(--ease-standard); }
+  .app.dark .card { box-shadow: 0 6px 18px rgba(0,0,0,.32); }
+  .card.tint { background: color-mix(in srgb, var(--accent) 12%, var(--scard)); border-color: color-mix(in srgb, var(--accent) 20%, transparent); }
+  .card.solid { background: var(--accent); border: none; color: var(--on-accent); }
+  .card.solid .lab, .card.solid .meta { color: color-mix(in srgb, var(--on-accent) 82%, transparent); }
+
+  .lab { font-size: 12px; font-weight: 800; letter-spacing: 0.7px; text-transform: uppercase; color: var(--smeta); }
+  .ctitle { font-family: var(--font-headline); font-weight: 600; font-size: 20px; color: var(--stext); letter-spacing: -0.2px; }
+  .card.solid .ctitle { color: var(--on-accent); }
+  .big { font-family: var(--font-headline); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+  .meta { font-size: 14.5px; font-weight: 700; color: var(--smeta); line-height: 1.45; }
+  .txt { font-size: 16px; font-weight: 700; color: var(--stext); }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .col { display: flex; flex-direction: column; }
+  .grow { flex: 1; min-width: 0; }
+
+  /* Buttons */
+  .btn { height: 56px; border-radius: 18px; border: none; padding: 0 22px; font-family: var(--font-body); font-weight: 800; font-size: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 9px; transition: transform .12s var(--ease-overshoot), background .2s, filter .2s; }
+  .btn:active { transform: scale(0.96); }
+  .btn.fill { background: var(--accent); color: var(--on-accent); box-shadow: var(--shadow-accent); }
+  .btn.soft { background: color-mix(in srgb, var(--accent) 15%, var(--scard)); color: var(--accent); }
+  .btn.ghost { background: var(--sdeep); color: var(--stext); }
+  .btn.sm { height: 46px; font-size: 15px; border-radius: 15px; padding: 0 18px; }
+
+  /* Segmented / Chips */
+  .seg { display: flex; background: var(--sdeep); border-radius: 18px; padding: 5px; gap: 4px; }
+  .seg .s { flex: 1; height: 44px; border-radius: 14px; display: grid; place-items: center; font-weight: 800; font-size: 14.5px; color: var(--smeta); cursor: pointer; transition: all .25s var(--ease-overshoot); border: none; background: none; font-family: var(--font-body); }
+  .seg .s.on { background: var(--accent); color: var(--on-accent); box-shadow: 0 4px 10px color-mix(in srgb, var(--accent) 40%, transparent); }
+  .chips { display: flex; gap: 9px; flex-wrap: wrap; }
+  .chip { height: 40px; border-radius: 14px; padding: 0 16px; display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: 14.5px; background: var(--sdeep); color: var(--smeta); border: none; cursor: pointer; transition: all .2s var(--ease-overshoot); font-family: var(--font-body); }
+  .chip.on { background: color-mix(in srgb, var(--accent) 16%, var(--scard)); color: var(--accent); }
+
+  /* Listenzeilen — große Tap-Targets */
+  .li { display: flex; align-items: center; gap: 14px; min-height: 40px; padding: 12px 0; }
+  .li + .li { border-top: 1px solid var(--sline); }
+  .lead { width: 52px; height: 52px; border-radius: 16px; background: var(--sdeep); display: grid; place-items: center; font-size: 25px; flex: none; }
+  .chev { color: var(--sfaint); font-size: 26px; font-weight: 700; flex: none; }
+
+  /* Checkbox */
+  .chk { width: 30px; height: 30px; border-radius: 10px; border: 2.5px solid var(--border); background: transparent; flex: none; cursor: pointer; display: grid; place-items: center; color: #fff; font-size: 17px; transition: all .2s var(--ease-overshoot); }
+  .chk.done { background: var(--accent); border-color: var(--accent); transform: scale(1); }
+  .chk.done { animation: pop .35s var(--ease-overshoot); }
+  @keyframes pop { 0% { transform: scale(.7); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  .done-txt { text-decoration: line-through; color: var(--sfaint); }
+
+  /* Fortschritt */
+  .split { display: flex; gap: 4px; height: 14px; border-radius: 8px; overflow: hidden; }
+  .split i { display: block; transition: width .8s var(--ease-overshoot); } .split .p1 { background: var(--chris); } .split .p2 { background: var(--sarah); }
+  .ringwrap { position: relative; display: grid; place-items: center; flex: none; }
+  .ringwrap .in { position: absolute; text-align: center; }
+  .ring-t { fill: none; stroke: color-mix(in srgb, var(--accent) 18%, var(--scard)); }
+  .ring-v { fill: none; stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s var(--ease-overshoot); }
+
+  /* Wochenstreifen */
+  .wk { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; text-align: center; }
+  .wk .d { border-radius: 14px; padding: 10px 0 8px; font-size: 13px; font-weight: 800; color: var(--smeta); background: var(--sdeep); }
+  .wk .d.today { background: var(--accent); color: var(--on-accent); }
+  .wk .dots { display: flex; gap: 3px; justify-content: center; margin-top: 5px; min-height: 6px; }
+  .wk .dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--smeta); }
+  .wk .d.today .dots i { background: var(--on-accent); }
+  .wk .dots i.warn { background: var(--danger); }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 800; }
+  .badge.warn { background: var(--danger-tint); color: var(--danger); }
+  .badge.acc { background: color-mix(in srgb, var(--accent) 16%, var(--scard)); color: var(--accent); }
+  .card.solid .badge.acc { background: rgba(255,255,255,.22); color: var(--on-accent); }
+  .pill-day { width: 44px; font-size: 13px; font-weight: 800; color: var(--smeta); flex: none; }
+
+  /* FAB */
+  .fab { position: absolute; right: 20px; bottom: 116px; width: 64px; height: 64px; border-radius: 22px; background: var(--accent); color: var(--on-accent); border: none; display: grid; place-items: center; font-size: 32px; box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 45%, transparent); cursor: pointer; z-index: 8; transition: transform .15s var(--ease-overshoot); }
+  .fab:active { transform: scale(0.9) rotate(90deg); }
+
+  /* ── Bottom-Nav: schwebende Pille + überstehende Bubble ─────── */
+  .nav { position: absolute; left: 14px; right: 14px; bottom: 20px; height: 66px; background: var(--scard); border: 1px solid var(--sline); border-radius: 26px; display: grid; grid-template-columns: repeat(5,1fr); box-shadow: 0 12px 28px rgba(50,35,20,.18); z-index: 9; transition: background .4s var(--ease-standard); }
+  .app.dark .nav { box-shadow: 0 12px 28px rgba(0,0,0,.5); }
+  .nav .it { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11px; font-weight: 800; color: var(--smeta); cursor: pointer; background: none; border: none; font-family: var(--font-body); transition: color .2s; }
+  .nav .it .ic { font-size: 25px; line-height: 1; transition: transform .35s var(--ease-overshoot); }
+  .nav .it .txt2 { opacity: 1; transition: opacity .2s; }
+  .nav .it.on { color: var(--nav-accent); }
+  .nav .it.on .ic { transform: translateY(-34px) scale(1.08); }
+  .nav .it.on .bubble { opacity: 1; transform: translateX(-50%) translateY(-34px) scale(1); }
+  .nav .it .bubble { position: absolute; top: 8px; left: 50%; width: 54px; height: 54px; border-radius: 50%; background: var(--nav-accent); opacity: 0; transform: translateX(-50%) translateY(0) scale(.4); box-shadow: 0 0 0 6px var(--scard), 0 10px 18px color-mix(in srgb, var(--nav-accent) 45%, transparent); transition: all .4s var(--ease-overshoot); z-index: -1; }
+  .nav .it.on .ic { color: #fff; }
+
+  .home-ind { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: 128px; height: 5px; border-radius: 3px; background: var(--stext); opacity: .18; z-index: 10; }
+
+  @media (max-width: 820px) { body { flex-direction: column; gap: 24px; } .intro { max-width: 400px; } }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>Redesign <span>Modern</span></h1>
+  <p>Euer Design — aber größer, klarer, animierter. Auf Basis eurer Tokens (Nunito · Fredoka, Bereichs- &amp; Personenfarben), im Stil moderner Apps: mehr Weißraum, größere Typo, dickere Tap-Targets (≥ 52 px), weiche Feder-Animationen.</p>
+  <ul class="pts">
+    <li><b>A</b><span>Größere Texte &amp; Elemente — alles besser lesbar und klickbar</span></li>
+    <li><b>B</b><span>Feder-Animationen: Tab-Bubble, Karten-Einzug, Ringe &amp; Balken</span></li>
+    <li><b>C</b><span>Optionaler Dark-Mode in warmen Neutraltönen</span></li>
+  </ul>
+  <button class="darkbtn" id="darktoggle" type="button">
+    <span class="knob"><i id="knobicon">☀️</i></span>
+    <span id="darklabel">Dark-Mode an</span>
+  </button>
+</div>
+
+<div class="app area-dashboard" id="app">
+  <div class="screen">
+    <div class="sb"><span>9:41</span><span class="r">📶 &nbsp;🔋</span></div>
+    <div class="stage" id="stage">
+
+      <!-- ═══ START ═══ -->
+      <div class="view on" data-view="start">
+        <div class="head">
+          <span class="av m">M</span>
+          <div class="grow"><div class="hi">Hallo Mara 👋</div><div class="dt">Mittwoch, 16. Juli</div></div>
+          <button class="iconbtn" type="button">🔔</button>
+        </div>
+
+        <div class="card solid area-food" style="background:var(--food);">
+          <div class="between">
+            <span class="lab">Jetzt im Fokus · heute Abend</span>
+            <span style="font-size:40px; line-height:1;">🍝</span>
+          </div>
+          <div class="big" style="font-size:26px; margin:10px 0 2px;">Pasta al Limone</div>
+          <div class="meta">25 Min · noch niemand eingeteilt</div>
+          <div class="row" style="margin-top:16px; gap:10px;">
+            <button class="btn fill grow" style="background:#fff; color:var(--food);" data-cook>Ich koche 🍳</button>
+            <button class="btn grow" style="background:rgba(255,255,255,.22); color:#fff;" data-cook>Ben fragen</button>
+          </div>
+        </div>
+
+        <div class="lab" style="padding:2px 2px 0;">Auf einen Blick</div>
+
+        <div class="card area-finanzen" data-goto="finanzen" style="cursor:pointer;">
+          <div class="between"><div class="row"><span style="font-size:22px;">💶</span><span class="ctitle">Finanzen</span></div><span class="badge acc">Ben → Mara 34,50 €</span></div>
+          <div class="row" style="gap:18px; margin-top:14px;">
+            <div class="ringwrap">
+              <svg width="76" height="76" viewBox="0 0 76 76"><circle class="ring-t" cx="38" cy="38" r="31" stroke-width="9"></circle><circle class="ring-v" cx="38" cy="38" r="31" stroke-width="9" stroke-dasharray="195" stroke-dashoffset="195" data-ring="0.76" transform="rotate(-90 38 38)"></circle></svg>
+              <div class="in big" style="font-size:16px; color:var(--stext);">76%</div>
+            </div>
+            <div class="grow">
+              <div class="big" style="font-size:24px; color:var(--stext);">612 € <span class="meta" style="font-weight:700;">/ 800 €</span></div>
+              <div class="meta" style="margin-top:3px;">Ben zahlte gestern 42,80 € · Wocheneinkauf</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card area-planung" data-goto="planung" style="cursor:pointer;">
+          <div class="between"><div class="row"><span style="font-size:22px;">📅</span><span class="ctitle">Belegung heute</span></div><span class="badge warn">⚠️ Konflikt</span></div>
+          <div class="li"><span class="lead">🚗</span><div class="grow"><div class="txt">Auto · 08:00–12:00</div><div class="meta">Zur Arbeit</div></div><span class="av xs m">M</span></div>
+          <div class="li"><span class="lead" style="background:var(--danger-tint);">🚗</span><div class="grow"><div class="txt">Auto · 10:00–13:00</div><div class="meta" style="color:var(--danger);">Werkstatt · überschneidet sich</div></div><span class="av xs b">B</span></div>
+          <div class="li"><span class="lead">🐕</span><div class="grow"><div class="txt">Hund · 07:00–07:30</div><div class="meta">Morgenrunde · wöchentlich</div></div><span class="av xs m">M</span></div>
+        </div>
+
+        <div class="card area-haushalt" data-goto="haushalt" style="cursor:pointer;">
+          <div class="between"><div class="row"><span style="font-size:22px;">🧹</span><span class="ctitle">Haushalt</span></div><span class="meta">2 heute offen</span></div>
+          <div class="split" style="margin-top:14px;"><i class="p1" style="width:42%;"></i><i class="p2" style="width:58%;"></i></div>
+          <div class="between" style="margin-top:9px;"><span class="meta">Mara 5</span><span class="meta">Ben 7 · diese Woche</span></div>
+        </div>
+      </div>
+
+      <!-- ═══ HAUSHALT ═══ -->
+      <div class="view area-haushalt" data-view="haushalt">
+        <div class="head"><div class="grow"><div class="hi">Haushalt</div><div class="dt">Fair aufgeteilt</div></div><button class="iconbtn" type="button">🕘</button></div>
+        <div class="card solid">
+          <span class="lab">Fairness · diese Woche</span>
+          <div class="split" style="margin-top:14px; background:rgba(255,255,255,.25);"><i style="background:#fff; width:42%; opacity:.85;"></i><i style="background:#fff; width:58%;"></i></div>
+          <div class="between" style="margin-top:10px;"><span class="row" style="gap:8px;"><span class="av xs m">M</span><span class="txt" style="color:#fff;">5 erledigt</span></span><span class="row" style="gap:8px;"><span class="txt" style="color:#fff;">7 erledigt</span><span class="av xs b">B</span></span></div>
+          <div class="meta" style="margin-top:12px; color:rgba(255,255,255,.9);">Ben liegt vorn — Mara ist heute dran 💪</div>
+        </div>
+        <div class="lab" style="padding:2px;">Heute</div>
+        <div class="card">
+          <div class="li"><button class="chk" type="button" data-chk></button><div class="grow"><div class="txt">Bad putzen 🛁</div><div class="meta">Bad</div></div><span class="av xs b">B</span></div>
+          <div class="li"><button class="chk" type="button" data-chk></button><div class="grow"><div class="txt">Müll rausbringen 🗑️</div><div class="meta">Küche</div></div><span class="av xs m">M</span></div>
+        </div>
+        <div class="lab" style="padding:2px;">Diese Woche</div>
+        <div class="card">
+          <div class="li"><button class="chk" type="button" data-chk></button><div class="grow"><div class="txt">Staubsaugen</div><div class="meta">Flur · bis Sonntag</div></div><span class="av xs b">B</span></div>
+          <div class="li"><button class="chk done" type="button" data-chk>✓</button><div class="grow"><div class="txt done-txt">Wäsche waschen</div><div class="meta">gestern · Mara</div></div><span class="av xs m">M</span></div>
+        </div>
+      </div>
+
+      <!-- ═══ PLANUNG ═══ -->
+      <div class="view area-planung" data-view="planung">
+        <div class="head"><div class="grow"><div class="hi">Planung</div><div class="dt">Belegung · Ideen · Reisen</div></div><button class="iconbtn" type="button">🔍</button></div>
+        <div class="card solid">
+          <div class="between"><span class="ctitle" style="color:#fff;">Belegung</span><span class="badge acc">⚠️ 1 Konflikt</span></div>
+          <div class="wk" style="margin-top:14px;">
+            <div class="d" style="background:rgba(255,255,255,.18); color:#fff;">Mo<div class="dots"><i style="background:#fff;"></i><i style="background:#fff;"></i></div></div>
+            <div class="d" style="background:rgba(255,255,255,.18); color:#fff;">Di<div class="dots"></div></div>
+            <div class="d" style="background:#fff; color:var(--planung);">Mi<div class="dots"><i class="warn"></i><i style="background:var(--planung);"></i><i style="background:var(--planung);"></i></div></div>
+            <div class="d" style="background:rgba(255,255,255,.18); color:#fff;">Do<div class="dots"><i style="background:#fff;"></i></div></div>
+            <div class="d" style="background:rgba(255,255,255,.18); color:#fff;">Fr<div class="dots"></div></div>
+            <div class="d" style="background:rgba(255,255,255,.18); color:#fff;">Sa<div class="dots"><i style="background:#fff;"></i></div></div>
+            <div class="d" style="background:rgba(255,255,255,.18); color:#fff;">So<div class="dots"></div></div>
+          </div>
+          <div class="meta" style="margin-top:12px; color:rgba(255,255,255,.9);">Heute 4 Termine · Auto doppelt gebucht</div>
+        </div>
+        <div class="card">
+          <div class="between"><div class="row"><span style="font-size:22px;">💡</span><span class="ctitle">Ideen</span></div><span class="meta">6 gesammelt</span></div>
+          <div class="chips" style="margin-top:14px;" id="ideenfilter">
+            <button class="chip on" type="button">Alle</button><button class="chip" type="button">🎬 Filme</button><button class="chip" type="button">🍜 Essen</button><button class="chip" type="button">💜 Dates</button>
+          </div>
+          <div class="li"><span class="lead">🎬</span><div class="grow"><div class="txt">Dune: Teil 2</div><div class="meta">Film · von Mara</div></div></div>
+          <div class="li"><span class="lead">🍜</span><div class="grow"><div class="txt">Ramen-Laden im Nordend</div><div class="meta">Essen · von Ben</div></div></div>
+          <div class="li"><span class="lead">💜</span><div class="grow"><div class="txt">Sternschnuppen im August</div><div class="meta">Date · von Mara</div></div></div>
+        </div>
+        <div class="card">
+          <div class="row"><span style="font-size:22px;">🧳</span><span class="ctitle">Reisen</span></div>
+          <div class="li"><span class="lead">🚲</span><div class="grow"><div class="txt">Wochenende Amsterdam</div><div class="meta">noch offen · 1 von 3 erledigt</div></div><span class="chev">›</span></div>
+          <div class="li"><span class="lead">⛰️</span><div class="grow"><div class="txt">Wandern Zugspitze</div><div class="meta">Sept. · 0 von 2 erledigt</div></div><span class="chev">›</span></div>
+        </div>
+        <div class="card">
+          <div class="between"><div class="row"><span style="font-size:22px;">📝</span><span class="ctitle">Notizen</span></div><span class="meta">2</span></div>
+          <div class="meta" style="margin-top:10px;">WLAN-Passwort Ferienwohnung · Geschenk Mama</div>
+        </div>
+      </div>
+
+      <!-- ═══ FINANZEN ═══ -->
+      <div class="view area-finanzen" data-view="finanzen">
+        <div class="head"><div class="grow"><div class="hi">Finanzen</div><div class="dt">Juli · gemeinsam</div></div><button class="iconbtn" type="button">📊</button></div>
+        <div class="card solid" style="display:flex; align-items:center; gap:22px;">
+          <div class="ringwrap">
+            <svg width="118" height="118" viewBox="0 0 118 118"><circle cx="59" cy="59" r="48" stroke-width="12" style="fill:none; stroke:rgba(255,255,255,.28);"></circle><circle class="ring-v" cx="59" cy="59" r="48" stroke-width="12" stroke-dasharray="302" stroke-dashoffset="302" data-ring="0.76" transform="rotate(-90 59 59)" style="stroke:#fff;"></circle></svg>
+            <div class="in big" style="font-size:22px; color:#fff;">76%</div>
+          </div>
+          <div class="grow"><span class="lab">Budget Juli</span><div class="big" style="font-size:38px; color:#fff; margin-top:2px;">612 €</div><div class="meta" style="color:rgba(255,255,255,.85);">von 800 € · noch 188 €</div></div>
+        </div>
+        <div class="card">
+          <span class="ctitle">Paar-Split</span>
+          <div class="split" style="margin-top:14px;"><i class="p1" style="width:56%;"></i><i class="p2" style="width:44%;"></i></div>
+          <div class="between" style="margin-top:10px;"><span class="row" style="gap:8px;"><span class="av xs m">M</span><span class="big" style="font-size:18px; color:var(--stext);">340,50 €</span></span><span class="row" style="gap:8px;"><span class="big" style="font-size:18px; color:var(--stext);">271,50 €</span><span class="av xs b">B</span></span></div>
+          <div class="between" style="margin-top:16px; background:var(--sdeep); border-radius:16px; padding:14px 16px;"><span class="txt">Ben schuldet Mara <span class="big" style="font-size:16px;">34,50 €</span></span><button class="btn fill sm" type="button">Ausgleichen</button></div>
+        </div>
+        <div class="lab" style="padding:2px;">Letzte Ausgaben</div>
+        <div class="card">
+          <div class="li"><span class="lead">🛒</span><div class="grow"><div class="txt">Wocheneinkauf</div><div class="meta">gestern · Ben</div></div><span class="big" style="font-size:17px; color:var(--stext);">42,80 €</span></div>
+          <div class="li"><span class="lead">🧴</span><div class="grow"><div class="txt">Drogerie</div><div class="meta">Montag · Mara</div></div><span class="big" style="font-size:17px; color:var(--stext);">18,60 €</span></div>
+          <div class="li"><span class="lead">🎬</span><div class="grow"><div class="txt">Kino</div><div class="meta">Sonntag · Ben</div></div><span class="big" style="font-size:17px; color:var(--stext);">24,00 €</span></div>
+        </div>
+      </div>
+
+      <!-- ═══ ESSEN ═══ -->
+      <div class="view area-food" data-view="essen">
+        <div class="head"><div class="grow"><div class="hi">Essen</div><div class="dt">Wochenplan</div></div><button class="iconbtn" type="button">📖</button></div>
+        <div class="card solid" style="background:var(--food);">
+          <div class="between"><span class="lab">Heute · Mittwoch</span><span style="font-size:40px; line-height:1;">🍝</span></div>
+          <div class="big" style="font-size:26px; color:#fff; margin:10px 0 2px;">Pasta al Limone</div>
+          <div class="meta" style="color:rgba(255,255,255,.85);">25 Min · Koch noch offen</div>
+          <div class="seg" style="margin-top:16px; background:rgba(255,255,255,.2);">
+            <button class="s" type="button" data-seg style="color:#fff;">Mara</button><button class="s on" type="button" data-seg style="background:#fff; color:var(--food);">Zusammen</button><button class="s" type="button" data-seg style="color:#fff;">Ben</button>
+          </div>
+        </div>
+        <div class="lab" style="padding:2px;">Wochenplan</div>
+        <div class="card">
+          <div class="li"><span class="pill-day">Mo</span><div class="grow"><div class="txt">Bowls mit Ofengemüse 🥗</div></div><span class="av xs m">M</span></div>
+          <div class="li"><span class="pill-day">Di</span><div class="grow"><div class="txt">Reste-Tag</div></div><span class="meta">—</span></div>
+          <div class="li" style="background:color-mix(in srgb, var(--food) 12%, var(--scard)); border-radius:16px; margin:2px -8px; padding:12px 8px; border:none;"><span class="pill-day" style="padding-left:8px;">Mi</span><div class="grow"><div class="txt">Pasta al Limone 🍝</div></div><span class="badge" style="background:var(--food); color:#fff;">Wer kocht?</span></div>
+          <div class="li"><span class="pill-day">Do</span><div class="grow"><div class="txt">Gemüse-Curry 🍛</div></div><span class="av xs b">B</span></div>
+          <div class="li"><span class="pill-day">Fr</span><div class="grow"><div class="txt">Pizza-Abend 🍕</div></div><span class="av xs b">B</span></div>
+          <div class="li"><span class="pill-day">Sa</span><div class="grow"><div class="txt">Auswärts — Trattoria</div></div><span class="meta">—</span></div>
+          <div class="li"><span class="pill-day">So</span><div class="grow"><div class="txt">Pfannkuchen 🥞</div></div><span class="av xs m">M</span></div>
+        </div>
+        <div class="card" data-goto="essen" style="cursor:pointer;">
+          <div class="li" style="padding:2px 0;"><span class="lead">🛒</span><div class="grow"><div class="txt">Einkaufsliste</div><div class="meta">4 Artikel · 1 erledigt · Zitronen, Parmesan …</div></div><span class="chev">›</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <button class="fab" id="fab" type="button">＋</button>
+
+    <div class="nav" id="nav">
+      <button class="it on" type="button" data-tab="start" style="--nav-accent:var(--dashboard);"><span class="bubble"></span><span class="ic">🏠</span><span class="txt2">Start</span></button>
+      <button class="it" type="button" data-tab="haushalt" style="--nav-accent:var(--haushalt);"><span class="bubble"></span><span class="ic">🧹</span><span class="txt2">Haushalt</span></button>
+      <button class="it" type="button" data-tab="planung" style="--nav-accent:var(--planung);"><span class="bubble"></span><span class="ic">📅</span><span class="txt2">Planung</span></button>
+      <button class="it" type="button" data-tab="finanzen" style="--nav-accent:var(--finanzen);"><span class="bubble"></span><span class="ic">💶</span><span class="txt2">Finanzen</span></button>
+      <button class="it" type="button" data-tab="essen" style="--nav-accent:var(--food);"><span class="bubble"></span><span class="ic">🍽️</span><span class="txt2">Essen</span></button>
+    </div>
+    <div class="home-ind"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var app = document.getElementById('app');
+  var stage = document.getElementById('stage');
+  var views = {}; document.querySelectorAll('.view').forEach(function (v) { views[v.dataset.view] = v; });
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('#nav .it'));
+  var areaClass = { start: 'area-dashboard', haushalt: 'area-haushalt', planung: 'area-planung', finanzen: 'area-finanzen', essen: 'area-food' };
+  var current = 'start';
+
+  function animateRings(view) {
+    view.querySelectorAll('[data-ring]').forEach(function (c) {
+      var len = parseFloat(c.getAttribute('stroke-dasharray'));
+      var frac = parseFloat(c.getAttribute('data-ring'));
+      c.style.strokeDashoffset = len;
+      requestAnimationFrame(function () { requestAnimationFrame(function () { c.style.strokeDashoffset = len * (1 - frac); }); });
+    });
+  }
+
+  function go(tab) {
+    if (tab === current) { stage.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    current = tab;
+    app.className = 'app ' + areaClass[tab] + (app.classList.contains('dark') ? ' dark' : '');
+    tabs.forEach(function (t) { t.classList.toggle('on', t.dataset.tab === tab); });
+    Object.keys(views).forEach(function (k) {
+      var v = views[k], on = (k === tab);
+      v.classList.remove('on');
+      if (on) { void v.offsetWidth; v.classList.add('on'); animateRings(v); }
+    });
+    stage.scrollTop = 0;
+  }
+
+  tabs.forEach(function (t) { t.addEventListener('click', function () { go(t.dataset.tab); }); });
+  document.querySelectorAll('[data-goto]').forEach(function (el) { el.addEventListener('click', function () { go(el.dataset.goto); }); });
+
+  // Checkboxen
+  document.addEventListener('click', function (e) {
+    var chk = e.target.closest('[data-chk]');
+    if (chk) {
+      var done = chk.classList.toggle('done');
+      chk.textContent = done ? '✓' : '';
+      var txt = chk.parentElement.querySelector('.txt');
+      if (txt) txt.classList.toggle('done-txt', done);
+    }
+    var seg = e.target.closest('[data-seg]');
+    if (seg) { seg.parentElement.querySelectorAll('[data-seg]').forEach(function (s) { s.classList.remove('on'); s.style.background = ''; s.style.color = '#fff'; }); seg.classList.add('on'); seg.style.background = '#fff'; seg.style.color = 'var(--food)'; }
+    var chip = e.target.closest('#ideenfilter .chip');
+    if (chip) { chip.parentElement.querySelectorAll('.chip').forEach(function (c) { c.classList.remove('on'); }); chip.classList.add('on'); }
+    var cook = e.target.closest('[data-cook]');
+    if (cook) { var card = cook.closest('.card'); card.querySelectorAll('[data-cook]').forEach(function (b) { b.style.opacity = '.5'; }); cook.style.opacity = '1'; cook.textContent = cook.textContent.indexOf('Ich') > -1 ? 'Du kochst 🍳' : cook.textContent; }
+  });
+
+  // FAB
+  document.getElementById('fab').addEventListener('click', function () { this.animate([{ transform: 'scale(.85) rotate(90deg)' }, { transform: 'scale(1) rotate(0)' }], { duration: 350, easing: 'cubic-bezier(0.34,1.56,0.64,1)' }); });
+
+  // Dark-Mode
+  var btn = document.getElementById('darktoggle'), knob = document.getElementById('knobicon'), lbl = document.getElementById('darklabel');
+  function applyDark(on) {
+    app.classList.toggle('dark', on);
+    knob.textContent = on ? '🌙' : '☀️';
+    knob.style.transform = on ? 'translateX(16px)' : 'translateX(0)';
+    knob.parentElement.style.background = on ? 'var(--dashboard)' : 'var(--border)';
+    lbl.textContent = on ? 'Light-Mode an' : 'Dark-Mode an';
+  }
+  btn.addEventListener('click', function () { var on = !app.classList.contains('dark'); applyDark(on); try { localStorage.setItem('twodo-modern-dark', on ? '1' : '0'); } catch (e) {} });
+  try { applyDark(localStorage.getItem('twodo-modern-dark') === '1'); } catch (e) {}
+
+  animateRings(views.start);
+})();
+</script>
+</body>
+</html>

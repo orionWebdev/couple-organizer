@@ -354,7 +354,7 @@ function countLabel(entry: Entry): string {
   border: 1px solid var(--border-softer);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  padding: 14px;
+  padding: 18px;
 }
 
 .empty-hint {
@@ -384,7 +384,7 @@ function countLabel(entry: Entry): string {
   justify-content: center;
   border-radius: 50%;
   font-size: 15px;
-  border: 2px solid #fff;
+  border: 2px solid var(--surface);
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 

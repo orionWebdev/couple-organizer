@@ -192,7 +192,7 @@ async function saveBudget() {
 
     <div v-if="loading" class="loading-msg">Laden…</div>
 
-    <div v-else class="dashboard-body">
+    <div v-else class="dashboard-body rise-stagger">
       <DashboardOnboarding
         v-if="isEmpty"
         :hasMeal="false"

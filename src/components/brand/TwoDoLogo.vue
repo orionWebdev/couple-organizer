@@ -19,7 +19,8 @@ const props = withDefaults(
     tagline: '',
     colorA: 'var(--haushalt)',
     colorB: 'var(--finanzen)',
-    blendMode: 'multiply',
+    // Kein Default: ohne Angabe entscheidet --brand-blend und damit das Theme.
+    blendMode: undefined,
     // „TwoDo" teilt sich nach „Two" (3 Zeichen): erste Silbe colorA, zweite colorB.
     splitAt: 3,
   }
@@ -34,13 +35,15 @@ const wordTail = computed(() => props.word.slice(props.splitAt))
 const gap = computed(() =>
   Math.round(props.height * (props.variant === 'vertical' ? 0.28 : 0.3))
 )
+// Ohne explizite Angabe folgt der Blend dem Theme: hell multiply, dunkel screen.
+const blend = computed(() => props.blendMode ?? 'var(--brand-blend)')
 </script>
 
 <template>
   <div
     class="logo"
     :class="[`logo--${variant}`, { 'logo--mark-only': !showText }]"
-    :style="{ gap: `${gap}px` }"
+    :style="{ gap: `${gap}px`, '--logo-blend': blend }"
   >
     <svg
       :width="markWidth"
@@ -49,11 +52,11 @@ const gap = computed(() =>
       role="img"
       :aria-label="word ? `${word} Logo` : 'TwoDo Logo'"
     >
-      <!-- Blend liegt auf den Kreisen, nicht auf der Gruppe: nur so dunkelt die
-           Überschneidung ein („geteilter Raum"). isolation hält den Blend im Symbol. -->
+      <!-- Blend liegt auf den Kreisen, nicht auf der Gruppe: nur so hebt sich die
+           Überschneidung ab („geteilter Raum"). isolation hält den Blend im Symbol. -->
       <g style="isolation: isolate">
-        <circle cx="46" cy="45" r="33" :style="{ fill: colorA, mixBlendMode: blendMode }" />
-        <circle cx="74" cy="45" r="33" :style="{ fill: colorB, mixBlendMode: blendMode }" />
+        <circle class="logo-circle" cx="46" cy="45" r="33" :style="{ fill: colorA }" />
+        <circle class="logo-circle" cx="74" cy="45" r="33" :style="{ fill: colorB }" />
       </g>
     </svg>
 
@@ -72,6 +75,12 @@ const gap = computed(() =>
 .logo {
   display: inline-flex;
   align-items: center;
+}
+
+/* Über --logo-blend statt inline, weil mix-blend-mode dort nur die Blend-Literale
+   annimmt — kein var(). Der Wert kommt aus der blendMode-Prop oder dem Theme. */
+.logo-circle {
+  mix-blend-mode: var(--logo-blend);
 }
 
 .logo--horizontal {

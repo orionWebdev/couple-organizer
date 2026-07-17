@@ -2,8 +2,13 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import { useAuth } from './composables/useAuth'
+import { initTheme } from './composables/useTheme'
 import { isNative, isWeb } from './services/platform'
 import './app.css'
+
+// Vor allem anderen: setzt data-theme am <html>, damit der erste Vue-Render
+// schon im richtigen Theme kommt.
+initTheme()
 
 /* Der Splash liegt im index.html: die Wartezeit auf authReady liegt vor dem ersten
    Vue-Render. Mindeststandzeit, damit der Aufbau bis zum Claim durchläuft.

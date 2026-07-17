@@ -60,13 +60,22 @@
   --danger:         #b34a32;
   --danger-border:  #ddaa95;
   --danger-tint:    rgba(179, 74, 50, 0.12);
-  --radius-card:    16px;
+  /* Modern-Layer: Karten-Radius von 16 auf 26 (reference/index.html .card).
+     Trifft alle ~26 Flächen, die var(--radius-card) nutzen — Karten UND die
+     als Karten gestalteten Listenzeilen (ExpenseRow, ShoppingItem …), was den
+     „Zeile-ist-Mini-Karte"-Look bewusst mitzieht. Reine Buttons (PaywallSheet/
+     PremiumView .cta) sind einzeln auf 18px gepinnt, damit sie der Button-Skala
+     folgen statt zu rund zu werden. */
+  --radius-card:    26px;
   --radius-card-lg: 20px;
   --radius-tile:    13px;
   --radius-sheet:   26px;
   --radius-chip:    11px;
   --screen-pad:     20px;
-  --shadow-card:    0 4px 12px rgba(60, 45, 30, 0.05);
+  /* Weicher als vorher (0 4px 12px /.05): mehr Streuung, damit Karten sanft
+     abheben statt hart zu kanten. Der Dark-Block überschreibt das mit einem
+     kräftigeren Schatten (dunkle Fläche trägt den leichten nicht). */
+  --shadow-card:    0 6px 20px rgba(60, 45, 30, 0.07);
   --shadow-float:   0 10px 22px rgba(60, 45, 30, 0.14);
   --shadow-accent:  0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
   /* env() ist auch nativ korrekt — dafür sorgt @capacitor-community/safe-area:
@@ -80,6 +89,11 @@
   --font-headline:  'Fredoka', system-ui, sans-serif;
   --on-accent:      #ffffff;
 
+  /* Blend der beiden Logo-Kreise: hell dunkelt die Überschneidung ein
+     (multiply), dunkel hellt sie auf (screen) — beides ergibt den „geteilten
+     Raum". Multiply auf dunklem Grund würde die Marke fast schwarz rechnen. */
+  --brand-blend:    multiply;
+
   /* ── Motion tokens (see Animations-Spec) ──────────────────── */
   --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1); /* the "bounce" — for anything entering */
   --ease-standard:  cubic-bezier(0.4, 0, 0.2, 1);      /* neutral colour/opacity moves */
@@ -91,6 +105,96 @@
   --dur-sheet-open: 420ms;
   --dur-sheet-close:260ms;
   --dur-highlight:  650ms;
+
+  /* Formularfelder/Scrollbars der UA sollen dem gewählten Theme folgen, nicht
+     der Systemwahl — deshalb pro Theme-Block gesetzt statt einmal "light dark". */
+  color-scheme: light;
+}
+
+/* ── Dark Theme (reference/design_handoff_modern_ui/tokens-dark.css) ──
+   Greift auf zwei Wegen, deshalb stehen die Deklarationen zweimal da —
+   ändert sich einer der Werte, muss der andere Block mitgezogen werden:
+   1. System  → @media (prefers-color-scheme: dark), nur solange <html> KEIN
+      data-theme trägt (= Nutzerwahl "System", der Default).
+   2. Manuell → :root[data-theme="dark"] übersteuert die Systemwahl.
+   data-theme="light" braucht keinen eigenen Block: das Attribut allein hebt
+   die :not([data-theme])-Bedingung auf, der helle :root-Block trägt wieder.
+
+   Warme Neutraltöne statt hartem Schwarz, damit die Marken- und
+   Personenfarben tragen. Die Bereichs-/Personen-Akzente (oklch) bleiben
+   unverändert — nur Flächen, Text, Ränder und Tints kippen. */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg:             #17130f;
+    --surface:        #221c17;
+    --surface-deep:   #2b241d;
+    --border:         #3a3128;
+    --border-soft:    #342c23;
+    --border-softer:  #2c251e;
+    --text:           #f3ece2;
+    --text-secondary: #b0a494;
+    --text-meta:      #9a8f80;
+    --text-faint:     #7d7365;
+
+    /* Tints im Dunkeln aus Akzent + Fläche gemischt — die hellen Light-Tints
+       (oklch 0.95+) wären hier leuchtende Flächen statt zarter Hinterlegung. */
+    --haushalt-tint:  color-mix(in oklab, var(--haushalt) 22%, var(--surface));
+    --einkauf-tint:   color-mix(in oklab, var(--einkauf)  22%, var(--surface));
+    --finanzen-tint:  color-mix(in oklab, var(--finanzen) 22%, var(--surface));
+    --dashboard-tint: color-mix(in oklab, var(--dashboard) 22%, var(--surface));
+    --planung-tint:   color-mix(in oklab, var(--planung)  22%, var(--surface));
+    --food-tint:      color-mix(in oklab, var(--food)     22%, var(--surface));
+    --bucket-tint:    color-mix(in oklab, var(--bucket)   22%, var(--surface));
+    --success-tint:   color-mix(in oklab, var(--success)  22%, var(--surface));
+    --danger-tint:    rgba(221, 170, 149, 0.16);
+
+    --shadow-card:    0 6px 18px rgba(0, 0, 0, 0.32);
+    --shadow-float:   0 12px 28px rgba(0, 0, 0, 0.5);
+    --brand-blend:    screen;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:             #17130f;
+  --surface:        #221c17;
+  --surface-deep:   #2b241d;
+  --border:         #3a3128;
+  --border-soft:    #342c23;
+  --border-softer:  #2c251e;
+  --text:           #f3ece2;
+  --text-secondary: #b0a494;
+  --text-meta:      #9a8f80;
+  --text-faint:     #7d7365;
+  --haushalt-tint:  color-mix(in oklab, var(--haushalt) 22%, var(--surface));
+  --einkauf-tint:   color-mix(in oklab, var(--einkauf)  22%, var(--surface));
+  --finanzen-tint:  color-mix(in oklab, var(--finanzen) 22%, var(--surface));
+  --dashboard-tint: color-mix(in oklab, var(--dashboard) 22%, var(--surface));
+  --planung-tint:   color-mix(in oklab, var(--planung)  22%, var(--surface));
+  --food-tint:      color-mix(in oklab, var(--food)     22%, var(--surface));
+  --bucket-tint:    color-mix(in oklab, var(--bucket)   22%, var(--surface));
+  --success-tint:   color-mix(in oklab, var(--success)  22%, var(--surface));
+  --danger-tint:    rgba(221, 170, 149, 0.16);
+  --shadow-card:    0 6px 18px rgba(0, 0, 0, 0.32);
+  --shadow-float:   0 12px 28px rgba(0, 0, 0, 0.5);
+  --brand-blend:    screen;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* Sanfter Wechsel beim Umschalten. .nav/.fab kommen in Schritt 4/5 dazu. */
+body,
+.card,
+.app-field,
+.mnav,
+.fab {
+  transition: background-color 0.4s var(--ease-standard),
+              color 0.4s var(--ease-standard),
+              border-color 0.4s var(--ease-standard);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -271,4 +375,108 @@
 
 .list-row.just-added {
   background-color: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MODERN LAYER (reference/design_handoff_modern_ui/modern-layer.css)
+   Überschreibt die GLOBALEN Utilities mit der größeren, klareren
+   Ausprägung. Bewusst am Ende von app.css statt als eigene Datei: gleiche
+   Spezifität wie die Basis-Regeln oben, hier gewinnt allein die Quell-
+   reihenfolge — kein Ladereihenfolge-Risiko über mehrere Dateien.
+
+   NUR die drei echt-globalen Utilities stehen hier (.btn-primary, .app-field,
+   .section-label). .card und .chip sind in diesem Code KEINE globalen Klassen
+   (scoped pro Komponente bzw. Avatar-Kreise) — deren Look kommt über die Tokens
+   oben (--radius-card, --shadow-card), nicht über eine Klasse.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Größerer Fließtext als Basis. Wirkt auf ungesetzten Text und em/rem;
+   die meisten Komponenten setzen eigene px-Größen. */
+body {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Primär-Button: höheres Tap-Target (56px), größere Schrift, Feder beim Druck.
+   :active-Hintergrund (accent-hover) kommt weiter aus der Basisregel oben. */
+.btn-primary {
+  min-height: 56px;
+  padding: 0 22px;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 800;
+  gap: 9px;
+  transition: background 0.2s var(--ease-standard),
+              transform 0.12s var(--ease-overshoot),
+              filter 0.2s;
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+}
+
+/* Eingabefeld: höher, größerer Text, weichere Kante. */
+.app-field {
+  padding: 16px 18px;
+  border-radius: 16px;
+  font-size: 16px;
+}
+
+/* Abschnitts-Label: etwas größer + Sperrung. DashboardView hat ein eigenes
+   scoped .section-label — das behält dort (höhere Spezifität) seine Größe. */
+.section-label {
+  font-size: 12px;
+  letter-spacing: 0.7px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ANIMATIONS (reference/design_handoff_modern_ui/animations.css)
+   Federkurven aus den vorhandenen --ease-*-Tokens. prefers-reduced-motion
+   ist bereits oben global entschärft (animation-duration → 0.01ms), sodass
+   `forwards`-Animationen sofort im Endzustand stehen.
+
+   Bewusst NICHT übernommen, weil im Bestand schon vorhanden und feiner
+   getunt: die Balken-/Ring-Fills (width/stroke-dashoffset-Transitions in den
+   Dashboard-Karten via useMountAnim, HaushaltUebersicht, EventDetail …) und
+   das Abhak-Feedback in TaskAbhakControl. Ein zweiter Layer darüber würde
+   nur konkurrieren. .rise-stagger liegt auf dem Dashboard (.dashboard-body)
+   und auf jedem Tab-Panel; auf den Tab-Views läuft es zusätzlich zum
+   bestehenden tab-fade (das den Block-Eingang + Leave-Übergang stellt), der
+   relative Karten-Versatz bleibt dabei sichtbar.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Karten-Einzug mit Stagger — Klasse auf den Container legen, dessen direkte
+   Kinder nacheinander von unten einziehen sollen. */
+.rise-stagger > * {
+  opacity: 0;
+  animation: rise 0.5s var(--ease-overshoot) forwards;
+}
+.rise-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.rise-stagger > *:nth-child(2) { animation-delay: 0.07s; }
+.rise-stagger > *:nth-child(3) { animation-delay: 0.12s; }
+.rise-stagger > *:nth-child(4) { animation-delay: 0.17s; }
+.rise-stagger > *:nth-child(5) { animation-delay: 0.22s; }
+.rise-stagger > *:nth-child(6) { animation-delay: 0.27s; }
+.rise-stagger > *:nth-child(n+7) { animation-delay: 0.3s; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Abhaken-Feedback: kurzer Feder-Pop. Wird an der jeweiligen Checkbox
+   referenziert (aktuell ShoppingItem .cb--checked). */
+@keyframes chk-pop {
+  0%   { transform: scale(0.7); }
+  60%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* Generisches Press-Feedback für tappbare Flächen/Buttons (u. a. der globale
+   FAB aus Schritt 5). */
+.press {
+  transition: transform 0.12s var(--ease-overshoot);
+}
+.press:active {
+  transform: scale(0.97);
 }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onScopeDispose } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useChores } from '@/composables/useChores'
+import { setFabAction } from '@/composables/useFab'
 import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
@@ -68,6 +69,12 @@ function openNewChore() {
   editingChore.value = null
   showSheet.value = true
 }
+
+// Globaler FAB (App-Shell): nur der Aufgaben-Pool ("Alle") kennt ein Add.
+watch(tab, (t) => {
+  setFabAction(t === 'alle' ? { label: 'Aufgabe hinzufügen', handler: openNewChore } : null)
+}, { immediate: true })
+onScopeDispose(() => setFabAction(null))
 
 function openEditChore(chore: Chore) {
   editingChore.value = chore
@@ -150,6 +157,7 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
         <HaushaltZuweisungen
           v-if="tab === 'zuweisungen'"
           key="zuweisungen"
+          class="rise-stagger"
           :chores="chores"
           :history="history"
           :couple="couple"
@@ -161,6 +169,7 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
         <HaushaltAlle
           v-else-if="tab === 'alle'"
           key="alle"
+          class="rise-stagger"
           :chores="chores"
           :couple="couple"
           :todayCounts="todayCounts"
@@ -174,6 +183,7 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
         <HaushaltUebersicht
           v-else
           key="uebersicht"
+          class="rise-stagger"
           :chores="chores"
           :history="history"
           :couple="couple"
@@ -182,8 +192,6 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
         />
       </Transition>
     </div>
-
-    <button v-if="tab === 'alle'" class="fab" @click="openNewChore"><span class="fab-plus">+</span>Aufgabe hinzufügen</button>
 
     <TaskSheet
       :isOpen="showSheet"
@@ -262,38 +270,5 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
 .tab-fade-leave-to {
   opacity: 0;
   transform: translateY(-6px);
-}
-
-.fab {
-  position: fixed;
-  left: 18px;
-  right: 18px;
-  bottom: calc(104px + var(--safe-bottom));
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--accent);
-  color: var(--on-accent);
-  border: none;
-  border-radius: 16px;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: var(--shadow-accent);
-  transition: background 0.18s ease, transform 0.12s ease;
-  z-index: 50;
-}
-
-.fab-plus {
-  font-size: 18px;
-  font-weight: 300;
-}
-
-.fab:active {
-  background: var(--accent-hover);
-  transform: scale(0.96);
 }
 </style>

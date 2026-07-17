@@ -157,7 +157,7 @@ function lastEntryFor(choreId: string): ChoreHistoryEntry | null {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #fff;
+  border: 2px solid var(--surface);
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
   flex-shrink: 0;
 }

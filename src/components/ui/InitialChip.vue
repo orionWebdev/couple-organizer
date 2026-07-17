@@ -46,7 +46,7 @@ const color = computed(() => {
   justify-content: center;
   border-radius: 50%;
   color: #fff;
-  border: 2px solid #fff;
+  border: 2px solid var(--surface);
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
   font-family: var(--font-body);
   font-weight: 700;

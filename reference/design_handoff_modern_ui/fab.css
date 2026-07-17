@@ -1,0 +1,21 @@
+/* ══════════════════════════════════════════════════════════════════
+   TwoDo · Modern UI — GLOBALER PLUS-BUTTON (FAB)
+   EIN globaler Button unten rechts, ersetzt ALLE bisherigen
+   „Hinzufügen"-Buttons. Kontextabhängig je aktivem Tab (siehe Fab.vue).
+   Nutzt den aktiven Bereichs-Akzent (--accent).
+   ══════════════════════════════════════════════════════════════════ */
+
+.fab {
+  position: fixed; right: 20px;
+  bottom: calc(102px + var(--safe-bottom)); /* sitzt über der Bottom-Nav */
+  width: 64px; height: 64px; border-radius: 22px;
+  background: var(--accent); color: var(--on-accent);
+  border: none; cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 32px; line-height: 1;
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 45%, transparent);
+  z-index: 45;
+  transition: transform .15s var(--ease-overshoot), background .2s var(--ease-standard);
+}
+.fab:active { transform: scale(0.9) rotate(90deg); }
+.fab:disabled { opacity: .4; pointer-events: none; }

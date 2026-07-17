@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onScopeDispose } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useShopping } from '@/composables/useShopping'
 import { useExpenses } from '@/composables/useExpenses'
 import { useTabSwipe } from '@/composables/useTabSwipe'
+import { setFabAction } from '@/composables/useFab'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
 import { useBackDismiss } from '@/composables/useBackButton'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
-import FabButton from '@/components/ui/FabButton.vue'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import ShoppingListCard from '@/components/shopping/ShoppingListCard.vue'
@@ -74,6 +74,20 @@ function handleNewListTap() {
   }
   showNewList.value = true
 }
+
+// Globaler FAB (App-Shell): nur in der Listenübersicht (nicht in Detail/
+// Einkaufsmodus). Liste → neue Liste, Rezepte → neues Rezept (versteckt,
+// solange das Rezept-Formular ohnehin offen ist). Wochenplan hat kein Add.
+const fabAction = computed(() => {
+  if (view.value !== 'lists') return null
+  if (tab.value === 'liste') return { label: 'Neue Liste', handler: handleNewListTap }
+  if (tab.value === 'rezepte' && !rezeptWikiRef.value?.showForm) {
+    return { label: 'Rezept hinzufügen', handler: () => rezeptWikiRef.value?.openCreateForm() }
+  }
+  return null
+})
+watch(fabAction, (a) => setFabAction(a), { immediate: true })
+onScopeDispose(() => setFabAction(null))
 
 async function handleCreateList() {
   if (!newListName.value.trim()) return
@@ -213,11 +227,9 @@ function listItemsFor(listId: string) {
         <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
       </div>
 
-      <!-- Die Touch-Handler sitzen auf .tab-area (nicht nur .tab-content), weil
-           die FabButtons als Geschwister-Elemente von .tab-content gerendert
-           werden (siehe Kommentar unten) — Touch-Events bubblen nicht zwischen
-           Geschwistern, ein auf dem FAB startender Swipe würde sonst nicht
-           erkannt. touchcancel zählt wie touchend, siehe useTabSwipe. -->
+      <!-- Touch-Handler auf .tab-area für den Tab-Swipe; touchcancel zählt wie
+           touchend (siehe useTabSwipe). Der frühere Inline-FAB ist jetzt global
+           im App-Shell (useFab). -->
       <div
         class="tab-area"
         @touchstart.passive="onTouchStart"
@@ -227,7 +239,7 @@ function listItemsFor(listId: string) {
       >
         <div class="tab-content">
           <Transition name="tab-fade" mode="out-in">
-            <div v-if="tab === 'liste'" key="liste" class="page-container">
+            <div v-if="tab === 'liste'" key="liste" class="page-container rise-stagger">
               <div v-if="loading" class="loading-msg">Laden…</div>
               <div v-else class="lists-wrap">
                 <TransitionGroup tag="div" name="list-add" class="lists-grid">
@@ -249,6 +261,7 @@ function listItemsFor(listId: string) {
             <EssensplanView
               v-else-if="tab === 'wochenplan'"
               key="wochenplan"
+              class="rise-stagger"
               :coupleId="coupleId"
               :couple="couple"
             />
@@ -257,19 +270,11 @@ function listItemsFor(listId: string) {
               v-else
               key="rezepte"
               ref="rezeptWikiRef"
+              class="rise-stagger"
               :coupleId="coupleId"
             />
           </Transition>
         </div>
-
-        <!-- Außerhalb der Transition (verhindert das FAB-Slow-Slide-Problem,
-             siehe unten), aber innerhalb der Swipe-Zone. -->
-        <FabButton v-if="tab === 'liste'" label="Neue Liste" @click="handleNewListTap" />
-        <FabButton
-          v-else-if="tab === 'rezepte' && !rezeptWikiRef?.showForm"
-          label="Rezept hinzufügen"
-          @click="rezeptWikiRef?.openCreateForm()"
-        />
       </div>
     </template>
 

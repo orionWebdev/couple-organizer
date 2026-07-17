@@ -157,7 +157,7 @@ function toggleExpand() {
   height: 28px;
   border-radius: 50%;
   font-size: 13px;
-  border: 2px solid #fff;
+  border: 2px solid var(--surface);
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
   flex-shrink: 0;
   user-select: none;

@@ -57,7 +57,7 @@ const itemCount = computed(() => props.summary.expenses.length)
   border: 1px solid var(--border-softer);
   background: var(--surface);
   border-radius: var(--radius-card);
-  padding: 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;

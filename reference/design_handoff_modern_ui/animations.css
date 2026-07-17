@@ -1,0 +1,33 @@
+/* ══════════════════════════════════════════════════════════════════
+   TwoDo · Modern UI — ANIMATIONS
+   Feder-Kurven kommen aus den bestehenden Motion-Tokens (--ease-*).
+   Alles respektiert prefers-reduced-motion (bereits im Base-CSS entschärft).
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Karten-Einzug mit Stagger — Klasse auf den Screen-/Listen-Container legen.
+   Kinder ziehen nacheinander von unten ein. */
+.rise-stagger > * { opacity: 0; animation: rise .5s var(--ease-overshoot) forwards; }
+.rise-stagger > *:nth-child(1) { animation-delay: .02s; }
+.rise-stagger > *:nth-child(2) { animation-delay: .07s; }
+.rise-stagger > *:nth-child(3) { animation-delay: .12s; }
+.rise-stagger > *:nth-child(4) { animation-delay: .17s; }
+.rise-stagger > *:nth-child(5) { animation-delay: .22s; }
+.rise-stagger > *:nth-child(6) { animation-delay: .27s; }
+.rise-stagger > *:nth-child(n+7) { animation-delay: .3s; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Abhaken-Feedback */
+@keyframes chk-pop { 0% { transform: scale(.7); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+
+/* Balken (Split/Fairness/Budget): Breite animieren.
+   Setzt die Ziel-Breite per Style/Klasse; Übergang erledigt der Rest. */
+.bar-fill { transition: width .8s var(--ease-overshoot); }
+
+/* Ring (SVG-Budget): stroke-dashoffset animieren.
+   JS setzt initial offset = Umfang, dann auf Zielwert → füllt sich federnd. */
+.ring-value { transition: stroke-dashoffset 1s var(--ease-overshoot); stroke-linecap: round; }
+
+/* Generisches Press-Feedback für tappbare Karten/Buttons */
+.press { transition: transform .12s var(--ease-overshoot); }
+.press:active { transform: scale(0.97); }

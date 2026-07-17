@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onScopeDispose } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useBucketList } from '@/composables/useBucketList'
 import { usePlanung } from '@/composables/usePlanung'
 import { useTabSwipe } from '@/composables/useTabSwipe'
+import { setFabAction } from '@/composables/useFab'
 import { showToast } from '@/composables/useToast'
 import type { BucketListItem, IdeaCategory, Note, Trip } from '@/types'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
-import FabButton from '@/components/ui/FabButton.vue'
 import BelegungKalender from '@/components/planung/BelegungKalender.vue'
 import SectionCard from '@/components/planung/SectionCard.vue'
 import IdeenBlock from '@/components/planung/IdeenBlock.vue'
@@ -48,6 +48,17 @@ const kalenderRef = ref<InstanceType<typeof BelegungKalender> | null>(null)
 // ── Sheets ────────────────────────────────────────────────────
 type Sheet = 'idea' | 'trip' | 'note' | null
 const sheet = ref<Sheet>(null)
+
+// Globaler FAB (App-Shell): Kalender → Belegung anlegen, Listen → neue Idee
+// (Reise/Notiz laufen weiter über das "+" im jeweiligen Block-Kopf).
+watch(tab, (t) => {
+  setFabAction(
+    t === 'kalender'
+      ? { label: 'Belegung anlegen', handler: () => kalenderRef.value?.openNew() }
+      : { label: 'Idee hinzufügen', handler: () => { sheet.value = 'idea' } }
+  )
+}, { immediate: true })
+onScopeDispose(() => setFabAction(null))
 
 async function onAddIdea(payload: { category: IdeaCategory; name: string; suggestedBy: string }) {
   const ok = await addItem(payload)
@@ -114,7 +125,7 @@ const listsEmpty = computed(() =>
       <div class="tab-content">
         <Transition name="tab-fade" mode="out-in">
           <!-- Kalender -->
-          <div v-if="tab === 'kalender'" key="kalender" class="tab-scroll">
+          <div v-if="tab === 'kalender'" key="kalender" class="tab-scroll rise-stagger">
             <BelegungKalender ref="kalenderRef" />
           </div>
 
@@ -122,7 +133,7 @@ const listsEmpty = computed(() =>
           <div v-else key="listen" class="tab-scroll">
             <div v-if="listsLoading" class="loading-msg">Laden…</div>
 
-            <div v-else class="listen-body">
+            <div v-else class="listen-body rise-stagger">
               <SectionCard v-if="listsEmpty" title="Was habt ihr vor?">
                 <p class="empty-text">Ideen, Reisen und Notizen sammeln sich hier.</p>
                 <button class="empty-btn" type="button" @click="sheet = 'idea'">＋ Erste Idee</button>
@@ -143,14 +154,6 @@ const listsEmpty = computed(() =>
           </div>
         </Transition>
       </div>
-
-      <!-- Außerhalb der Transition (verhindert das FAB-Slow-Slide-Problem,
-           siehe EinkaufenView), aber innerhalb der Swipe-Zone. -->
-      <FabButton
-        v-if="tab === 'kalender'"
-        label="Belegung anlegen"
-        @click="kalenderRef?.openNew()"
-      />
     </div>
 
     <AddIdeaSheet

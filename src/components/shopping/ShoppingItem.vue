@@ -88,6 +88,10 @@ function onTouchEnd() {
 .cb--checked {
   background: var(--accent);
   border-color: var(--accent);
+  /* Feder-Pop beim Abhaken (Keyframe global in app.css). Läuft auch beim
+     Mount bereits abgehakter Einträge einmal an — bewusst akzeptiert wie in
+     der Referenz; abgehakte Posten sind in der Liste die Ausnahme. */
+  animation: chk-pop 0.35s var(--ease-overshoot);
 }
 
 .item-text {

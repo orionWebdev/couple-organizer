@@ -1,0 +1,82 @@
+/* ══════════════════════════════════════════════════════════════════
+   TwoDo · Modern UI — MODERN LAYER
+   Überschreibt die BESTEHENDEN Utility-Klassen mit der neuen, größeren
+   Ausprägung. Gleiche Klassennamen ⇒ nur Look ändert sich, kein Markup.
+   Nach src/app.css laden (oder ans Ende hängen).
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Größere, klarere Grundtypo */
+body { font-size: 16px; line-height: 1.5; }
+
+/* Karten: größere Radien, mehr Luft, weichere Kante */
+.card {
+  border-radius: 26px;
+  padding: 20px;
+  border: 1px solid var(--border-softer);
+  box-shadow: var(--shadow-card);
+}
+
+/* Primär-Button: höher (Tap-Target 56px), größere Schrift, Feder beim Druck */
+.btn-primary {
+  min-height: 56px;
+  padding: 0 22px;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 800;
+  gap: 9px;
+  transition: background .2s var(--ease-standard), transform .12s var(--ease-overshoot), filter .2s;
+}
+.btn-primary:active { transform: scale(0.96); }
+
+/* Sekundär-/Soft-Variante (optional, gleiche Höhe) */
+.btn-soft {
+  min-height: 56px; padding: 0 22px; border-radius: 18px;
+  font-family: var(--font-body); font-size: 16px; font-weight: 800; cursor: pointer;
+  border: none; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  color: var(--accent);
+  transition: transform .12s var(--ease-overshoot);
+}
+.btn-soft:active { transform: scale(0.96); }
+
+/* Chip / Pill: größer, klickbarer */
+.chip {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 14px;
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+/* Eingabefeld: höher, größerer Text */
+.app-field {
+  padding: 16px 18px;
+  border-radius: 16px;
+  font-size: 16px;
+}
+
+/* Abschnitts-Label: etwas größer + Sperrung */
+.section-label {
+  font-size: 12px;
+  letter-spacing: 0.7px;
+}
+
+/* Große Tap-Target-Listenzeile (opt-in Utility, ersetzt kein Markup) */
+.list-row-lg { min-height: 64px; }
+
+/* Icon-Kreis-Button (Header etc.) — 50px Tap-Target */
+.icon-btn {
+  width: 50px; height: 50px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 22px;
+  background: var(--surface); border: 1px solid var(--border-softer);
+  box-shadow: var(--shadow-card); cursor: pointer;
+}
+
+/* Checkbox im neuen Look (30px) */
+.chk-lg {
+  width: 30px; height: 30px; border-radius: 10px;
+  border: 2.5px solid var(--border); background: transparent;
+  display: grid; place-items: center; color: var(--on-accent); font-size: 17px;
+  cursor: pointer; transition: all .2s var(--ease-overshoot);
+}
+.chk-lg.is-done { background: var(--accent); border-color: var(--accent); animation: chk-pop .35s var(--ease-overshoot); }

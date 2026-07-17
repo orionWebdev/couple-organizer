@@ -5,6 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- content wird vom Theme-Skript unten überschrieben, bevor gezeichnet wird -->
     <meta name="theme-color" content="#fdfaf5" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -15,8 +16,36 @@
     <link rel="preload" href="/fonts/fredoka-var.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/nunito-var.woff2" as="font" type="font/woff2" crossorigin />
 
+    <!-- Theme vor dem ersten Paint: der Splash steht schon, bevor das JS-Bundle
+         (und damit initTheme() aus useTheme.ts) überhaupt lädt — ohne das hier
+         blitzte er im Dark-Mode hell auf. Klein und blockierend gehalten, das
+         ist der Punkt. Schlüssel und Werte spiegeln useTheme.ts/app.css. -->
+    <script>
+      (function () {
+        var pref = 'system'
+        try {
+          var stored = localStorage.getItem('twodo-theme')
+          if (stored === 'light' || stored === 'dark' || stored === 'system') pref = stored
+        } catch (e) {
+          /* localStorage blockiert (Privatmodus): Default "system" */
+        }
+
+        // "system" lässt das Attribut weg, damit die Media-Query greift.
+        if (pref !== 'system') document.documentElement.setAttribute('data-theme', pref)
+
+        var dark =
+          pref === 'dark' ||
+          (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        var meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute('content', dark ? '#17130f' : '#fdfaf5')
+      })()
+    </script>
+
     <!-- Splash: sichtbar ab dem ersten Paint, bis main.ts nach authReady gemountet hat.
-         Werte hier literal statt via Tokens — app.css kommt erst mit dem JS-Bundle. -->
+         Werte hier literal statt via app.css-Tokens — die kommen erst mit dem
+         JS-Bundle. Die --sp-*-Variablen unten sind lokal in diesem Block
+         definiert und deshalb sofort da; sie spiegeln die Tokens aus app.css
+         (hell/dunkel) und müssen mitgezogen werden, wenn die sich ändern. -->
     <style>
       /* Selbst gehostet statt vom Google-CDN: in der APK gäbe es die Schrift
          sonst erst nach der ersten Netzantwort und offline nie — der Splash
@@ -39,6 +68,38 @@
         src: url('/fonts/nunito-var.woff2') format('woff2');
       }
 
+      /* Hell = --surface/--bg/--text/--text-secondary/--text-faint aus app.css. */
+      :root {
+        --sp-glow: #ffffff;
+        --sp-bg: #fdfaf5;
+        --sp-word: #2c2823;
+        --sp-tag: #8c857b;
+        --sp-dot: #b8b0a4;
+        --sp-blend: multiply;
+      }
+
+      /* Dieselben zwei Wege wie der Dark-Block in app.css: System, solange
+         <html> kein data-theme trägt — und die manuelle Wahl darüber. */
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) {
+          --sp-glow: #221c17;
+          --sp-bg: #17130f;
+          --sp-word: #f3ece2;
+          --sp-tag: #b0a494;
+          --sp-dot: #7d7365;
+          --sp-blend: screen;
+        }
+      }
+
+      :root[data-theme='dark'] {
+        --sp-glow: #221c17;
+        --sp-bg: #17130f;
+        --sp-word: #f3ece2;
+        --sp-tag: #b0a494;
+        --sp-dot: #7d7365;
+        --sp-blend: screen;
+      }
+
       #splash {
         position: fixed;
         inset: 0;
@@ -47,7 +108,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: radial-gradient(130% 80% at 50% 12%, #ffffff 0%, #fdfaf5 60%);
+        background: radial-gradient(130% 80% at 50% 12%, var(--sp-glow) 0%, var(--sp-bg) 60%);
         transition: opacity 400ms cubic-bezier(0.4, 0, 1, 1), transform 400ms cubic-bezier(0.4, 0, 1, 1);
       }
       #splash.is-hiding {
@@ -76,7 +137,7 @@
         width: 96px;
         height: 96px;
         border-radius: 50%;
-        mix-blend-mode: multiply;
+        mix-blend-mode: var(--sp-blend);
         opacity: 0;
       }
       .splash-circle.left {
@@ -95,7 +156,7 @@
         font-weight: 600;
         font-size: 40px;
         letter-spacing: -0.5px;
-        color: #2c2823;
+        color: var(--sp-word);
         opacity: 0;
         animation: splashWordIn 1400ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
       }
@@ -107,7 +168,7 @@
         font-family: 'Nunito', system-ui, sans-serif;
         font-weight: 600;
         font-size: 13.5px;
-        color: #8c857b;
+        color: var(--sp-tag);
         margin-top: -14px;
         opacity: 0;
         animation: splashTagIn 1900ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
@@ -123,7 +184,7 @@
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: #b8b0a4;
+        background: var(--sp-dot);
         animation: splashBlink 1.4s ease-in-out infinite;
       }
       .splash-dots i:nth-child(2) { animation-delay: 0.2s; }

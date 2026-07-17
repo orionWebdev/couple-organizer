@@ -251,7 +251,7 @@ const statRows = computed(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 2px solid #fff;
+  border: 2px solid var(--surface);
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 

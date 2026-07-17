@@ -73,8 +73,8 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
 .card {
   border: 1px solid var(--border-softer);
   background: var(--surface);
-  border-radius: 14px;
-  padding: 12px 13px;
+  border-radius: var(--radius-card);
+  padding: 14px;
   margin-bottom: 8px;
   box-shadow: var(--shadow-card);
   transition: box-shadow 0.2s var(--ease-standard), border-color 0.2s var(--ease-standard);
@@ -124,7 +124,7 @@ const personB = computed(() => props.couple?.memberIds[1] ?? null)
   align-items: center;
   justify-content: center;
   margin-left: -4px;
-  border: 1.5px solid #fff;
+  border: 1.5px solid var(--surface);
   box-shadow: 0 2px 6px rgba(60, 45, 30, 0.12);
 }
 

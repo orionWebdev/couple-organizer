@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onScopeDispose } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useExpenses } from '@/composables/useExpenses'
+import { setFabAction } from '@/composables/useFab'
 import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
 import { useBackDismiss } from '@/composables/useBackButton'
@@ -81,6 +82,13 @@ function openAddExpense() {
   editingExpense.value = null
   showAdd.value = true
 }
+
+// Globaler FAB (App-Shell): nur die Übersicht kennt ein Add (Ausgabe erfassen),
+// der Finanz-Coach nicht.
+watch(tab, (t) => {
+  setFabAction(t === 'uebersicht' ? { label: 'Ausgabe erfassen', handler: openAddExpense } : null)
+}, { immediate: true })
+onScopeDispose(() => setFabAction(null))
 
 function openNewEvent() {
   startInEventMode.value = true
@@ -232,7 +240,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       >
         <div class="tab-content">
           <Transition name="tab-fade" mode="out-in">
-            <div v-if="tab === 'uebersicht'" key="uebersicht" class="uebersicht-pane">
+            <div v-if="tab === 'uebersicht'" key="uebersicht" class="uebersicht-pane rise-stagger">
               <!-- Balance card -->
               <BalanceCard
                 :balanceInfo="balanceInfo"
@@ -278,20 +286,13 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
             <FinanzCoachView
               v-else
               key="coach"
+              class="rise-stagger"
               :couple="couple"
               :months="financeMonths"
               :loading="loading"
             />
           </Transition>
         </div>
-
-        <!-- Außerhalb der Transition, aber innerhalb der Swipe-Zone — sonst
-             würde ein Swipe, der auf dem FAB beginnt, nicht erkannt (der FAB
-             läge sonst außerhalb von .tab-area und Touch-Events bubblen nicht
-             zwischen Geschwister-Elementen). -->
-        <button v-if="tab === 'uebersicht'" class="fab" @click="openAddExpense">
-          <span class="fab-plus">+</span>Ausgabe erfassen
-        </button>
       </div>
     </template>
 
@@ -488,39 +489,6 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
   flex-direction: column;
   gap: 9px;
   padding: 0 var(--screen-pad);
-}
-
-.fab {
-  position: fixed;
-  left: 18px;
-  right: 18px;
-  bottom: calc(104px + var(--safe-bottom));
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--accent);
-  color: var(--on-accent);
-  border: none;
-  border-radius: 16px;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: var(--shadow-accent);
-  transition: background 0.18s ease, transform 0.12s ease;
-  z-index: 50;
-}
-
-.fab-plus {
-  font-size: 18px;
-  font-weight: 300;
-}
-
-.fab:active {
-  background: var(--accent-hover);
-  transform: scale(0.96);
 }
 
 .settle-text {

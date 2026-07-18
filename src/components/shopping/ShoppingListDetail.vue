@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue'
-import type { ShoppingList, ShoppingItem } from '@/types'
+import type { Couple, ShoppingList, ShoppingItem } from '@/types'
 import ShoppingItemRow from './ShoppingItem.vue'
 import { useJustAdded } from '@/composables/useJustAdded'
+import { sectionDef, sectionOfItem, sectionOrder } from '@/utils/shoppingSections'
 
 const props = defineProps<{
   list: ShoppingList
   items: ShoppingItem[]
+  couple: Couple | null
 }>()
 
 const emit = defineEmits<{
@@ -14,6 +16,7 @@ const emit = defineEmits<{
   delete: [id: string]
   add: [name: string]
   startShopping: []
+  clearChecked: []
   back: []
   renameList: [title: string]
   deleteList: []
@@ -27,6 +30,10 @@ function handleAdd() {
   emit('add', newName.value.trim())
   newName.value = ''
   nextTick(() => inputRef.value?.focus())
+}
+
+function quickAdd(name: string) {
+  emit('add', name)
 }
 
 const menuOpen = ref(false)
@@ -53,27 +60,49 @@ function handleDeleteList() {
   menuOpen.value = false
 }
 
-interface CategoryGroup { cat: string; items: ShoppingItem[] }
+// ── Fortschritt ────────────────────────────────────────────────
+const total = computed(() => props.items.length)
+const doneCount = computed(() => props.items.filter((i) => i.checked).length)
+const uncheckedCount = computed(() => total.value - doneCount.value)
+const progressPct = computed(() => (total.value ? Math.round((doneCount.value / total.value) * 100) : 0))
 
-const grouped = computed<CategoryGroup[]>(() => {
+// ── Gruppierung nach Laden-Bereich ─────────────────────────────
+interface SectionGroup {
+  id: string
+  emoji: string
+  label: string
+  openCount: number
+  items: ShoppingItem[]
+}
+
+const grouped = computed<SectionGroup[]>(() => {
   const map = new Map<string, ShoppingItem[]>()
   for (const item of props.items) {
-    const key = item.category ?? 'Sonstiges'
-    if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(item)
+    const sec = sectionOfItem(item)
+    if (!map.has(sec)) map.set(sec, [])
+    map.get(sec)!.push(item)
   }
-  const sorted = [...map.entries()].sort(([a], [b]) => {
-    const aChecked = !map.get(a)!.some(i => !i.checked)
-    const bChecked = !map.get(b)!.some(i => !i.checked)
-    if (aChecked !== bChecked) return aChecked ? 1 : -1
-    return a.localeCompare(b, 'de')
-  })
-  return sorted.map(([cat, items]) => ({ cat, items }))
+  return [...map.entries()]
+    .sort(([a], [b]) => sectionOrder(a) - sectionOrder(b))
+    .map(([id, items]) => {
+      const def = sectionDef(id)
+      return {
+        id,
+        emoji: def.emoji,
+        label: def.label,
+        openCount: items.filter((i) => !i.checked).length,
+        // Offene zuerst, Erledigtes ans Ende des Bereichs.
+        items: [...items].sort((a, b) => (a.checked === b.checked ? 0 : a.checked ? 1 : -1)),
+      }
+    })
 })
 
-const uncheckedCount = computed(() => props.items.filter(i => !i.checked).length)
+// ── „Oft gekauft“ (kuratierte Staples, bereits vorhandene ausgeblendet) ──
+const STAPLES = ['Milch', 'Eier', 'Brot', 'Butter', 'Kaffee', 'Bananen', 'Käse', 'Klopapier'] as const
+const presentNames = computed(() => new Set(props.items.filter((i) => !i.checked).map((i) => i.name.toLowerCase())))
+const suggestions = computed(() => STAPLES.filter((s) => !presentNames.value.has(s.toLowerCase())))
 
-const { justAdded } = useJustAdded(() => props.items, i => i.id)
+const { justAdded } = useJustAdded(() => props.items, (i) => i.id)
 </script>
 
 <template>
@@ -82,7 +111,6 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
     <div class="detail-nav">
       <button class="back-caret" type="button" @click="emit('back')" aria-label="Zurück">‹</button>
       <h2 class="detail-title">{{ list.title }}</h2>
-      <span class="detail-count mono">{{ uncheckedCount }}</span>
       <button class="menu-btn" @click="toggleMenu">⋯</button>
     </div>
 
@@ -100,46 +128,76 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
       </div>
     </div>
 
-    <!-- Items by category -->
-    <div v-if="grouped.length === 0" class="empty">
-      Keine Artikel. Füge unten welche hinzu.
-    </div>
-    <div v-else class="item-list">
-      <div v-for="group in grouped" :key="group.cat">
-        <div class="cat-header section-label">{{ group.cat }}</div>
-        <TransitionGroup tag="div" name="list-add">
-          <ShoppingItemRow
-            v-for="item in group.items"
-            :key="item.id"
-            :item="item"
-            :class="{ 'just-added': justAdded.has(item.id) }"
-            @toggle="emit('toggle', item.id, !item.checked)"
-            @delete="emit('delete', item.id)"
-          />
-        </TransitionGroup>
+    <div class="scroll">
+      <!-- Fortschritt -->
+      <div v-if="total > 0" class="progress-wrap">
+        <div class="progress-top">
+          <span class="progress-label">{{ doneCount }} von {{ total }} erledigt</span>
+          <button v-if="doneCount > 0" type="button" class="clear-btn" @click="emit('clearChecked')">
+            🧹 Erledigte entfernen
+          </button>
+        </div>
+        <div class="prog"><i :style="{ width: progressPct + '%' }" /></div>
       </div>
+
+      <div v-if="grouped.length === 0" class="empty">
+        Keine Artikel. Füge unten welche hinzu.
+      </div>
+
+      <div v-else class="sections">
+        <div v-for="group in grouped" :key="group.id" class="section">
+          <div class="grouphd">
+            <span class="grouphd-emoji">{{ group.emoji }}</span>
+            <span class="grouphd-label">{{ group.label }}</span>
+            <span class="grouphd-count">{{ group.openCount }}</span>
+          </div>
+          <div class="section-card">
+            <TransitionGroup tag="div" name="list-add">
+              <ShoppingItemRow
+                v-for="item in group.items"
+                :key="item.id"
+                :item="item"
+                :couple="couple"
+                :class="{ 'just-added': justAdded.has(item.id) }"
+                @toggle="emit('toggle', item.id, !item.checked)"
+                @delete="emit('delete', item.id)"
+              />
+            </TransitionGroup>
+          </div>
+        </div>
+      </div>
+
+      <!-- Oft gekauft -->
+      <template v-if="suggestions.length">
+        <div class="grouphd grouphd--plain">
+          <span class="grouphd-emoji">💡</span>
+          <span class="grouphd-label">Oft gekauft</span>
+        </div>
+        <div class="staples">
+          <button v-for="name in suggestions" :key="name" type="button" class="staple-chip" @click="quickAdd(name)">
+            ＋ {{ name }}
+          </button>
+        </div>
+      </template>
     </div>
 
-    <!-- Inline add input (Nido: weiße Bar mit Plus-Kachel links) -->
-    <div class="add-row">
-      <button class="add-btn" :disabled="!newName.trim()" @click="handleAdd">+</button>
+    <!-- Schnell-Add-Leiste -->
+    <div class="addbar">
+      <span class="addbar-icon">🛒</span>
       <input
         ref="inputRef"
         v-model="newName"
-        class="add-field"
+        class="addbar-field"
         type="text"
-        placeholder="Artikel hinzufügen…"
+        placeholder="Artikel hinzufügen …"
         @keyup.enter="handleAdd"
       />
+      <button class="addbar-go" :disabled="!newName.trim()" aria-label="Hinzufügen" @click="handleAdd">＋</button>
     </div>
 
-    <!-- Start shopping button -->
+    <!-- Einkaufsmodus -->
     <div class="start-wrap">
-      <button
-        class="btn-primary"
-        :disabled="uncheckedCount === 0"
-        @click="emit('startShopping')"
-      >
+      <button class="btn-primary" :disabled="uncheckedCount === 0" @click="emit('startShopping')">
         Einkaufsmodus starten
       </button>
     </div>
@@ -157,7 +215,7 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: calc(var(--safe-top) + 16px) var(--screen-pad) 16px;
+  padding: calc(var(--safe-top) + 16px) var(--screen-pad) 12px;
 }
 
 .back-caret {
@@ -190,12 +248,6 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.detail-count {
-  font-size: 14px;
-  color: var(--text-meta);
-  flex-shrink: 0;
 }
 
 .menu-btn {
@@ -257,39 +309,150 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
   color: var(--danger);
 }
 
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--screen-pad) 12px;
+}
+
+.progress-wrap {
+  margin-bottom: 14px;
+}
+
+.progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.progress-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.clear-btn {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.clear-btn:active {
+  opacity: 0.6;
+}
+
+.prog {
+  height: 10px;
+  border-radius: 6px;
+  background: var(--surface-deep);
+  overflow: hidden;
+}
+
+.prog i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--accent);
+  transition: width 0.6s var(--ease-standard);
+}
+
 .empty {
-  padding: 40px var(--screen-pad);
+  padding: 40px 20px;
   font-size: 14px;
   color: var(--text-faint);
   text-align: center;
-  flex: 1;
 }
 
-.item-list {
-  flex: 1;
-  overflow-y: auto;
+.section {
+  margin-bottom: 6px;
 }
 
-.cat-header {
-  padding: 14px var(--screen-pad) 9px;
+.grouphd {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.grouphd--plain {
+  padding-top: 14px;
+}
+
+.grouphd-emoji {
+  font-size: 15px;
+}
+
+.grouphd-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 800;
   color: var(--text-meta);
 }
 
-/* Nido: weiße Eingabe-Bar mit Amber-Plus-Kachel (Frame „Einkaufsliste") */
-.add-row {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin: 14px var(--screen-pad) 0;
-  padding: 0 14px;
-  height: 50px;
+.section-card {
   background: var(--surface);
   border: 1px solid var(--border-softer);
-  border-radius: 16px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 4px 14px;
+}
+
+.staples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.staple-chip {
+  border: 1px solid var(--border-softer);
+  background: var(--surface);
+  border-radius: 13px;
+  padding: 9px 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.12s var(--ease-overshoot);
+}
+
+.staple-chip:active {
+  transform: scale(0.96);
+}
+
+/* Schnell-Add-Leiste über der Nav (reference/index.html .addbar) */
+.addbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px var(--screen-pad) 0;
+  padding: 0 8px 0 16px;
+  height: 52px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: 17px;
   box-shadow: var(--shadow-float);
 }
 
-.add-field {
+.addbar-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.addbar-field {
   flex: 1;
   min-width: 0;
   background: transparent;
@@ -297,33 +460,31 @@ const { justAdded } = useJustAdded(() => props.items, i => i.id)
   outline: none;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 14.5px;
+  font-weight: 700;
 }
 
-.add-field::placeholder {
-  color: var(--text-meta);
+.addbar-field::placeholder {
+  color: var(--text-faint);
   opacity: 1;
 }
 
-.add-btn {
-  width: 32px;
-  height: 32px;
+.addbar-go {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   background: var(--accent);
   border: none;
-  border-radius: 11px;
   color: #fff;
   font-size: 22px;
-  font-weight: 300;
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
 }
 
-.add-btn:disabled {
+.addbar-go:disabled {
   opacity: 0.4;
 }
 

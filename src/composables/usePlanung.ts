@@ -1,17 +1,27 @@
 import { ref, onScopeDispose, readonly, type Ref, watch } from 'vue'
 import {
   collection, query, where, orderBy, onSnapshot,
-  addDoc, deleteDoc, doc, serverTimestamp
+  addDoc, updateDoc, deleteDoc, doc, serverTimestamp
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { Note, Trip } from '@/types'
+import type { Note, Trip, TripChecklistItem } from '@/types'
 
 export interface TripDraft {
   title: string
-  when: string
   emoji: string
+  when?: string
+  startDate?: string | null // YYYY-MM-DD
+  endDate?: string | null // YYYY-MM-DD
+  location?: string
+  notes?: string
+  links?: readonly string[]
+  checklist?: readonly TripChecklistItem[]
 }
+
+// Teil-Update: nur die mitgegebenen Felder werden geschrieben (z. B. nur die
+// Packliste beim Abhaken).
+export type TripPatch = Partial<TripDraft>
 
 // Reisen & Notizen des Planung-Tabs. Zwei kleine Collections in einem
 // Composable — wie useBelegung mit resources + bookings, weil sie immer
@@ -86,7 +96,13 @@ export function usePlanung(coupleId: Ref<string | null>) {
       await addDoc(collection(db, 'trips'), {
         coupleId: coupleId.value,
         title,
-        when: draft.when.trim() || 'noch offen',
+        when: draft.when?.trim() || 'noch offen',
+        startDate: draft.startDate ?? null,
+        endDate: draft.endDate ?? null,
+        location: draft.location?.trim() ?? '',
+        notes: draft.notes?.trim() ?? '',
+        links: draft.links ?? [],
+        checklist: draft.checklist ?? [],
         emoji: draft.emoji,
         createdBy: user.value.uid,
         createdAt: serverTimestamp(),
@@ -96,6 +112,31 @@ export function usePlanung(coupleId: Ref<string | null>) {
       return true
     } catch (err: any) {
       console.error('Failed to add trip:', err)
+      error.value = err.message
+      return false
+    }
+  }
+
+  async function updateTrip(id: string, patch: TripPatch): Promise<boolean> {
+    if (patch.title !== undefined && !patch.title.trim()) return false
+
+    const data: Record<string, any> = { updatedAt: serverTimestamp() }
+    if (patch.title !== undefined) data.title = patch.title.trim()
+    if (patch.emoji !== undefined) data.emoji = patch.emoji
+    if (patch.when !== undefined) data.when = patch.when.trim() || 'noch offen'
+    if (patch.startDate !== undefined) data.startDate = patch.startDate ?? null
+    if (patch.endDate !== undefined) data.endDate = patch.endDate ?? null
+    if (patch.location !== undefined) data.location = patch.location.trim()
+    if (patch.notes !== undefined) data.notes = patch.notes.trim()
+    if (patch.links !== undefined) data.links = patch.links
+    if (patch.checklist !== undefined) data.checklist = patch.checklist
+
+    try {
+      await updateDoc(doc(db, 'trips', id), data)
+      error.value = null
+      return true
+    } catch (err: any) {
+      console.error('Failed to update trip:', err)
       error.value = err.message
       return false
     }
@@ -155,6 +196,7 @@ export function usePlanung(coupleId: Ref<string | null>) {
     loading: readonly(loading),
     error: readonly(error),
     addTrip,
+    updateTrip,
     deleteTrip,
     addNote,
     deleteNote

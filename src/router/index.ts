@@ -64,6 +64,13 @@ const router = createRouter({
           component: () => import('@/views/KategorienView.vue')
         },
         {
+          // Persönliche Schnell-Aufgaben (Favoriten-Routinen) — wie /settings
+          // ohne eigenen Nav-Slot.
+          path: 'settings/schnellaufgaben',
+          name: 'schnellaufgaben',
+          component: () => import('@/views/QuickTasksSettingsView.vue')
+        },
+        {
           path: 'premium',
           name: 'premium',
           component: () => import('@/views/PremiumView.vue')

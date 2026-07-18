@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import type { BucketListItem, Couple } from '@/types'
 import { categoryDef, ideaAuthor, ideaCategory, resolveIdeaCategories } from '@/utils/ideen'
+import { dateBadge } from '@/utils/dateLabels'
 import SectionCard from './SectionCard.vue'
 import InitialChip from '@/components/ui/InitialChip.vue'
 
@@ -12,6 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'add'): void
+  (e: 'edit', item: BucketListItem): void
   (e: 'toggle', item: BucketListItem): void
   (e: 'delete', item: BucketListItem): void
 }>()
@@ -66,8 +68,11 @@ const openCount = computed(() => props.items.filter((i) => !i.done).length)
           :aria-label="item.done ? 'Wieder öffnen' : 'Abhaken'"
           @click="emit('toggle', item)"
         >{{ item.done ? '✓' : '' }}</button>
-        <span class="idea-emoji">{{ categoryDef(item.category, categories).emoji }}</span>
-        <span class="idea-title">{{ item.name }}</span>
+        <button class="idea-main" type="button" @click="emit('edit', item)">
+          <span class="idea-emoji">{{ categoryDef(item.category, categories).emoji }}</span>
+          <span class="idea-title">{{ item.name }}</span>
+          <span v-if="item.date" class="idea-date">📅 {{ dateBadge(item.date) }}</span>
+        </button>
         <InitialChip :uid="ideaAuthor(item)" :couple="couple" :size="20" />
         <button class="del" type="button" aria-label="Idee löschen" @click="emit('delete', item)">✕</button>
       </div>
@@ -171,8 +176,23 @@ const openCount = computed(() => props.items.filter((i) => !i.done).length)
   background: var(--success);
 }
 
+.idea-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
 .idea-emoji {
   font-size: 15px;
+  flex-shrink: 0;
 }
 
 .idea-title {
@@ -188,6 +208,17 @@ const openCount = computed(() => props.items.filter((i) => !i.done).length)
 
 .idea--done .idea-title {
   text-decoration: line-through;
+}
+
+.idea-date {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .del {

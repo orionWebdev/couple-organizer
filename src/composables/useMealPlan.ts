@@ -1,7 +1,7 @@
 import { ref, computed, onScopeDispose, readonly, type Ref, watch } from 'vue'
 import {
   collection, query, where, orderBy, onSnapshot,
-  addDoc, updateDoc, deleteDoc, doc, serverTimestamp
+  addDoc, updateDoc, deleteDoc, doc, serverTimestamp, arrayUnion, arrayRemove
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
@@ -72,6 +72,7 @@ export function useMealPlan(coupleId: Ref<string | null>) {
             id: d.id,
             ...data,
             tags: data.tags ?? [],
+            likes: data.likes ?? [],
             ingredients: data.ingredients ?? [],
             steps: data.steps ?? [],
             nutrition: data.nutrition ?? null,
@@ -279,6 +280,25 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     }
   }
 
+  // "Herz je Person": schaltet das Herz des angegebenen Nutzers um. Bewusst OHNE
+  // updatedAt — ein Herz ist keine inhaltliche Änderung und soll die nach
+  // updatedAt sortierte Liste (und damit den Foto-Hero) nicht umsortieren.
+  async function toggleRecipeLike(recipeId: string, uid: string): Promise<boolean> {
+    const recipe = recipes.value.find((r) => r.id === recipeId)
+    const liked = recipe?.likes.includes(uid) ?? false
+    try {
+      await updateDoc(doc(db, 'recipes', recipeId), {
+        likes: liked ? arrayRemove(uid) : arrayUnion(uid)
+      })
+      error.value = null
+      return true
+    } catch (err: any) {
+      console.error('Failed to toggle recipe like:', err)
+      error.value = err.message
+      return false
+    }
+  }
+
   async function deleteRecipe(id: string): Promise<boolean> {
     try {
       await deleteDoc(doc(db, 'recipes', id))
@@ -332,6 +352,7 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     createRecipe,
     updateRecipe,
     deleteRecipe,
+    toggleRecipeLike,
     removeAssignment,
     setCookAssignee
   }

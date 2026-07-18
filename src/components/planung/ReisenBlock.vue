@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { Trip } from '@/types'
+import { rangeLabel } from '@/utils/dateLabels'
 import SectionCard from './SectionCard.vue'
 
 defineProps<{ trips: readonly Trip[] }>()
 
 const emit = defineEmits<{
   (e: 'add'): void
+  (e: 'open', trip: Trip): void
   (e: 'delete', trip: Trip): void
 }>()
 </script>
@@ -18,9 +20,12 @@ const emit = defineEmits<{
 
     <div class="list">
       <div v-for="trip in trips" :key="trip.id" class="trip">
-        <span class="trip-emoji">{{ trip.emoji }}</span>
-        <span class="trip-title">{{ trip.title }}</span>
-        <span class="trip-when">{{ trip.when }}</span>
+        <button class="trip-main" type="button" @click="emit('open', trip)">
+          <span class="trip-emoji">{{ trip.emoji }}</span>
+          <span class="trip-title">{{ trip.title }}</span>
+          <span v-if="trip.startDate" class="trip-date">📅 {{ rangeLabel(trip.startDate, trip.endDate) }}</span>
+          <span v-else class="trip-when">{{ trip.when }}</span>
+        </button>
         <button class="del" type="button" aria-label="Reise löschen" @click="emit('delete', trip)">✕</button>
       </div>
 
@@ -58,8 +63,23 @@ const emit = defineEmits<{
   border-radius: var(--radius-tile);
 }
 
+.trip-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
 .trip-emoji {
   font-size: 20px;
+  flex-shrink: 0;
 }
 
 .trip-title {
@@ -73,7 +93,19 @@ const emit = defineEmits<{
   white-space: nowrap;
 }
 
+.trip-date {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .trip-when {
+  flex-shrink: 0;
   padding: 3px 9px;
   border-radius: 999px;
   background: var(--accent-tint);

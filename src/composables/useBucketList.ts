@@ -11,7 +11,16 @@ export interface AddBucketItemInput {
   category: IdeaCategory
   name: string
   note?: string
+  date?: string | null // YYYY-MM-DD; optional
   suggestedBy?: string // uid — Default: wer gerade eingeloggt ist
+}
+
+export interface UpdateBucketItemInput {
+  category: IdeaCategory
+  name: string
+  note?: string
+  date?: string | null
+  suggestedBy?: string
 }
 
 export function useBucketList(coupleId: Ref<string | null>) {
@@ -66,6 +75,7 @@ export function useBucketList(coupleId: Ref<string | null>) {
         category: input.category,
         name: cleanName,
         note: input.note?.trim() ?? '',
+        date: input.date ?? null,
         done: false,
         suggestedBy: input.suggestedBy || user.value.uid,
         createdBy: user.value.uid,
@@ -76,6 +86,32 @@ export function useBucketList(coupleId: Ref<string | null>) {
       return true
     } catch (err: any) {
       console.error('Failed to add bucket list item:', err)
+      error.value = err.message
+      return false
+    }
+  }
+
+  async function updateItem(id: string, input: UpdateBucketItemInput): Promise<boolean> {
+    const cleanName = input.name.trim()
+    if (!cleanName) return false
+
+    // Nur gesetzte Felder patchen — note/suggestedBy bleiben unangetastet, wenn
+    // der Aufrufer sie nicht mitgibt.
+    const patch: Record<string, any> = {
+      category: input.category,
+      name: cleanName,
+      date: input.date ?? null,
+      updatedAt: serverTimestamp(),
+    }
+    if (input.note !== undefined) patch.note = input.note.trim()
+    if (input.suggestedBy !== undefined) patch.suggestedBy = input.suggestedBy
+
+    try {
+      await updateDoc(doc(db, 'bucketListItems', id), patch)
+      error.value = null
+      return true
+    } catch (err: any) {
+      console.error('Failed to update bucket list item:', err)
       error.value = err.message
       return false
     }
@@ -117,6 +153,7 @@ export function useBucketList(coupleId: Ref<string | null>) {
     loading: readonly(loading),
     error: readonly(error),
     addItem,
+    updateItem,
     toggleDone,
     deleteItem
   }

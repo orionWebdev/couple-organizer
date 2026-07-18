@@ -34,7 +34,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { id: 'finanzen', label: 'Finanzen', icon: '💶', iconName: 'finanzen', color: 'var(--finanzen)', href: '/finanzen' },
   { id: 'dashboard', label: 'Start', icon: '🏠', iconName: 'start', color: 'var(--dashboard)', href: '/dashboard' },
   { id: 'haushalt', label: 'Haushalt', icon: '🧽', iconName: 'haushalt', color: 'var(--haushalt)', href: '/haushalt' },
-  { id: 'einkaufen', label: 'Essen', icon: '🍽️', iconName: 'essen', color: 'var(--food)', href: '/einkaufen' },
+  { id: 'einkaufen', label: 'Küche', icon: '🍽️', iconName: 'essen', color: 'var(--food)', href: '/einkaufen' },
 ]
 
 // Routen ohne eigenen Nav-Slot leihen sich den Slot ihres Bereichs. Aktuell

@@ -4,45 +4,63 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useChores } from '@/composables/useChores'
+import { useFavoriteChores } from '@/composables/useFavoriteChores'
 import { useMealPlan } from '@/composables/useMealPlan'
 import { useExpenses } from '@/composables/useExpenses'
 import { useBelegung } from '@/composables/useBelegung'
+import { useBucketList } from '@/composables/useBucketList'
+import { usePlanung } from '@/composables/usePlanung'
 import { showToast } from '@/composables/useToast'
-import { isDoneToday } from '@/utils/chores'
 import { dateKey } from '@/utils/mealplan'
-import { mondayOf, addDays } from '@/utils/belegung'
+import type { Chore, ExpenseCategory } from '@/types'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import MealHero from '@/components/dashboard/MealHero.vue'
-import FinanceGlanceCard from '@/components/dashboard/FinanceGlanceCard.vue'
-import BelegungShelfCard from '@/components/dashboard/BelegungShelfCard.vue'
-import HaushaltBalanceCard from '@/components/dashboard/HaushaltBalanceCard.vue'
+import QuickTasksCard from '@/components/dashboard/QuickTasksCard.vue'
+import BelegungTodayCard from '@/components/dashboard/BelegungTodayCard.vue'
+import FinanceCard from '@/components/dashboard/FinanceCard.vue'
+import TogetherSoonCard from '@/components/dashboard/TogetherSoonCard.vue'
 import DashboardOnboarding from '@/components/dashboard/DashboardOnboarding.vue'
+import AddExpenseSheet from '@/components/finance/AddExpenseSheet.vue'
 
 const router = useRouter()
 const { user } = useAuth()
 const { couple, updateBudget } = useCouple()
 const coupleId = computed(() => user.value?.coupleId ?? null)
+const currentUserId = computed(() => user.value?.uid ?? '')
 
-const { chores, history, loading: choresLoading, completeChore } = useChores(coupleId)
+const { chores, history, completeChore, loading: choresLoading } = useChores(coupleId)
+const { myFavoriteChoreIds, loading: favLoading } = useFavoriteChores(coupleId)
 const { week, loading: mealPlanLoading, setCookAssignee } = useMealPlan(coupleId)
+
+// Meine favorisierten Chores, aufgelöst gegen den Pool (verwaiste Links, deren
+// Chore gelöscht wurde, fallen dabei automatisch weg).
+const favoriteChores = computed(() =>
+  chores.value.filter((c) => myFavoriteChoreIds.value.has(c.id))
+)
 const {
-  expenses, monthlySummaries, recentExpenses,
+  expenses, monthlySummaries, balanceInfo, addExpense, createEvent,
   loading: expensesLoading,
 } = useExpenses(coupleId)
 const { bookings, resources, resourceById, loading: belegungLoading } = useBelegung(coupleId)
+const { items: ideas, loading: ideasLoading } = useBucketList(coupleId)
+const { trips, loading: tripsLoading } = usePlanung(coupleId)
 
 const loading = computed(() =>
-  choresLoading.value || mealPlanLoading.value || expensesLoading.value || belegungLoading.value
+  choresLoading.value || favLoading.value || mealPlanLoading.value ||
+  expensesLoading.value || belegungLoading.value || ideasLoading.value || tripsLoading.value
 )
 
 const dateLabel = computed(() =>
   new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())
 )
 
-const members = computed(() => couple.value?.memberIds ?? [])
+const greetingName = computed(() => {
+  const name = couple.value?.memberNames[currentUserId.value]
+  return name ? `Hallo ${name} 👋` : 'Moin, ihr zwei 👋'
+})
 
-// ── Jetzt im Fokus: Essen heute ───────────────────────────────
+// ── Fokus heute: Essen ─────────────────────────────────────────
 const todayMeal = computed(() => {
   const key = dateKey(new Date())
   return week.value.find((d) => d.dateKey === key) ?? null
@@ -54,19 +72,18 @@ async function setCook(assignee: string) {
   if (!ok) showToast('Fehler beim Speichern')
 }
 
-function goToEssen() {
-  router.push('/einkaufen')
+// ── Schnell-Aufgaben (Verknüpfungen auf bestehende Chores) ─────
+// Ein Tap erledigt den Chore ganz normal → Verlaufseintrag + Punkte.
+async function tapQuickTask(chore: Chore) {
+  const ok = await completeChore(chore, currentUserId.value)
+  if (!ok) showToast('Fehler beim Speichern')
 }
 
-function goToPlanung() {
-  router.push('/planung')
+function goToQuickTaskSettings() {
+  router.push('/settings/schnellaufgaben')
 }
 
-function goToKalender() {
-  router.push('/planung?tab=kalender')
-}
-
-// ── Finanzen ──────────────────────────────────────────────────
+// ── Finanzen ───────────────────────────────────────────────────
 const monthKey = computed(() => {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -80,72 +97,56 @@ const currentMonth = computed(() =>
   monthlySummaries.value.find((m) => m.monthKey === monthKey.value) ?? null
 )
 
-// Ausgegeben = alles, was der Monat gekostet hat. Ob die beiden sich
-// untereinander schon ausgeglichen haben, ist eine andere Frage — die stellt
-// die Finanzen-View — und darf diese Zahl nicht kleiner machen.
 const currentMonthSpent = computed(() => currentMonth.value?.total ?? 0)
-const currentMonthPaidBy = computed(() => currentMonth.value?.paidBy ?? {})
-
 const budgetCents = computed(() => couple.value?.monthlyBudget ?? null)
 
-const lastPayment = computed(() => {
-  const e = recentExpenses.value[0]
-  return e ? { by: e.paidBy, title: e.title, amount: e.amount } : null
-})
+// Offener Paar-Saldo (nur unbezahlte Monatsausgaben, über alle Monate).
+const openBalance = computed(() => Math.abs(balanceInfo.value.balances[currentUserId.value] ?? 0))
+const hasBudget = computed(() => budgetCents.value != null && budgetCents.value > 0)
 
-// ── Haushalt: Fairness diese Woche ────────────────────────────
-const weekCounts = computed(() => {
-  const start = mondayOf(new Date()).getTime()
-  const end = addDays(mondayOf(new Date()), 7).getTime()
+// Finanz-Widget nur zeigen, wenn es etwas zu sagen hat: entweder ein Budget
+// läuft, oder es steht ein Ausgleich offen (Fallback-Regel aus dem Handoff).
+const showFinance = computed(() => hasBudget.value || openBalance.value > 0)
 
-  const counts: Record<string, number> = {}
-  for (const uid of members.value) counts[uid] = 0
+// ── Ausgabe erfassen (Sheet wie in der Finanzen-View) ──────────
+const showAddExpense = ref(false)
 
-  for (const entry of history.value) {
-    const at = entry.completedAt?.toMillis?.()
-    if (at == null || at < start || at >= end) continue
-
-    // Gemeinsam Erledigtes zählt für beide — sonst würde ein Paar, das alles
-    // zusammen macht, dauerhaft als "unfair" dastehen.
-    if (entry.completedBy === 'both') {
-      for (const uid of members.value) counts[uid]++
-    } else if (entry.completedBy && counts[entry.completedBy] != null) {
-      counts[entry.completedBy]++
-    }
-  }
-  return counts
-})
-
-const openChores = computed(() => chores.value.filter((c) => !isDoneToday(c)))
-const nextChore = computed(() => openChores.value[0] ?? null)
-
-async function completeNextChore() {
-  const c = nextChore.value
-  if (!c) return
-  const ok = await completeChore(c, c.assignee ?? 'both')
-  showToast(ok ? 'Erledigt ✓' : 'Fehler beim Speichern')
+async function onSubmitExpense(payload: {
+  title: string
+  amountInCents: number
+  paidBy: string
+  owedBy: Record<string, number>
+  category: ExpenseCategory
+}) {
+  await addExpense({ ...payload, eventId: null })
+  showAddExpense.value = false
+  showToast('Ausgabe gespeichert')
 }
 
-function goToHaushalt() {
-  router.push('/haushalt')
+async function onSubmitEvent(payload: { title: string; dateLabel: string }) {
+  await createEvent(payload.title)
+  showAddExpense.value = false
+  showToast(`„${payload.title}" angelegt ✓`)
 }
 
-function goToFinanzen() {
-  router.push('/finanzen')
-}
+// ── Navigation ─────────────────────────────────────────────────
+function goToEssen() { router.push('/einkaufen') }
+function goToPlanung() { router.push('/planung') }
+function goToKalender() { router.push('/planung?tab=kalender') }
+function goToFinanzen() { router.push('/finanzen') }
 
-// ── Leerzustand: frisch angemeldetes Paar ─────────────────────
-// Nur wenn es wirklich nichts zu zeigen gibt. Ein fehlendes Budget allein macht
-// das Dashboard nicht leer — die Ausgaben stehen auch ohne eins in der Karte.
+// ── Leerzustand: frisch angemeldetes Paar ──────────────────────
 const isEmpty = computed(() =>
   !todayMeal.value?.recipe &&
   chores.value.length === 0 &&
   bookings.value.length === 0 &&
   resources.value.length === 0 &&
-  expenses.value.length === 0
+  expenses.value.length === 0 &&
+  trips.value.length === 0 &&
+  ideas.value.length === 0
 )
 
-// ── Budget festlegen (lebt weiterhin nur hier) ────────────────
+// ── Budget festlegen (Onboarding-Schritt) ──────────────────────
 const showBudgetSheet = ref(false)
 const budgetInput = ref('')
 
@@ -154,10 +155,6 @@ function openBudgetSheet() {
   showBudgetSheet.value = true
 }
 
-// Ein leeres Feld entfernt das Budget bewusst; eine unlesbare Eingabe ist ein
-// Fehler und darf nicht stillschweigend als "kein Budget" durchgehen — genau das
-// passierte vorher bei "800,00" in einem <input type="number">, das die
-// Kommazahl verwirft und einen leeren String liefert.
 async function saveBudget() {
   const raw = budgetInput.value.trim().replace(',', '.')
 
@@ -184,7 +181,7 @@ async function saveBudget() {
   <div class="dashboard-page area-dashboard">
     <div class="page-header">
       <div>
-        <h1 class="greeting">Moin, ihr zwei 👋</h1>
+        <h1 class="greeting">{{ greetingName }}</h1>
         <span class="date-label">{{ dateLabel }}</span>
       </div>
       <ProfileButton :size="34" />
@@ -204,38 +201,79 @@ async function saveBudget() {
       />
 
       <template v-else>
-        <div class="section-label">Jetzt im Fokus</div>
-        <MealHero :day="todayMeal" :couple="couple" @setCook="setCook" @open="goToEssen" />
+        <!-- Fokus heute -->
+        <MealHero
+          :day="todayMeal"
+          :couple="couple"
+          :currentUserId="currentUserId"
+          @setCook="setCook"
+          @open="goToEssen"
+        />
 
-        <div class="section-label section-label--spaced">Auf einen Blick</div>
-        <div class="glance">
-          <FinanceGlanceCard
-            :couple="couple"
-            :monthLabel="monthLabel"
-            :spent="currentMonthSpent"
-            :budget="budgetCents"
-            :paid="currentMonthPaidBy"
-            :last="lastPayment"
-            @open="goToFinanzen"
-            @setBudget="openBudgetSheet"
-          />
-          <BelegungShelfCard
-            :bookings="bookings"
-            :resourceById="resourceById"
-            :couple="couple"
-            @open="goToKalender"
-          />
-          <HaushaltBalanceCard
-            :couple="couple"
-            :counts="weekCounts"
-            :nextChore="nextChore"
-            @open="goToHaushalt"
-            @complete="completeNextChore"
-          />
+        <!-- Meine Schnell-Aufgaben -->
+        <div class="sec">
+          <span class="sec-lab">Meine Schnell-Aufgaben</span>
+          <button type="button" class="sec-act" @click="goToQuickTaskSettings">Bearbeiten</button>
         </div>
+        <QuickTasksCard
+          :chores="favoriteChores"
+          :history="history"
+          :currentUserId="currentUserId"
+          @tap="tapQuickTask"
+          @add="goToQuickTaskSettings"
+        />
+
+        <!-- Belegung heute -->
+        <div class="sec">
+          <span class="sec-lab">Belegung heute</span>
+          <button type="button" class="sec-act" @click="goToKalender">Alle</button>
+        </div>
+        <BelegungTodayCard
+          :bookings="bookings"
+          :resourceById="resourceById"
+          :couple="couple"
+        />
+
+        <!-- Finanzen -->
+        <FinanceCard
+          v-if="showFinance"
+          :couple="couple"
+          :currentUserId="currentUserId"
+          :monthLabel="monthLabel"
+          :spent="currentMonthSpent"
+          :budget="budgetCents"
+          :balances="balanceInfo.balances"
+          @open="goToFinanzen"
+          @addExpense="showAddExpense = true"
+        />
+
+        <!-- Gemeinsam bald -->
+        <template v-if="trips.length || ideas.length">
+          <div class="sec">
+            <span class="sec-lab">Gemeinsam bald</span>
+          </div>
+          <TogetherSoonCard
+            :couple="couple"
+            :trips="trips"
+            :ideas="ideas"
+            @open="goToPlanung"
+          />
+        </template>
       </template>
     </div>
 
+    <!-- Ausgabe erfassen -->
+    <AddExpenseSheet
+      :isOpen="showAddExpense"
+      :couple="couple"
+      :currentUserId="currentUserId"
+      addContext="dashboard"
+      @close="showAddExpense = false"
+      @submit="onSubmitExpense"
+      @submitEvent="onSubmitEvent"
+    />
+
+    <!-- Budget festlegen (Onboarding) -->
     <BottomSheet :isOpen="showBudgetSheet" title="Monatsbudget festlegen" @close="showBudgetSheet = false">
       <input
         v-model="budgetInput"
@@ -287,21 +325,38 @@ async function saveBudget() {
 }
 
 .dashboard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding: 8px var(--screen-pad) 24px;
 }
 
-.section-label {
-  margin: 0 0 9px;
-}
-
-.section-label--spaced {
-  margin-top: 20px;
-}
-
-.glance {
+/* Abschnittskopf mit Aktions-Link (reference/index.html .sec) */
+.sec {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px;
+  margin-top: 6px;
+}
+
+.sec-lab {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-meta);
+}
+
+.sec-act {
+  border: none;
+  background: none;
+  padding: 4px 6px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent);
+  cursor: pointer;
 }
 
 .sheet-hint {

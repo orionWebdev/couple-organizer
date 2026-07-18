@@ -258,6 +258,19 @@ async function confirmDanger() {
         </div>
       </div>
 
+      <!-- Schnell-Aufgaben: persönliche Favoriten-Routinen fürs Dashboard -->
+      <div class="section-label section-gap">Schnell-Aufgaben</div>
+      <div class="card cat-card">
+        <button class="cat-link" type="button" @click="router.push('/settings/schnellaufgaben')">
+          <span class="cat-link-icon">⚡</span>
+          <span class="profile-text">
+            <span class="cat-link-title">Meine Routinen</span>
+            <span class="profile-hint">Favoriten fürs Dashboard</span>
+          </span>
+          <span class="chevron">›</span>
+        </button>
+      </div>
+
       <!-- Kategorien: je Liste eine eigene Unterseite -->
       <div class="section-label section-gap">Kategorien</div>
       <div class="card cat-card">

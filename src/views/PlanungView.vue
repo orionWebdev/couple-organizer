@@ -17,17 +17,20 @@ import IdeenBlock from '@/components/planung/IdeenBlock.vue'
 import ReisenBlock from '@/components/planung/ReisenBlock.vue'
 import NotizenBlock from '@/components/planung/NotizenBlock.vue'
 import AddIdeaSheet from '@/components/planung/AddIdeaSheet.vue'
+import TripSheet from '@/components/planung/TripSheet.vue'
+import TripDetailSheet from '@/components/planung/TripDetailSheet.vue'
 import QuickAddSheet from '@/components/planung/QuickAddSheet.vue'
+import type { TripChecklistItem } from '@/types'
 
 const route = useRoute()
 const { user } = useAuth()
 const { couple } = useCouple()
 const coupleId = computed(() => user.value?.coupleId ?? null)
 
-const { items: ideen, loading: ideenLoading, addItem, toggleDone, deleteItem } = useBucketList(coupleId)
+const { items: ideen, loading: ideenLoading, addItem, updateItem, toggleDone, deleteItem } = useBucketList(coupleId)
 const {
   trips, notes, loading: planungLoading,
-  addTrip, deleteTrip, addNote, deleteNote,
+  addTrip, updateTrip, deleteTrip, addNote, deleteNote,
 } = usePlanung(coupleId)
 
 const listsLoading = computed(() => ideenLoading.value || planungLoading.value)
@@ -48,6 +51,39 @@ const kalenderRef = ref<InstanceType<typeof BelegungKalender> | null>(null)
 // ── Sheets ────────────────────────────────────────────────────
 type Sheet = 'idea' | 'trip' | 'note' | null
 const sheet = ref<Sheet>(null)
+const editingIdea = ref<BucketListItem | null>(null)
+const editingTrip = ref<Trip | null>(null)
+
+// Reise-Detail: die ID halten und die Reise live aus der Liste ableiten, damit
+// Änderungen (Packliste/Links) sofort durchschlagen.
+const detailTripId = ref<string | null>(null)
+const detailTrip = computed(() => trips.value.find((t) => t.id === detailTripId.value) ?? null)
+
+function openIdeaSheet() {
+  editingIdea.value = null
+  sheet.value = 'idea'
+}
+function openEditIdea(item: BucketListItem) {
+  editingIdea.value = item
+  sheet.value = 'idea'
+}
+function openTripSheet() {
+  editingTrip.value = null
+  sheet.value = 'trip'
+}
+function openTripDetail(trip: Trip) {
+  detailTripId.value = trip.id
+}
+function editTripFromDetail(trip: Trip) {
+  detailTripId.value = null
+  editingTrip.value = trip
+  sheet.value = 'trip'
+}
+function closeSheet() {
+  sheet.value = null
+  editingIdea.value = null
+  editingTrip.value = null
+}
 
 // Globaler FAB (App-Shell): Kalender → Belegung anlegen, Listen → neue Idee
 // (Reise/Notiz laufen weiter über das "+" im jeweiligen Block-Kopf).
@@ -55,15 +91,18 @@ watch(tab, (t) => {
   setFabAction(
     t === 'kalender'
       ? { label: 'Belegung anlegen', handler: () => kalenderRef.value?.openNew() }
-      : { label: 'Idee hinzufügen', handler: () => { sheet.value = 'idea' } }
+      : { label: 'Idee hinzufügen', handler: openIdeaSheet }
   )
 }, { immediate: true })
 onScopeDispose(() => setFabAction(null))
 
-async function onAddIdea(payload: { category: IdeaCategory; name: string; suggestedBy: string }) {
-  const ok = await addItem(payload)
-  sheet.value = null
-  showToast(ok ? 'Idee gemerkt 💡' : 'Fehler beim Speichern')
+async function onSubmitIdea(payload: { category: IdeaCategory; name: string; suggestedBy: string; date: string | null }) {
+  const wasEditing = !!editingIdea.value
+  const ok = wasEditing
+    ? await updateItem(editingIdea.value!.id, payload)
+    : await addItem(payload)
+  closeSheet()
+  showToast(ok ? (wasEditing ? 'Idee aktualisiert' : 'Idee gemerkt 💡') : 'Fehler beim Speichern')
 }
 
 async function onToggleIdea(item: BucketListItem) {
@@ -75,20 +114,32 @@ async function onDeleteIdea(item: BucketListItem) {
   showToast(ok ? 'Idee gelöscht' : 'Fehler beim Löschen')
 }
 
-async function onAddTrip(payload: { text: string; extra: string }) {
-  const ok = await addTrip({ title: payload.text, when: payload.extra, emoji: '🧳' })
-  sheet.value = null
-  showToast(ok ? 'Reise gemerkt 🧳' : 'Fehler beim Speichern')
+async function onSubmitTrip(payload: {
+  title: string; emoji: string; location: string
+  startDate: string | null; endDate: string | null; when: string; notes: string
+}) {
+  const wasEditing = !!editingTrip.value
+  const ok = wasEditing
+    ? await updateTrip(editingTrip.value!.id, payload)
+    : await addTrip(payload)
+  closeSheet()
+  showToast(ok ? (wasEditing ? 'Reise aktualisiert' : 'Reise gemerkt 🧳') : 'Fehler beim Speichern')
 }
 
 async function onDeleteTrip(trip: Trip) {
+  detailTripId.value = null
   const ok = await deleteTrip(trip.id)
   showToast(ok ? 'Reise gelöscht' : 'Fehler beim Löschen')
 }
 
+// Packliste/Links am offenen Reise-Detail — still speichern (kein Toast).
+async function onPatchTrip(id: string, patch: { links?: string[]; checklist?: TripChecklistItem[] }) {
+  await updateTrip(id, patch)
+}
+
 async function onAddNote(payload: { text: string }) {
   const ok = await addNote(payload.text)
-  sheet.value = null
+  closeSheet()
   showToast(ok ? 'Notiz gespeichert 📝' : 'Fehler beim Speichern')
 }
 
@@ -126,7 +177,13 @@ const listsEmpty = computed(() =>
         <Transition name="tab-fade" mode="out-in">
           <!-- Kalender -->
           <div v-if="tab === 'kalender'" key="kalender" class="tab-scroll rise-stagger">
-            <BelegungKalender ref="kalenderRef" />
+            <BelegungKalender
+              ref="kalenderRef"
+              :ideas="ideen"
+              :trips="trips"
+              @editIdea="openEditIdea"
+              @openTrip="openTripDetail"
+            />
           </div>
 
           <!-- Listen: Ideen · Reisen · Notizen -->
@@ -136,18 +193,19 @@ const listsEmpty = computed(() =>
             <div v-else class="listen-body rise-stagger">
               <SectionCard v-if="listsEmpty" title="Was habt ihr vor?">
                 <p class="empty-text">Ideen, Reisen und Notizen sammeln sich hier.</p>
-                <button class="empty-btn" type="button" @click="sheet = 'idea'">＋ Erste Idee</button>
+                <button class="empty-btn" type="button" @click="openIdeaSheet">＋ Erste Idee</button>
               </SectionCard>
 
               <template v-else>
                 <IdeenBlock
                   :items="ideen"
                   :couple="couple"
-                  @add="sheet = 'idea'"
+                  @add="openIdeaSheet"
+                  @edit="openEditIdea"
                   @toggle="onToggleIdea"
                   @delete="onDeleteIdea"
                 />
-                <ReisenBlock :trips="trips" @add="sheet = 'trip'" @delete="onDeleteTrip" />
+                <ReisenBlock :trips="trips" @add="openTripSheet" @open="openTripDetail" @delete="onDeleteTrip" />
                 <NotizenBlock :notes="notes" @add="sheet = 'note'" @delete="onDeleteNote" />
               </template>
             </div>
@@ -160,19 +218,24 @@ const listsEmpty = computed(() =>
       :isOpen="sheet === 'idea'"
       :couple="couple"
       :currentUserId="user?.uid ?? ''"
-      @close="sheet = null"
-      @submit="onAddIdea"
+      :editing="editingIdea"
+      @close="closeSheet"
+      @submit="onSubmitIdea"
     />
 
-    <QuickAddSheet
+    <TripSheet
       :isOpen="sheet === 'trip'"
-      title="Neue Reise / Ausflug"
-      placeholder="z. B. Städtetrip Kopenhagen"
-      extraLabel="Wann?"
-      extraPlaceholder="z. B. Sept. — leer = noch offen"
-      submitLabel="Reise merken"
-      @close="sheet = null"
-      @submit="onAddTrip"
+      :editing="editingTrip"
+      @close="closeSheet"
+      @submit="onSubmitTrip"
+    />
+
+    <TripDetailSheet
+      :trip="detailTrip"
+      @close="detailTripId = null"
+      @edit="editTripFromDetail"
+      @delete="onDeleteTrip"
+      @patch="onPatchTrip"
     />
 
     <QuickAddSheet
@@ -180,7 +243,7 @@ const listsEmpty = computed(() =>
       title="Neue Notiz"
       placeholder="Kurz festhalten …"
       submitLabel="Notiz speichern"
-      @close="sheet = null"
+      @close="closeSheet"
       @submit="onAddNote"
     />
   </div>

@@ -98,6 +98,21 @@ export interface ChoreHistoryEntry {
   createdAt: Timestamp
 }
 
+// Persönliche Schnell-Aufgaben fürs Dashboard: KEIN eigener Aufgaben-Datensatz,
+// sondern eine Verknüpfung auf einen bestehenden Chore (`choreId`). Jeder Partner
+// pflegt über die Settings seine eigene Auswahl (`owner`). Ein Tap auf dem
+// Dashboard erledigt exakt diesen Chore (landet im choreHistory-Verlauf und in
+// den Punkten) — die Kachel zeigt Name/Emoji/Zähler 1:1 aus dem Chore + Verlauf.
+export interface FavoriteChore {
+  id: string
+  coupleId: string
+  owner: string // uid — wessen Favorit
+  choreId: string // verweist auf chores/{choreId}
+  createdBy: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
 export interface ShoppingItem {
   id: string
   coupleId: string
@@ -147,6 +162,7 @@ export interface Recipe {
   minutes: number | null
   servings: number | null
   tags: readonly string[]
+  likes: readonly string[] // uids, die das Rezept mit Herz markiert haben (absent = [])
   ingredients: readonly RecipeIngredient[]
   steps: readonly string[]
   nutrition: RecipeNutrition | null
@@ -310,6 +326,7 @@ export interface BucketListItem {
   name: string
   note: string
   done: boolean
+  date?: string | null // YYYY-MM-DD; optional — im Kalender angezeigt, wenn gesetzt
   suggestedBy: string // uid — von wem die Idee stammt (kann der Partner sein)
   createdBy: string // uid — wer sie eingetragen hat
   createdAt: Timestamp
@@ -318,11 +335,24 @@ export interface BucketListItem {
 
 // Reisen & Ausflüge — `when` ist bewusst Freitext ("Sept.", "noch offen"),
 // weil die wenigsten Ideen schon ein Datum haben.
+// Ein Punkt auf der Packliste/To-do-Liste einer Reise (klein & eingebettet,
+// deshalb als Array auf dem Trip-Dokument statt eigener Collection).
+export interface TripChecklistItem {
+  text: string
+  done: boolean
+}
+
 export interface Trip {
   id: string
   coupleId: string
   title: string
-  when: string
+  when: string // grober Zeit-Freitext ("Sept.", "noch offen") — Fallback ohne Datum
+  startDate?: string | null // YYYY-MM-DD; Beginn (auch Einzeltag) — im Kalender angezeigt
+  endDate?: string | null // YYYY-MM-DD; Ende der Range (optional; leer = ein Tag)
+  location?: string // Ziel/Ort
+  notes?: string // Freitext-Notizen
+  links?: readonly string[] // URLs (Buchungen, Ideen …)
+  checklist?: readonly TripChecklistItem[] // Packliste / To-dos
   emoji: string
   createdBy: string
   createdAt: Timestamp

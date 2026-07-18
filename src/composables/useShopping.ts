@@ -17,6 +17,7 @@ import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
 import { useCouple } from './useCouple'
 import { FREE_LIMITS } from '@/utils/premium'
+import { sectionForName } from '@/utils/shoppingSections'
 import type { ShoppingItem, ShoppingList } from '@/types'
 
 interface AddShoppingItemInput {
@@ -298,7 +299,9 @@ export function useShopping(coupleId: Ref<string | null>) {
     if (!coupleId.value || !user.value) return
     const cleanName = input.name.trim()
     if (!cleanName) return
-    const cleanCategory = input.category?.trim() || 'Sonstiges'
+    // Ohne explizite Kategorie den Laden-Bereich aus dem Namen ableiten, damit
+    // die Liste sich von allein sinnvoll gruppiert (Obst & Gemüse, Kühlregal …).
+    const cleanCategory = input.category?.trim() || sectionForName(cleanName)
 
     const key = `${normalizeText(cleanName)}__${normalizeUnit(input.unit)}`
 

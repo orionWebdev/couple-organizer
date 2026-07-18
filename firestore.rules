@@ -86,6 +86,16 @@ service cloud.firestore {
       allow update, delete: if isCoupleMember(resource.data.coupleId);
     }
 
+    // Persönliche Schnell-Aufgaben fürs Dashboard: Verknüpfungen auf bestehende
+    // Chores (welcher Chore ist wessen Favorit).
+    match /favoriteChores/{favId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
     match /choreHistory/{entryId} {
       allow read: if isCoupleMember(resource.data.coupleId);
       allow create: if signedIn()

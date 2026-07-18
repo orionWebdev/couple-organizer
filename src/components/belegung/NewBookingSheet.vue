@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, type Ref } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
 import { conflictsFor, personColor, personName, rangeLabel } from '@/utils/belegung'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import type { BookingDraft } from '@/composables/useBelegung'
 import type { Booking, Couple, Resource } from '@/types'
 
@@ -13,6 +14,7 @@ const props = defineProps<{
   couple: Couple | null
   currentUserId: string
   defaultDate: string // YYYY-MM-DD
+  persistKey?: string
 }>()
 
 const emit = defineEmits<{
@@ -20,14 +22,20 @@ const emit = defineEmits<{
   submit: [draft: BookingDraft]
 }>()
 
-const resourceId = ref('')
-const owner = ref('')
-const date = ref('')
-const allDay = ref(false)
-const start = ref('09:00')
-const end = ref('11:00')
-const repeat = ref<'none' | 'weekly'>('none')
-const note = ref('')
+function draftRef<T>(field: string, initial: T): Ref<T> {
+  return props.persistKey
+    ? usePersistedRef<T>(`${props.persistKey}.${field}`, initial, { ttlMs: DRAFT_TTL_MS })
+    : (ref(initial) as Ref<T>)
+}
+
+const resourceId = draftRef('resourceId', '')
+const owner = draftRef('owner', '')
+const date = draftRef('date', '')
+const allDay = draftRef('allDay', false)
+const start = draftRef('start', '09:00')
+const end = draftRef('end', '11:00')
+const repeat = draftRef<'none' | 'weekly'>('repeat', 'none')
+const note = draftRef('note', '')
 
 // Beim Öffnen frisch aufsetzen: eigene Person, heutiges Datum, erste Ressource.
 watch(() => props.isOpen, (open) => {

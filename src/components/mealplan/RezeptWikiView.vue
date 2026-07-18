@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Recipe } from '@/types'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import { useMealPlan, type AssignRecipeInput } from '@/composables/useMealPlan'
 import { useShopping } from '@/composables/useShopping'
 import { useCouple } from '@/composables/useCouple'
@@ -170,13 +171,34 @@ function onAiSaved(success: boolean) {
 }
 
 // ── Rezept anlegen/bearbeiten (ein Formular für beides) ───────
-const showForm = ref(false)
-const editingId = ref<string | null>(null)
-const formName = ref('')
-const formDuration = ref('')
-const formIngredients = ref<string[]>([''])
-const formSteps = ref<string[]>([''])
+// Das lange manuelle Formular überlebt den Android-Kaltstart. formTags bleibt
+// bewusst im Speicher (ein Set ist nicht JSON-persistierbar; Kategorien sind
+// schnell nachgetippt). editingId sichert, dass „Speichern“ nach dem Restore
+// aktualisiert statt zu duplizieren.
+const showForm = usePersistedRef('rezept.showForm', false, { ttlMs: DRAFT_TTL_MS })
+const editingId = usePersistedRef<string | null>('rezept.editId', null, { ttlMs: DRAFT_TTL_MS })
+const formName = usePersistedRef('rezept.formName', '', { ttlMs: DRAFT_TTL_MS })
+const formDuration = usePersistedRef('rezept.formDuration', '', { ttlMs: DRAFT_TTL_MS })
+const formIngredients = usePersistedRef<string[]>('rezept.formIngredients', [''], { ttlMs: DRAFT_TTL_MS })
+const formSteps = usePersistedRef<string[]>('rezept.formSteps', [''], { ttlMs: DRAFT_TTL_MS })
 const formTags = ref<Set<string>>(new Set())
+
+// Nach dem Kaltstart: war ein Rezept in Bearbeitung, das es nicht mehr gibt,
+// das Formular schließen statt versehentlich ein neues anzulegen. Die Tags des
+// bearbeiteten Rezepts wieder setzen (formTags ist nicht persistiert).
+const stopFormRestore = watch(
+  () => recipes.value.length,
+  (len) => {
+    if (len === 0) return
+    if (editingId.value) {
+      const rec = recipes.value.find((r) => r.id === editingId.value)
+      if (rec) formTags.value = new Set(rec.tags)
+      else if (showForm.value) { showForm.value = false; editingId.value = null }
+    }
+    stopFormRestore()
+  },
+  { immediate: true }
+)
 
 function toggleFormTag(id: string) {
   const next = new Set(formTags.value)

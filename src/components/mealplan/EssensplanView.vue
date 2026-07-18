@@ -8,6 +8,7 @@ import { showPaywall } from '@/composables/usePaywall'
 import MealPlanDayRow from './MealPlanDayRow.vue'
 import RecipeSuggestSheet from './RecipeSuggestSheet.vue'
 import AiRecipeSheet from './AiRecipeSheet.vue'
+import WeekAutopilotSheet from './WeekAutopilotSheet.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
 
 const props = defineProps<{
@@ -17,7 +18,7 @@ const props = defineProps<{
 
 const coupleIdRef = computed(() => props.coupleId)
 
-const { week, recipes, loading, canCreateRecipe, suggestRecipes, assignRecipe, assignExistingRecipe, removeAssignment } = useMealPlan(coupleIdRef)
+const { week, recipes, loading, canCreateRecipe, canPlanWeek, suggestRecipes, planWeek, applyWeekPlan, assignRecipe, assignExistingRecipe, removeAssignment } = useMealPlan(coupleIdRef)
 const { activeListId, addItem: addShoppingItem } = useShopping(coupleIdRef)
 
 const hasAnyRecipe = computed(() => week.value.some((d) => d.recipe))
@@ -41,6 +42,23 @@ const suggestDateKey = ref<string | null>(null)
 // Separates KI-Modal ("Rezept vorschlagen lassen"): freie Beschreibung,
 // eigener animierter Ladezustand — bewusst getrennt von der Tages-Sheet oben.
 const showAiModal = ref(false)
+
+// Wochen-Autopilot (TwoDo Plus): plant die ganze Woche auf einen Tap. Gate
+// vorab, damit die Paywall statt der Konfig-Maske aufgeht.
+const showAutopilot = ref(false)
+
+function openAutopilot() {
+  if (!canPlanWeek.value) {
+    showPaywall('weekPlan')
+    return
+  }
+  showAutopilot.value = true
+}
+
+function onWeekApplied(count: number) {
+  showAutopilot.value = false
+  showToast(count > 0 ? `Wochenplan eingeplant (${count} ${count === 1 ? 'Tag' : 'Tage'})` : 'Es wurde nichts eingeplant')
+}
 
 const detailRecipe = ref<Recipe | null>(null)
 const showDetail = ref(false)
@@ -116,6 +134,18 @@ async function handleCreateShoppingList() {
 <template>
   <div class="essensplan">
     <div class="essensplan-scroll">
+      <button class="suggest-card autopilot-card" type="button" @click="openAutopilot">
+        <span class="suggest-icon">🪄</span>
+        <div class="suggest-text">
+          <span class="suggest-title">
+            Ganze Woche planen lassen
+            <span v-if="!canPlanWeek" class="plus-tag">Plus</span>
+          </span>
+          <span class="suggest-sub">Ein Tap — Essensplan für die Woche steht</span>
+        </div>
+        <span class="suggest-chevron">›</span>
+      </button>
+
       <button class="suggest-card" type="button" @click="openAiModal">
         <span class="suggest-icon">✨</span>
         <div class="suggest-text">
@@ -168,6 +198,15 @@ async function handleCreateShoppingList() {
       @assigned="onAssigned"
     />
 
+    <WeekAutopilotSheet
+      :isOpen="showAutopilot"
+      :week="weekForSheet"
+      :plan="planWeek"
+      :apply="applyWeekPlan"
+      @close="showAutopilot = false"
+      @applied="onWeekApplied"
+    />
+
     <RecipeDetailModal
       :isOpen="showDetail"
       :recipe="detailRecipe"
@@ -216,6 +255,24 @@ async function handleCreateShoppingList() {
 
 .suggest-card:active {
   transform: scale(0.98);
+}
+
+/* Die beiden KI-Karten enger zusammenrücken — der Autopilot ist der Held. */
+.autopilot-card {
+  margin-bottom: 10px;
+}
+
+.plus-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.28);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  vertical-align: middle;
+  text-shadow: none;
 }
 
 @keyframes suggestGradientShift {

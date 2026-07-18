@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, type Ref } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 
 // Ein Sheet für die beiden knappen Eingaben des Planung-Tabs: Reise (Titel +
 // freies "wann") und Notiz (nur Text). `extraPlaceholder` schaltet das zweite
@@ -12,6 +13,7 @@ const props = defineProps<{
   extraLabel?: string
   extraPlaceholder?: string
   submitLabel?: string
+  persistKey?: string
 }>()
 
 const emit = defineEmits<{
@@ -19,8 +21,14 @@ const emit = defineEmits<{
   (e: 'submit', payload: { text: string; extra: string }): void
 }>()
 
-const text = ref('')
-const extra = ref('')
+function draft(field: string): Ref<string> {
+  return props.persistKey
+    ? usePersistedRef<string>(`${props.persistKey}.${field}`, '', { ttlMs: DRAFT_TTL_MS })
+    : ref('')
+}
+
+const text = draft('text')
+const extra = draft('extra')
 
 watch(() => props.isOpen, (open) => {
   if (!open) return

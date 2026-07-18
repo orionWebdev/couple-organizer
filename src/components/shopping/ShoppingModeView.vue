@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import type { ShoppingItem, ShoppingList, Couple } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import NumericKeypad from '@/components/finance/NumericKeypad.vue'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 
 const props = defineProps<{
   list: ShoppingList
@@ -21,10 +22,10 @@ const emit = defineEmits<{
   }]
 }>()
 
-const showCheckout = ref(false)
-const rawAmount = ref('')
-const paidBy = ref(props.currentUserId)
-const createExpense = ref(true)
+const showCheckout = usePersistedRef('shopping.mode.showCheckout', false, { ttlMs: DRAFT_TTL_MS })
+const rawAmount = usePersistedRef('shopping.mode.rawAmount', '', { ttlMs: DRAFT_TTL_MS })
+const paidBy = usePersistedRef('shopping.mode.paidBy', props.currentUserId, { ttlMs: DRAFT_TTL_MS })
+const createExpense = usePersistedRef('shopping.mode.createExpense', true, { ttlMs: DRAFT_TTL_MS })
 
 const sortedItems = computed(() =>
   [...props.items].sort((a, b) => {

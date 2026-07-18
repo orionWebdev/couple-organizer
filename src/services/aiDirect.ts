@@ -14,7 +14,7 @@
 // Sobald die Functions deployt sind: VITE_GEMINI_API_KEY überall entfernen
 // (Vercel + .env.local), dann greift die Weiche in ai.ts nicht mehr und diese
 // Datei kann ersatzlos weg.
-import type { FinanceCategoryDelta, RecipeSuggestion } from './ai'
+import type { FinanceCategoryDelta, PlanWeekInput, RecipeSuggestion } from './ai'
 
 const MODEL = 'gemini-2.5-flash'
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
@@ -110,6 +110,27 @@ Nutze nur haushaltsübliche Zutaten und gib realistische Kochzeiten und Portions
 Gib nummerierte, knappe Zubereitungsschritte an (steps).
 Ordne jedem Rezept 1-3 passende Kategorien aus dieser Liste zu: ${TAG_IDS.join(', ')}.
 Schätze Nährwerte pro Portion (nutrition) nur, wenn du dir einigermaßen sicher bist — sonst lass das Feld weg.`
+
+  const text = await callGemini(prompt, RECIPE_RESPONSE_SCHEMA)
+  const parsed = JSON.parse(text) as { recipes?: RecipeSuggestion[] }
+  return parsed.recipes ?? []
+}
+
+export async function directPlanWeek(input: PlanWeekInput): Promise<RecipeSuggestion[]> {
+  const favor = (input.favorTitles ?? []).filter(Boolean)
+  const avoid = (input.avoidTitles ?? []).filter(Boolean)
+
+  const prompt = `Du bist ein Kochassistent für ein Paar und planst dessen Abendessen für die Woche.
+Erstelle GENAU ${input.count} Abendessen als zusammenhängenden Wochenplan.
+Wichtig: die Gerichte sollen abwechslungsreich sein (nicht mehrmals dasselbe Grundgericht, wechselnde Hauptzutaten und Küchenstile über die Woche).
+${input.servings ? `Plane für ${input.servings} Portionen pro Gericht.` : 'Plane für 2 Portionen pro Gericht.'}
+${input.prefs?.trim() ? `Berücksichtige diese Vorlieben und No-Gos des Paares: "${input.prefs.trim()}".` : ''}
+${favor.length ? `Das Paar mag diese Gerichte besonders — du DARFST 1-2 davon wieder einplanen (dann exakt denselben Titel verwenden), musst aber nicht: ${favor.join(', ')}.` : ''}
+${avoid.length ? `Diese Gerichte gab es kürzlich schon — plane sie NICHT erneut: ${avoid.join(', ')}.` : ''}
+Nutze haushaltsübliche Zutaten, gib realistische Kochzeiten und Portionsangaben an und knappe, nummerierte Zubereitungsschritte (steps).
+Ordne jedem Rezept 1-3 passende Kategorien aus dieser Liste zu: ${TAG_IDS.join(', ')}.
+Schätze Nährwerte pro Portion (nutrition) nur, wenn du dir einigermaßen sicher bist — sonst lass das Feld weg.
+Gib die Rezepte in der Reihenfolge zurück, in der sie über die Woche gekocht werden sollen.`
 
   const text = await callGemini(prompt, RECIPE_RESPONSE_SCHEMA)
   const parsed = JSON.parse(text) as { recipes?: RecipeSuggestion[] }

@@ -11,14 +11,14 @@ Bitte in dieser Reihenfolge, jeweils zur Bestätigung anhalten:
 
 1. **Dashboard neu** — Budget-Ring und Fairness-Waage entfernen. Neue Zonen von oben:
    - **Fokus heute** (Essens-Hero mit „Wer kocht?", zwei Aktionen).
-   - **Meine Schnell-Aufgaben**: persönliche Favoriten-Routinen als Kachel-Grid (2 Spalten). **Kein Abhaken/Checkbox, sondern ein Zähler** — jeder Tap zählt hoch (Badge „2×"), mehrfach pro Tag möglich; Kopf zeigt Tagessumme + Streak. „Bearbeiten" + „Hinzufügen"-Kachel, damit jeder seine eigenen Routinen festlegt. Grid mit `grid-template-columns: minmax(0,1fr) minmax(0,1fr)` und `min-width:0` auf den Kacheln (sonst Overflow).
+   - **Meine Schnell-Aufgaben** — als **Fortschritts-Ring-Kacheln** (4 Spalten, `grid-template-columns: repeat(4, minmax(0,1fr))`). Jede Kachel: Emoji in einem SVG-Ring, darunter kurzes Label. **Kein Abhaken/Checkbox, sondern ein Zähler** — jeder Tap zählt hoch, der Ring füllt sich (`stroke-dashoffset` animiert, `--ease-overshoot`), eine kleine Badge unten rechts zeigt die Anzahl, Emoji macht kurz „bump". Mehrfach pro Tag möglich; Kopf zeigt Tagessumme + Streak (🔥). Letzte Kachel „Neu" (gestrichelt) zum Festlegen eigener Routinen, plus „Bearbeiten" oben. Optionales `data-goal` je Aufgabe steuert, ab wie vielen Taps der Ring voll ist (Default 1). Referenz: die Ring-Kacheln im Dashboard bzw. `variants/schnell-aufgaben.html` Variante B.
    - **Belegung heute** (aufgelöste Termine, Konflikt-Badge).
    - **Finanzen** — budget-bewusst (siehe Punkt 2).
    - **Gemeinsam bald** (nächstes Date/Reise als emotionaler Anker).
 
 2. **Finanz-Widget, budget-abhängig** (zwei Zustände, `reference/index.html` rechte Spalte):
    - **Budget gesetzt**: Karte zeigt Verbrauch/Rest + Fortschrittsbalken, der Paar-Ausgleich läuft als Nebenzeile mit.
-   - **Kein Budget (Fallback)**: schlanke Karte nur mit dem Paar-Ausgleich („Ben schuldet dir 34,50 €"), erscheint nur bei offener Summe.
+   - **Kein Budget (Fallback)**: schlanke Karte nur mit dem Paar-Ausgleich („Ben schuldet dir 34,50 €"),  erscheint nur bei offener Summe.
    - Beide Zustände teilen **eine** Aktion **„＋ Ausgabe erfassen"**. **Kein** „Ausgleichen"- und **kein** „Erinnern"-Button.
 
 3. **Rezepte modernisiert**: Foto-Hero mit CTA „In Wochenplan" + „🛒 Zutaten", **horizontal scrollbare Filter-Row** (Alle/Favoriten/Schnell/Veggie/Suppen/Süßes — `flex-nowrap`, `overflow-x:auto`, volle Chip-Höhe reservieren) und ein Karten-Grid mit Bild/Zeit/Herz je Person. Foto-Feld als Platzhalter zum späteren Upload.

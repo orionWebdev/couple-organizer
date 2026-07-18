@@ -29,6 +29,14 @@ export interface RecipeSuggestion {
   nutrition?: RecipeNutrition
 }
 
+export interface PlanWeekInput {
+  count: number
+  servings?: number | null
+  prefs?: string
+  avoidTitles?: string[]
+  favorTitles?: string[]
+}
+
 export interface FinanceCategoryDelta {
   name: string
   currentEuros: number
@@ -74,6 +82,11 @@ const callSuggestRecipes = httpsCallable<
   { recipes: RecipeSuggestion[]; quota: Quota }
 >(functions, 'suggestRecipes')
 
+const callPlanWeek = httpsCallable<
+  { coupleId: string } & PlanWeekInput,
+  { recipes: RecipeSuggestion[]; quota: Quota }
+>(functions, 'planWeek')
+
 const callSuggestFinanceInsight = httpsCallable<
   { coupleId: string; deltas: FinanceCategoryDelta[]; monthLabel: string },
   { insightText: string; quota: Quota }
@@ -113,6 +126,25 @@ export async function suggestRecipes(
 
   try {
     const res = await callSuggestRecipes({ coupleId, query, count })
+    return { kind: 'ok', data: res.data.recipes ?? [], quota: res.data.quota }
+  } catch (err) {
+    return toAiResult<RecipeSuggestion[]>(err)
+  }
+}
+
+// Wochen-Autopilot: plant alle Kochtage in einem Aufruf. Quota-/Premium-
+// Ablehnung kommt wie bei suggestRecipes als AiResult-Zweig zurück.
+export async function planWeek(
+  coupleId: string,
+  input: PlanWeekInput
+): Promise<AiResult<RecipeSuggestion[]>> {
+  if (useDirect) {
+    const { directPlanWeek } = await import('./aiDirect')
+    return { kind: 'ok', data: await directPlanWeek(input), quota: NO_QUOTA }
+  }
+
+  try {
+    const res = await callPlanWeek({ coupleId, ...input })
     return { kind: 'ok', data: res.data.recipes ?? [], quota: res.data.quota }
   } catch (err) {
     return toAiResult<RecipeSuggestion[]>(err)

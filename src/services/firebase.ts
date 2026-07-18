@@ -1,15 +1,22 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
-import { getFunctions } from 'firebase/functions'
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
 import {
   getFirestore,
   initializeFirestore,
+  connectFirestoreEmulator,
   persistentLocalCache,
   persistentMultipleTabManager,
   persistentSingleTabManager
 } from 'firebase/firestore'
 import { isNative } from './platform'
+
+// Isolierter Testbereich: mit VITE_USE_EMULATORS=true (siehe `npm run dev:emu`)
+// spricht die App den lokalen Firebase-Emulator statt des Live-Projekts an.
+// Auth, Firestore und die Callables landen alle auf localhost — echte Daten
+// bleiben unberührt, das Seed-Skript (scripts/seed.mjs) füllt die Sandbox.
+const useEmulators = import.meta.env.VITE_USE_EMULATORS === 'true'
 
 const firebaseConfig = {
   apiKey: "AIzaSyBdkkBd9l2SD7A9MuMpsAllw9ZU5rZgNOk",
@@ -38,13 +45,15 @@ if (import.meta.env.DEV) {
   self.FIREBASE_APPCHECK_DEBUG_TOKEN = true
 }
 
+// App Check gegen den Emulator wäre nur im Weg — die Emulatoren erzwingen es
+// nicht, und der ReCaptcha-Provider braucht eine echte Domain.
 const appCheckSiteKey = import.meta.env.VITE_APPCHECK_SITE_KEY
-if (appCheckSiteKey) {
+if (appCheckSiteKey && !useEmulators) {
   initializeAppCheck(app, {
     provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
     isTokenAutoRefreshEnabled: true
   })
-} else {
+} else if (!useEmulators) {
   console.warn('VITE_APPCHECK_SITE_KEY fehlt — KI-Funktionen werden abgelehnt (siehe .env.example).')
 }
 
@@ -63,3 +72,12 @@ export const db = (() => {
     return getFirestore(app)
   }
 })()
+
+// Muss NACH auth/functions/db und VOR jeder Nutzung passieren. Ports aus
+// firebase.json. 127.0.0.1 statt localhost, damit es nicht an IPv6 (::1) hängt.
+if (useEmulators) {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+  connectFirestoreEmulator(db, '127.0.0.1', 8080)
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001)
+  console.info('🔌 Firebase-Emulatoren aktiv (Auth :9099, Firestore :8080, Functions :5001)')
+}

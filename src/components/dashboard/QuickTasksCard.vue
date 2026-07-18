@@ -14,6 +14,9 @@ const emit = defineEmits<{
   (e: 'add'): void
 }>()
 
+// SVG-Ring-Geometrie (viewBox 0 0 58 58, r=26) → Umfang ≈ 163.
+const RING_LEN = 163
+
 // Lokaler YYYY-MM-DD-Schlüssel (History-Timestamps sind UTC-Instant).
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -69,7 +72,22 @@ function tileEmoji(chore: Chore): string {
   return roomDef(roomOf(chore)).icon
 }
 
-// Kurzer Feder-Pop beim Erledigen.
+// Ab wie vielen Taps ist der Ring voll? Chores tragen (noch) kein Ziel-Feld,
+// daher Default 1 — der Ring füllt sich beim ersten Tap, der Zähler läuft weiter.
+function goalOf(_chore: Chore): number {
+  return 1
+}
+
+// stroke-dashoffset für den Fortschritts-Ring: voll leer bei 0, voll gefüllt
+// sobald das Ziel erreicht ist. Die CSS-Transition erledigt die Animation,
+// sobald todayCounts nach dem Firestore-Snapshot reaktiv nachzieht.
+function ringOffset(chore: Chore): number {
+  const n = todayCounts.value[chore.id] ?? 0
+  const goal = goalOf(chore)
+  return Math.max(0, RING_LEN * (1 - n / goal))
+}
+
+// Kurzer Feder-Pop des Emojis für unmittelbares Tap-Feedback.
 const bumping = reactive<Record<string, boolean>>({})
 function onTap(chore: Chore) {
   emit('tap', chore)
@@ -94,24 +112,41 @@ function onTap(chore: Chore) {
         v-for="chore in chores"
         :key="chore.id"
         type="button"
-        class="qtask"
+        class="qtile"
         :class="{ has: (todayCounts[chore.id] ?? 0) > 0, bump: bumping[chore.id] }"
         @click="onTap(chore)"
       >
-        <span v-if="(todayCounts[chore.id] ?? 0) > 0" class="qcount mono">{{ todayCounts[chore.id] }}×</span>
-        <span class="qi">{{ tileEmoji(chore) }}</span>
+        <span class="qring">
+          <svg width="58" height="58" viewBox="0 0 58 58" aria-hidden="true">
+            <circle class="qtrack" cx="29" cy="29" r="26" fill="none" stroke-width="4" />
+            <circle
+              class="qprog"
+              cx="29"
+              cy="29"
+              r="26"
+              fill="none"
+              stroke-width="4"
+              stroke-linecap="round"
+              :stroke-dasharray="RING_LEN"
+              :stroke-dashoffset="ringOffset(chore)"
+            />
+          </svg>
+          <span class="qi">{{ tileEmoji(chore) }}</span>
+          <span v-if="(todayCounts[chore.id] ?? 0) > 0" class="qbadge mono">{{ todayCounts[chore.id] }}</span>
+        </span>
         <span class="qt">{{ chore.name }}</span>
-        <span class="qadd">＋</span>
       </button>
 
-      <button type="button" class="qtask qtask--add" @click="emit('add')">
-        <span class="qi qi--add">＋</span>
-        <span class="qt">Auswählen</span>
+      <button type="button" class="qtile qtile--add" @click="emit('add')">
+        <span class="qring qring--add">
+          <span class="qi qi--add">＋</span>
+        </span>
+        <span class="qt qt--add">Neu</span>
       </button>
     </div>
 
     <p v-if="chores.length === 0" class="qhint">
-      Noch keine Favoriten — tippe „Auswählen“, um Aufgaben fürs Dashboard zu verknüpfen.
+      Noch keine Favoriten — tippe „Neu“, um Aufgaben fürs Dashboard zu verknüpfen.
     </p>
   </div>
 </template>
@@ -130,7 +165,7 @@ function onTap(chore: Chore) {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .streak {
@@ -156,104 +191,109 @@ function onTap(chore: Chore) {
   color: var(--text-secondary);
 }
 
+/* Fortschritts-Ring-Kacheln — 4 Spalten (reference: variants/schnell-aufgaben.html B) */
 .qgrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
-.qtask {
-  position: relative;
+.qtile {
   min-width: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 9px;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 18px;
-  padding: 12px;
+  gap: 7px;
+  background: none;
+  border: none;
+  padding: 2px 0;
   cursor: pointer;
-  text-align: left;
   font-family: var(--font-body);
-  transition: background 0.18s var(--ease-overshoot),
-              border-color 0.18s var(--ease-overshoot),
-              transform 0.12s var(--ease-overshoot);
+  transition: transform 0.12s var(--ease-overshoot);
 }
 
-.qtask:active {
-  transform: scale(0.97);
+.qtile:active {
+  transform: scale(0.94);
+}
+
+.qring {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+}
+
+.qring svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg); /* Ringstart oben */
+}
+
+.qtrack {
+  stroke: var(--surface-deep);
+}
+
+.qprog {
+  stroke: var(--accent);
+  transition: stroke-dashoffset 0.5s var(--ease-overshoot);
 }
 
 .qi {
-  flex: none;
-  font-size: 22px;
+  font-size: 24px;
   transition: transform 0.2s var(--ease-overshoot);
 }
 
-.qi--add {
-  font-size: 20px;
-  color: var(--accent);
+.qtile.bump .qi {
+  transform: scale(1.22);
+}
+
+.qbadge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--surface);
 }
 
 .qt {
-  flex: 1;
-  min-width: 0;
-  font-size: 13.5px;
+  max-width: 100%;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1.15;
-  color: var(--text);
+  text-align: center;
+  color: var(--text-meta);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.qadd {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-  background: var(--surface-deep);
-  color: var(--accent);
-  flex: none;
-  display: grid;
-  place-items: center;
+.qtile.has .qt {
+  color: var(--text);
+}
+
+/* „Neu"-Kachel: gestrichelter Ring */
+.qring--add {
+  border: 2px dashed var(--border-soft);
+  border-radius: 50%;
+}
+
+.qi--add {
   font-size: 20px;
-  transition: background 0.2s var(--ease-overshoot), color 0.2s var(--ease-overshoot);
+  color: var(--text-meta);
 }
 
-.qcount {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  min-width: 23px;
-  height: 23px;
-  padding: 0 6px;
-  border-radius: 12px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 45%, transparent);
-}
-
-.qtask.has {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
-}
-
-.qtask.has .qadd {
-  background: var(--accent);
-  color: #fff;
-}
-
-.qtask.bump .qi {
-  transform: scale(1.2);
-}
-
-.qtask--add {
-  border-style: dashed;
-  justify-content: center;
+.qt--add {
   color: var(--text-secondary);
 }
 

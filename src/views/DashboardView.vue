@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
@@ -11,6 +11,7 @@ import { useBelegung } from '@/composables/useBelegung'
 import { useBucketList } from '@/composables/useBucketList'
 import { usePlanung } from '@/composables/usePlanung'
 import { showToast } from '@/composables/useToast'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import { dateKey } from '@/utils/mealplan'
 import type { Chore, ExpenseCategory } from '@/types'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
@@ -109,7 +110,9 @@ const hasBudget = computed(() => budgetCents.value != null && budgetCents.value 
 const showFinance = computed(() => hasBudget.value || openBalance.value > 0)
 
 // ── Ausgabe erfassen (Sheet wie in der Finanzen-View) ──────────
-const showAddExpense = ref(false)
+// Offener Sheet überlebt den Android-Kaltstart (TTL); der Entwurf im Sheet
+// selbst ist ebenfalls persistiert (AddExpenseSheet).
+const showAddExpense = usePersistedRef('dashboard.showAddExpense', false, { ttlMs: DRAFT_TTL_MS })
 
 async function onSubmitExpense(payload: {
   title: string
@@ -147,8 +150,8 @@ const isEmpty = computed(() =>
 )
 
 // ── Budget festlegen (Onboarding-Schritt) ──────────────────────
-const showBudgetSheet = ref(false)
-const budgetInput = ref('')
+const showBudgetSheet = usePersistedRef('dashboard.showBudgetSheet', false, { ttlMs: DRAFT_TTL_MS })
+const budgetInput = usePersistedRef('dashboard.budgetInput', '', { ttlMs: DRAFT_TTL_MS })
 
 function openBudgetSheet() {
   budgetInput.value = budgetCents.value ? (budgetCents.value / 100).toFixed(2) : ''
@@ -268,6 +271,7 @@ async function saveBudget() {
       :couple="couple"
       :currentUserId="currentUserId"
       addContext="dashboard"
+      persistKey="dashboard.expense"
       @close="showAddExpense = false"
       @submit="onSubmitExpense"
       @submitEvent="onSubmitEvent"

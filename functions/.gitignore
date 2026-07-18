@@ -1,4 +1,7 @@
 node_modules/
-lib/
+# Nur den tsc-Output (functions/lib/) ignorieren — mit führendem Slash verankert,
+# sonst matcht die Regel auch functions/src/lib/ und der komplette Server-
+# Quellcode (gemini/limits/rateLimit/entitlements/config/admin) wäre nicht versioniert.
+/lib/
 *.log
 .env

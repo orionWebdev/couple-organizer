@@ -75,18 +75,20 @@
   .btn.fill { background: var(--accent); color: #fff; }
   .btn.soft { background: color-mix(in srgb, var(--accent) 14%, var(--scard)); color: var(--accent); }
 
-  /* Schnell-Aufgaben-Kacheln */
-  .qgrid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
-  .qtask { position: relative; min-width: 0; display: flex; align-items: center; gap: 9px; background: var(--scard); border: 1px solid var(--sline); border-radius: 18px; padding: 12px; cursor: pointer; transition: all .18s var(--ease-overshoot); }
-  .qtask .qi { font-size: 22px; flex: none; transition: transform .2s var(--ease-overshoot); }
-  .qtask .qt { font-size: 13.5px; font-weight: 800; line-height: 1.15; flex: 1; min-width: 0; }
-  .qtask .qadd { width: 30px; height: 30px; border-radius: 10px; background: var(--sdeep); color: var(--accent); flex: none; display: grid; place-items: center; font-size: 20px; transition: all .2s var(--ease-overshoot); }
-  .qtask .qcount { position: absolute; top: -8px; right: -8px; min-width: 23px; height: 23px; padding: 0 6px; border-radius: 12px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 6px color-mix(in srgb,var(--accent) 45%,transparent); }
-  .qtask.has { background: color-mix(in srgb, var(--accent) 12%, var(--scard)); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+  /* Schnell-Aufgaben — Fortschritts-Ringe */
+  .qgrid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+  .qtask { display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; min-width: 0; }
+  .qRing { position: relative; width: 56px; height: 56px; display: grid; place-items: center; }
+  .qRing svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .qRing .qi { font-size: 23px; transition: transform .18s var(--ease-overshoot); }
+  .qtask.bump .qi { transform: scale(1.25); }
+  .qRing .pr { transition: stroke-dashoffset .5s var(--ease-overshoot); }
+  .qRing .qcount { position: absolute; bottom: -2px; right: -2px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 10.5px; font-weight: 800; display: none; align-items: center; justify-content: center; padding: 0 4px; border: 2px solid var(--scard); }
   .qtask.has .qcount { display: flex; }
-  .qtask.has .qadd { background: var(--accent); color: #fff; }
-  .qtask.bump .qi { transform: scale(1.2); }
-  .qtask.add { border-style: dashed; justify-content: center; color: var(--smeta); }
+  .qtask .qt { font-size: 11px; font-weight: 800; color: var(--smeta); text-align: center; line-height: 1.15; }
+  .qtask.has .qt { color: var(--stext); }
+  .qtask.add { opacity: .6; }
+  .qtask.add .qRing { border: 2px dashed var(--sline); border-radius: 50%; }
 
   .streak { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, var(--scard)); border-radius: 999px; padding: 5px 12px; }
 
@@ -172,12 +174,12 @@
       <div class="card" style="padding:15px;">
         <div class="between" style="margin-bottom:12px;"><span class="streak">🔥 4 Tage in Folge</span><span class="meta" style="font-weight:800;">3× heute</span></div>
         <div class="qgrid">
-          <div class="qtask has" data-q><span class="qcount">1×</span><span class="qi">🛏️</span><span class="qt">Bett machen</span><span class="qadd">＋</span></div>
-          <div class="qtask has" data-q><span class="qcount">2×</span><span class="qi">🪴</span><span class="qt">Pflanzen gießen</span><span class="qadd">＋</span></div>
-          <div class="qtask" data-q><span class="qcount">0×</span><span class="qi">🍽️</span><span class="qt">Küche aufräumen</span><span class="qadd">＋</span></div>
-          <div class="qtask" data-q><span class="qcount">0×</span><span class="qi">🐈</span><span class="qt">Katze füttern</span><span class="qadd">＋</span></div>
-          <div class="qtask" data-q><span class="qcount">0×</span><span class="qi">💊</span><span class="qt">Vitamine</span><span class="qadd">＋</span></div>
-          <div class="qtask add" data-add><span class="qi" style="font-size:20px;">＋</span><span class="qt">Hinzufügen</span></div>
+          <div class="qtask has" data-q data-goal="1"><div class="qRing"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--sdeep)" stroke-width="4"></circle><circle class="pr" cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="0"></circle></svg><span class="qi">🛏️</span><span class="qcount">1</span></div><span class="qt">Bett</span></div>
+          <div class="qtask has" data-q data-goal="2"><div class="qRing"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--sdeep)" stroke-width="4"></circle><circle class="pr" cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="0"></circle></svg><span class="qi">🪴</span><span class="qcount">2</span></div><span class="qt">Gießen</span></div>
+          <div class="qtask" data-q data-goal="1"><div class="qRing"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--sdeep)" stroke-width="4"></circle><circle class="pr" cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"></circle></svg><span class="qi">🍽️</span><span class="qcount">0</span></div><span class="qt">Küche</span></div>
+          <div class="qtask" data-q data-goal="1"><div class="qRing"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--sdeep)" stroke-width="4"></circle><circle class="pr" cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"></circle></svg><span class="qi">🐈</span><span class="qcount">0</span></div><span class="qt">Katze</span></div>
+          <div class="qtask" data-q data-goal="1"><div class="qRing"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--sdeep)" stroke-width="4"></circle><circle class="pr" cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"></circle></svg><span class="qi">💊</span><span class="qcount">0</span></div><span class="qt">Vitamine</span></div>
+          <div class="qtask add" data-add><div class="qRing"><span class="qi" style="font-size:20px; color:var(--smeta);">＋</span></div><span class="qt">Neu</span></div>
         </div>
       </div>
 
@@ -234,12 +236,12 @@
       <div class="card" style="padding:15px;">
         <div class="between" style="margin-bottom:12px;"><span class="streak">🔥 4 Tage in Folge</span><span class="meta" style="font-weight:800;">3× heute</span></div>
         <div class="qgrid">
-          <div class="qtask has" data-q><span class="qcount">1×</span><span class="qi">🛏️</span><span class="qt">Bett machen</span><span class="qadd">＋</span></div>
-          <div class="qtask has" data-q><span class="qcount">2×</span><span class="qi">🪴</span><span class="qt">Pflanzen gießen</span><span class="qadd">＋</span></div>
-          <div class="qtask" data-q><span class="qcount">0×</span><span class="qi">🍽️</span><span class="qt">Küche aufräumen</span><span class="qadd">＋</span></div>
-          <div class="qtask" data-q><span class="qcount">0×</span><span class="qi">🐈</span><span class="qt">Katze füttern</span><span class="qadd">＋</span></div>
-          <div class="qtask" data-q><span class="qcount">0×</span><span class="qi">💊</span><span class="qt">Vitamine</span><span class="qadd">＋</span></div>
-          <div class="qtask add" data-add><span class="qi" style="font-size:20px;">＋</span><span class="qt">Hinzufügen</span></div>
+          <div class="qtask has" data-q data-goal="1"><div class="qRing"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--sdeep)" stroke-width="4"></circle><circle class="pr" cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="0"></circle></svg><span class="qi">🛏️</span><span class="qcount">1</span></div><span class="qt">Bett</span></div>
+          <div class="qtask has" data-q data-goal="2"><div class="qRing"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--sdeep)" stroke-width="4"></circle><circle class="pr" cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="0"></circle></svg><span class="qi">🪴</span><span class="qcount">2</span></div><span class="qt">Gießen</span></div>
+          <div class="qtask" data-q data-goal="1"><div class="qRing"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--sdeep)" stroke-width="4"></circle><circle class="pr" cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"></circle></svg><span class="qi">🍽️</span><span class="qcount">0</span></div><span class="qt">Küche</span></div>
+          <div class="qtask" data-q data-goal="1"><div class="qRing"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--sdeep)" stroke-width="4"></circle><circle class="pr" cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"></circle></svg><span class="qi">🐈</span><span class="qcount">0</span></div><span class="qt">Katze</span></div>
+          <div class="qtask" data-q data-goal="1"><div class="qRing"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--sdeep)" stroke-width="4"></circle><circle class="pr" cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"></circle></svg><span class="qi">💊</span><span class="qcount">0</span></div><span class="qt">Vitamine</span></div>
+          <div class="qtask add" data-add><div class="qRing"><span class="qi" style="font-size:20px; color:var(--smeta);">＋</span></div><span class="qt">Neu</span></div>
         </div>
       </div>
       <div class="sec"><span class="lab">Belegung heute</span><span class="act">Alle</span></div>
@@ -390,9 +392,11 @@
     if (q) {
       var badge = q.querySelector('.qcount');
       var n = (parseInt(badge.dataset.n || badge.textContent, 10) || 0) + 1;
-      badge.dataset.n = n; badge.textContent = n + '×';
+      badge.dataset.n = n; badge.textContent = n;
       q.classList.add('has');
       q.classList.remove('bump'); void q.offsetWidth; q.classList.add('bump');
+      var goal = parseInt(q.dataset.goal, 10) || 1, pr = q.querySelector('.pr'), len = 163;
+      if (pr) pr.style.strokeDashoffset = Math.max(0, len * (1 - n / goal));
       var grid = q.closest('.qgrid'); var total = 0;
       grid.querySelectorAll('.qcount').forEach(function (b) { total += parseInt(b.dataset.n || b.textContent, 10) || 0; });
       var hdr = grid.closest('.card').querySelector('.between .meta');

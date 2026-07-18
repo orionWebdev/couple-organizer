@@ -6,6 +6,7 @@ import { useCouple } from '@/composables/useCouple'
 import { useBucketList } from '@/composables/useBucketList'
 import { usePlanung } from '@/composables/usePlanung'
 import { useTabSwipe } from '@/composables/useTabSwipe'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import { setFabAction } from '@/composables/useFab'
 import { showToast } from '@/composables/useToast'
 import type { BucketListItem, IdeaCategory, Note, Trip } from '@/types'
@@ -41,7 +42,11 @@ const tabOptions = [
   { label: 'Kalender', value: 'kalender' },
   { label: 'Listen', value: 'listen' },
 ]
-const tab = ref<Tab>(route.query.tab === 'listen' ? 'listen' : 'kalender')
+// Persistiert (überlebt den Android-Kaltstart); ein expliziter ?tab=-Deeplink
+// gewinnt aber weiterhin über den gemerkten Stand.
+const tab = usePersistedRef<Tab>('planung.tab', 'kalender')
+if (route.query.tab === 'listen') tab.value = 'listen'
+else if (route.query.tab === 'kalender') tab.value = 'kalender'
 
 const tabOrder: Tab[] = ['kalender', 'listen']
 const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
@@ -49,26 +54,55 @@ const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
 const kalenderRef = ref<InstanceType<typeof BelegungKalender> | null>(null)
 
 // ── Sheets ────────────────────────────────────────────────────
+// Offener Sheet + Detail überleben den Kaltstart (TTL). Das jeweils bearbeitete
+// Objekt kann nicht als Ganzes persistiert werden — wir merken uns seine ID und
+// leiten das Objekt beim Laden wieder ab, damit "Absenden" korrekt aktualisiert
+// statt ein Duplikat anzulegen.
 type Sheet = 'idea' | 'trip' | 'note' | null
-const sheet = ref<Sheet>(null)
+const sheet = usePersistedRef<Sheet>('planung.sheet', null, { ttlMs: DRAFT_TTL_MS })
+const editingIdeaId = usePersistedRef<string | null>('planung.editIdeaId', null, { ttlMs: DRAFT_TTL_MS })
+const editingTripId = usePersistedRef<string | null>('planung.editTripId', null, { ttlMs: DRAFT_TTL_MS })
 const editingIdea = ref<BucketListItem | null>(null)
 const editingTrip = ref<Trip | null>(null)
 
 // Reise-Detail: die ID halten und die Reise live aus der Liste ableiten, damit
 // Änderungen (Packliste/Links) sofort durchschlagen.
-const detailTripId = ref<string | null>(null)
+const detailTripId = usePersistedRef<string | null>('planung.detailTripId', null, { ttlMs: DRAFT_TTL_MS })
 const detailTrip = computed(() => trips.value.find((t) => t.id === detailTripId.value) ?? null)
+
+// Nach dem Kaltstart die bearbeiteten Objekte aus den IDs wiederherstellen,
+// sobald die Listen geladen sind. Gibt es das Objekt nicht mehr (gelöscht),
+// wird der Edit-Sheet geschlossen statt versehentlich neu anzulegen.
+const stopSheetRestore = watch(
+  () => listsLoading.value,
+  (busy) => {
+    if (busy) return
+    if (editingIdeaId.value) {
+      editingIdea.value = ideen.value.find((i) => i.id === editingIdeaId.value) ?? null
+      if (sheet.value === 'idea' && !editingIdea.value) { sheet.value = null; editingIdeaId.value = null }
+    }
+    if (editingTripId.value) {
+      editingTrip.value = trips.value.find((t) => t.id === editingTripId.value) ?? null
+      if (sheet.value === 'trip' && !editingTrip.value) { sheet.value = null; editingTripId.value = null }
+    }
+    stopSheetRestore()
+  },
+  { immediate: true }
+)
 
 function openIdeaSheet() {
   editingIdea.value = null
+  editingIdeaId.value = null
   sheet.value = 'idea'
 }
 function openEditIdea(item: BucketListItem) {
   editingIdea.value = item
+  editingIdeaId.value = item.id
   sheet.value = 'idea'
 }
 function openTripSheet() {
   editingTrip.value = null
+  editingTripId.value = null
   sheet.value = 'trip'
 }
 function openTripDetail(trip: Trip) {
@@ -77,12 +111,15 @@ function openTripDetail(trip: Trip) {
 function editTripFromDetail(trip: Trip) {
   detailTripId.value = null
   editingTrip.value = trip
+  editingTripId.value = trip.id
   sheet.value = 'trip'
 }
 function closeSheet() {
   sheet.value = null
   editingIdea.value = null
   editingTrip.value = null
+  editingIdeaId.value = null
+  editingTripId.value = null
 }
 
 // Globaler FAB (App-Shell): Kalender → Belegung anlegen, Listen → neue Idee
@@ -219,6 +256,7 @@ const listsEmpty = computed(() =>
       :couple="couple"
       :currentUserId="user?.uid ?? ''"
       :editing="editingIdea"
+      persistKey="planung.idea"
       @close="closeSheet"
       @submit="onSubmitIdea"
     />
@@ -226,6 +264,7 @@ const listsEmpty = computed(() =>
     <TripSheet
       :isOpen="sheet === 'trip'"
       :editing="editingTrip"
+      persistKey="planung.trip"
       @close="closeSheet"
       @submit="onSubmitTrip"
     />
@@ -243,6 +282,7 @@ const listsEmpty = computed(() =>
       title="Neue Notiz"
       placeholder="Kurz festhalten …"
       submitLabel="Notiz speichern"
+      persistKey="planung.note"
       @close="closeSheet"
       @submit="onAddNote"
     />

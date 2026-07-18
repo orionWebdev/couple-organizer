@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useCouple } from '@/composables/useCouple'
 import { useFabState } from '@/composables/useFab'
+import { useOnline } from '@/composables/useOnline'
 import NavIcon from '@/components/ui/NavIcon.vue'
 import Toast from '@/components/ui/Toast.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
@@ -15,6 +16,10 @@ const { couple } = useCouple()
 
 const route = useRoute()
 const router = useRouter()
+
+// Dezente Offline-Anzeige (Sync selbst macht Firestore automatisch). Der Aufruf
+// startet zugleich den "wieder online – synchronisiert"-Toast (Singleton).
+const { isOnline } = useOnline()
 
 // Show invite prompt while the partner has not joined yet
 const partnerMissing = computed(() =>
@@ -91,6 +96,13 @@ function onTabClick(e: MouseEvent, id: string) {
 
 <template>
   <div class="tabs-shell">
+    <Transition name="offline-drop">
+      <div v-if="!isOnline" class="offline-pill" role="status">
+        <span class="offline-pill__dot" />
+        <span>Offline – Änderungen werden gespeichert</span>
+      </div>
+    </Transition>
+
     <button
       v-if="partnerMissing"
       class="invite-banner"
@@ -154,6 +166,50 @@ function onTabClick(e: MouseEvent, id: string) {
   flex: 1;
   padding-bottom: calc(128px + var(--safe-bottom));
   overflow-y: auto;
+}
+
+/* Dezente Offline-Pille, oben mittig schwebend. Klassenname bewusst mit
+   Komponenten-Präfix (kein bare Tailwind-Utility wie .pill/.badge). */
+.offline-pill {
+  position: fixed;
+  top: calc(var(--safe-top) + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 28px);
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  box-shadow: var(--shadow-float);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.offline-pill__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted, #b0a89c);
+}
+
+.offline-drop-enter-active,
+.offline-drop-leave-active {
+  transition: transform 0.3s var(--ease-overshoot), opacity 0.2s var(--ease-standard);
+}
+.offline-drop-enter-from,
+.offline-drop-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-16px);
 }
 
 .invite-banner {

@@ -9,6 +9,7 @@ import { setFabAction } from '@/composables/useFab'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
 import { useBackDismiss } from '@/composables/useBackButton'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
@@ -46,7 +47,9 @@ const { addExpense } = useExpenses(coupleId)
 type Tab = 'wochenplan' | 'liste' | 'rezepte'
 // Der Nav-Slot heißt "Essen" und landet deshalb auf dem Wochenplan; die
 // Einkaufsliste ist von hier einen Tap entfernt.
-const tab = ref<Tab>('wochenplan')
+// Überlebt den Android-Kaltstart: gewähltes Segment ohne TTL (harmlos), die
+// In-Page-Unteransicht + zuletzt geöffnete Liste mit TTL (siehe Restore unten).
+const tab = usePersistedRef<Tab>('einkaufen.tab', 'wochenplan')
 const tabOptions = [
   { label: 'Wochenplan', value: 'wochenplan' },
   { label: 'Einkaufsliste', value: 'liste' },
@@ -60,10 +63,31 @@ const tabOrder: Tab[] = ['wochenplan', 'liste', 'rezepte']
 const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
 
 type View = 'lists' | 'detail' | 'shopping-mode'
-const view = ref<View>('lists')
+const view = usePersistedRef<View>('einkaufen.view', 'lists', { ttlMs: DRAFT_TTL_MS })
 
-const showNewList = ref(false)
-const newListName = ref('')
+// Die aktive Liste lebt in useShopping und würde beim Kaltstart auf die erste
+// Liste zurückfallen. Wir merken uns die zuletzt geöffnete separat und stellen
+// sie wieder her, sobald die Listen geladen sind — einmalig.
+const persistedListId = usePersistedRef<string | null>('einkaufen.listId', null, { ttlMs: DRAFT_TTL_MS })
+const stopListRestore = watch(
+  () => lists.value.length,
+  (len) => {
+    if (len === 0) return
+    const savedId = persistedListId.value
+    const valid = !!savedId && lists.value.some(l => l.id === savedId)
+    if (valid) setActiveList(savedId as string)
+    // Detail/Einkaufsmodus wurden restauriert, aber die Liste gibt es nicht mehr
+    // (gelöscht) → sauber zurück auf die Übersicht statt einer fremden Liste.
+    if (!valid && (view.value === 'detail' || view.value === 'shopping-mode')) {
+      view.value = 'lists'
+    }
+    stopListRestore()
+  },
+  { immediate: true }
+)
+
+const showNewList = usePersistedRef('einkaufen.showNewList', false, { ttlMs: DRAFT_TTL_MS })
+const newListName = usePersistedRef('einkaufen.newListName', '', { ttlMs: DRAFT_TTL_MS })
 
 // Die Paywall greift schon beim Antippen des FAB — den Namen erst tippen zu
 // lassen und dann abzulehnen wäre die unfreundlichere Reihenfolge.
@@ -104,6 +128,7 @@ async function handleCreateList() {
 
 function selectList(id: string) {
   setActiveList(id)
+  persistedListId.value = id
   view.value = 'detail'
 }
 

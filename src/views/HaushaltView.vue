@@ -12,6 +12,7 @@ import TaskSheet from '@/components/haushalt/TaskSheet.vue'
 import HaushaltZuweisungen from '@/components/haushalt/HaushaltZuweisungen.vue'
 import HaushaltAlle from '@/components/haushalt/HaushaltAlle.vue'
 import HaushaltUebersicht from '@/components/haushalt/HaushaltUebersicht.vue'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import { isSameDay } from '@/utils/chores'
 import type { Chore, ChoreAssignee, ChoreHistoryEntry } from '@/types'
 
@@ -51,7 +52,7 @@ const todayCounts = computed(() => {
 type Tab = 'zuweisungen' | 'alle' | 'uebersicht'
 // Standard-Landing im Haushalt ist „Zuweisungen" — direkter Blick auf die
 // eigenen offenen Aufgaben.
-const tab = ref<Tab>('zuweisungen')
+const tab = usePersistedRef<Tab>('haushalt.tab', 'zuweisungen')
 const tabOptions = [
   { label: 'Zuweisungen', value: 'zuweisungen' },
   { label: 'Alle', value: 'alle' },
@@ -62,11 +63,34 @@ const tabOptions = [
 const order: Tab[] = ['zuweisungen', 'alle', 'uebersicht']
 const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(order, tab)
 
-const showSheet = ref(false)
+// Offener Sheet überlebt den Kaltstart (TTL); die bearbeitete Aufgabe wird über
+// ihre ID zurückgeholt, sobald die Aufgaben geladen sind.
+const showSheet = usePersistedRef('haushalt.showSheet', false, { ttlMs: DRAFT_TTL_MS })
+const editingChoreId = usePersistedRef<string | null>('haushalt.editChoreId', null, { ttlMs: DRAFT_TTL_MS })
 const editingChore = ref<Chore | null>(null)
+
+const stopChoreRestore = watch(
+  () => loading.value,
+  (busy) => {
+    if (busy) return
+    if (editingChoreId.value) {
+      editingChore.value = chores.value.find((c) => c.id === editingChoreId.value) ?? null
+      if (showSheet.value && !editingChore.value) { showSheet.value = false; editingChoreId.value = null }
+    }
+    stopChoreRestore()
+  },
+  { immediate: true }
+)
+
+function closeSheet() {
+  showSheet.value = false
+  editingChore.value = null
+  editingChoreId.value = null
+}
 
 function openNewChore() {
   editingChore.value = null
+  editingChoreId.value = null
   showSheet.value = true
 }
 
@@ -78,6 +102,7 @@ onScopeDispose(() => setFabAction(null))
 
 function openEditChore(chore: Chore) {
   editingChore.value = chore
+  editingChoreId.value = chore.id
   showSheet.value = true
 }
 
@@ -93,7 +118,7 @@ async function onSheetSubmit(payload: Parameters<typeof addChore>[0]) {
     return
   }
   showToast(editingChore.value ? 'Änderungen gespeichert' : 'Aufgabe angelegt')
-  showSheet.value = false
+  closeSheet()
 }
 
 async function onPick(chore: Chore, assignee: ChoreAssignee) {
@@ -197,7 +222,8 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
       :isOpen="showSheet"
       :couple="couple"
       :editingChore="editingChore"
-      @close="showSheet = false"
+      persistKey="haushalt.chore"
+      @close="closeSheet"
       @submit="onSheetSubmit"
     />
   </div>

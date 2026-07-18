@@ -1,15 +1,25 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, type Ref } from 'vue'
 import type { Chore, ChoreAssignee, ChorePoints, ChoreRoom, ChoreType, Couple } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { ROOMS, DEFAULT_ROOM, roomOf } from '@/utils/rooms'
 import { POINT_OPTIONS, DEFAULT_POINTS, pointsForChore } from '@/utils/points'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 
 const props = defineProps<{
   isOpen: boolean
   couple: Couple | null
   editingChore: Chore | null
+  persistKey?: string
 }>()
+
+// Entwurf überlebt den Android-Kaltstart, wenn der Aufrufort den offenen Zustand
+// mitpersistiert.
+function draft<T>(field: string, initial: T): Ref<T> {
+  return props.persistKey
+    ? usePersistedRef<T>(`${props.persistKey}.${field}`, initial, { ttlMs: DRAFT_TTL_MS })
+    : (ref(initial) as Ref<T>)
+}
 
 const emit = defineEmits<{
   close: []
@@ -22,11 +32,11 @@ const emit = defineEmits<{
   }]
 }>()
 
-const name = ref('')
-const room = ref<ChoreRoom>(DEFAULT_ROOM)
-const type = ref<ChoreType>('recurring')
-const assignee = ref<ChoreAssignee>(null)
-const points = ref<ChorePoints>(DEFAULT_POINTS)
+const name = draft('name', '')
+const room = draft<ChoreRoom>('room', DEFAULT_ROOM)
+const type = draft<ChoreType>('type', 'recurring')
+const assignee = draft<ChoreAssignee>('assignee', null)
+const points = draft<ChorePoints>('points', DEFAULT_POINTS)
 
 function resetForm(chore: Chore | null) {
   if (!chore) {

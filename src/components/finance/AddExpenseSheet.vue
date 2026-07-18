@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, type Ref } from 'vue'
 import type { Couple, Expense } from '@/types'
 import type { ExpenseCategory } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import NumericKeypad from './NumericKeypad.vue'
 import { resolveExpenseCategories, categoryColor } from '@/utils/expenseCategories'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 
 const props = defineProps<{
   isOpen: boolean
@@ -13,7 +14,18 @@ const props = defineProps<{
   addContext?: 'dashboard' | 'event'
   startInEventMode?: boolean
   editingExpense?: Expense | null
+  // Eindeutiger Storage-Präfix je Aufrufort — sonst teilten sich Dashboard und
+  // Finanzen denselben Entwurf. Ohne Prop bleiben die Felder rein im Speicher.
+  persistKey?: string
 }>()
+
+// Entwurf überlebt den Android-Kaltstart (nur wenn der Aufrufort den offenen
+// Zustand ebenfalls persistiert; sonst schadet es nicht).
+function draft<T>(field: string, initial: T): Ref<T> {
+  return props.persistKey
+    ? usePersistedRef<T>(`${props.persistKey}.${field}`, initial, { ttlMs: DRAFT_TTL_MS })
+    : (ref(initial) as Ref<T>)
+}
 
 const emit = defineEmits<{
   close: []
@@ -27,9 +39,9 @@ const emit = defineEmits<{
   submitEvent: [payload: { title: string; dateLabel: string }]
 }>()
 
-const addMode = ref<'expense' | 'event'>('expense')
-const newEventTitle = ref('')
-const newEventDate = ref('')
+const addMode = draft<'expense' | 'event'>('addMode', 'expense')
+const newEventTitle = draft('newEventTitle', '')
+const newEventDate = draft('newEventDate', '')
 
 const isEditing = computed(() => !!props.editingExpense)
 const showModeToggle = computed(() => !isEditing.value && (props.addContext ?? 'dashboard') === 'dashboard')
@@ -40,13 +52,13 @@ const sheetTitle = computed(() => {
 })
 const submitLabel = computed(() => (isEditing.value ? 'Speichern' : 'Hinzufügen'))
 
-const rawAmount = ref('')
-const title = ref('')
-const paidBy = ref(props.currentUserId)
 const categories = computed(() => resolveExpenseCategories(props.couple))
-const tag = ref<ExpenseCategory>(categories.value[0]?.id ?? 'other')
-const splitMode = ref<'5050' | 'custom'>('5050')
-const customPct = ref(50)
+const rawAmount = draft('rawAmount', '')
+const title = draft('title', '')
+const paidBy = draft('paidBy', props.currentUserId)
+const tag = draft<ExpenseCategory>('tag', categories.value[0]?.id ?? 'other')
+const splitMode = draft<'5050' | 'custom'>('splitMode', '5050')
+const customPct = draft('customPct', 50)
 
 const displayAmount = computed(() => {
   if (!rawAmount.value) return '0,00'

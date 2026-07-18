@@ -1,24 +1,45 @@
-// Übergangslösung. Ruft Gemini direkt aus dem Browser auf, mit dem Key aus
-// VITE_GEMINI_API_KEY — genau das, was die App vor dem Cloud-Functions-Umbau
-// getan hat.
-//
-// Existiert, weil die Functions noch nicht deployt sind (Blaze + Secrets + App
-// Check fehlen) und die App bis dahin trotzdem benutzbar bleiben soll — auch im
-// Vercel-Build, nicht nur im `npm run dev`.
-//
-// ⚠️ Der Key liegt damit im öffentlichen JS-Bundle und ist auslesbar. Das ist
-// eine bewusste, temporäre Entscheidung. Ins offene Netz gehört dieser Build nur
-// mit einem Key, dessen Missbrauch verkraftbar ist — idealerweise per
-// HTTP-Referrer auf die eigene Domain eingeschränkt.
-//
-// Sobald die Functions deployt sind: VITE_GEMINI_API_KEY überall entfernen
-// (Vercel + .env.local), dann greift die Weiche in ai.ts nicht mehr und diese
-// Datei kann ersatzlos weg.
-import type { FinanceCategoryDelta, PlanWeekInput, RecipeSuggestion } from './ai'
+import { HttpsError } from 'firebase-functions/v2/https'
+import { GEMINI_API_KEY } from './config'
 
+// Der Key lebt ab hier ausschließlich serverseitig (Secret Manager). Im Client
+// gab es ihn im Bundle, geschützt nur durch eine HTTP-Referrer-Sperre — die im
+// Capacitor-WebView (Origin https://localhost) nicht mehr greift.
 const MODEL = 'gemini-2.5-flash'
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
+export interface RecipeIngredient {
+  name: string
+  amount?: number
+  unit?: string
+}
+
+export interface RecipeNutrition {
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
+export interface RecipeSuggestion {
+  title: string
+  description?: string
+  minutes?: number
+  servings?: number
+  tags?: string[]
+  ingredients: RecipeIngredient[]
+  steps: string[]
+  nutrition?: RecipeNutrition
+}
+
+export interface FinanceCategoryDelta {
+  name: string
+  currentEuros: number
+  previousEuros: number
+  deltaPct: number | null
+}
+
+// Vokabular der Rezept-Wiki-Kategorien (src/utils/recipeTags.ts) — Gemini
+// bekommt die IDs vorgegeben, damit Vorschläge zu den Filter-Badges passen.
 const TAG_IDS = ['quick', 'onepot', 'mealprep', 'datenight', 'veggie', 'meat', 'pasta', 'fakeaway']
 
 const RECIPE_RESPONSE_SCHEMA = {
@@ -75,12 +96,7 @@ const INSIGHT_RESPONSE_SCHEMA = {
 }
 
 async function callGemini(prompt: string, schema: object): Promise<string> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-  if (!apiKey) {
-    throw new Error('VITE_GEMINI_API_KEY ist nicht gesetzt (lokal: .env.local, deployt: Vercel-Env-Vars).')
-  }
-
-  const res = await fetch(`${API_BASE}/${MODEL}:generateContent?key=${apiKey}`, {
+  const res = await fetch(`${API_BASE}/${MODEL}:generateContent?key=${GEMINI_API_KEY.value()}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -94,16 +110,22 @@ async function callGemini(prompt: string, schema: object): Promise<string> {
 
   if (!res.ok) {
     const body = await res.text().catch(() => '')
-    throw new Error(`Gemini-Anfrage fehlgeschlagen (${res.status}): ${body}`)
+    // Der Client sieht bewusst keine Gemini-Interna — die landen nur im Log.
+    console.error(`Gemini ${res.status}: ${body}`)
+    throw new HttpsError('unavailable', 'Die KI ist gerade nicht erreichbar. Bitte später erneut versuchen.')
   }
 
-  const data = await res.json()
+  const data = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[]
+  }
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-  if (!text) throw new Error('Gemini hat keine Antwort geliefert.')
+  if (!text) {
+    throw new HttpsError('unavailable', 'Die KI hat keine Antwort geliefert.')
+  }
   return text
 }
 
-export async function directSuggestRecipes(query: string, count: number): Promise<RecipeSuggestion[]> {
+export async function generateRecipes(query: string, count: number): Promise<RecipeSuggestion[]> {
   const prompt = `Du bist ein Kochassistent für ein Paar, das seinen Wochen-Essensplan erstellt.
 Schlage genau ${count} Rezept(e) vor, die zu folgendem Wunsch passen: "${query}".
 Nutze nur haushaltsübliche Zutaten und gib realistische Kochzeiten und Portionsangaben an.
@@ -116,7 +138,19 @@ Schätze Nährwerte pro Portion (nutrition) nur, wenn du dir einigermaßen siche
   return parsed.recipes ?? []
 }
 
-export async function directPlanWeek(input: PlanWeekInput): Promise<RecipeSuggestion[]> {
+export interface WeekPlanInput {
+  count: number
+  servings?: number | null
+  prefs?: string
+  avoidTitles?: string[]
+  favorTitles?: string[]
+}
+
+// Wochen-Autopilot: EIN Aufruf plant die ganzen Kochtage als zusammenhängendes
+// Set (Abwechslung statt N unabhängiger Vorschläge). Nutzt dasselbe
+// Recipe-Schema — die Antwort ist wieder { recipes: [...] }, nur in der
+// gewünschten Reihenfolge und Anzahl.
+export async function generateWeekPlan(input: WeekPlanInput): Promise<RecipeSuggestion[]> {
   const favor = (input.favorTitles ?? []).filter(Boolean)
   const avoid = (input.avoidTitles ?? []).filter(Boolean)
 
@@ -137,7 +171,7 @@ Gib die Rezepte in der Reihenfolge zurück, in der sie über die Woche gekocht w
   return parsed.recipes ?? []
 }
 
-export async function directSuggestFinanceInsight(
+export async function generateFinanceInsight(
   deltas: FinanceCategoryDelta[],
   monthLabel: string
 ): Promise<string> {
@@ -159,6 +193,8 @@ Erfinde KEINE Zahlen, die nicht oben stehen. Wenn es keine nennenswerte Verände
 
   const text = await callGemini(prompt, INSIGHT_RESPONSE_SCHEMA)
   const parsed = JSON.parse(text) as { insightText?: string }
-  if (!parsed.insightText) throw new Error('Gemini hat keinen Insight geliefert.')
+  if (!parsed.insightText) {
+    throw new HttpsError('unavailable', 'Die KI hat keinen Insight geliefert.')
+  }
   return parsed.insightText
 }

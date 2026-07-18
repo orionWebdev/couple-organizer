@@ -4,6 +4,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useBelegung, type BookingDraft } from '@/composables/useBelegung'
 import { showToast } from '@/composables/useToast'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import {
   WEEKDAYS_SHORT, WEEKDAYS_LONG, weekdayIndex, monthGrid, monthLabel, addMonths,
   firstOfMonth, sameMonth, dayMonth, expandDays, bookingsOnDay, conflictsFor,
@@ -112,7 +113,8 @@ function seriesLabel(booking: Booking): string {
 }
 
 // ── Sheets ────────────────────────────────────────────────────
-const showNew = ref(false)
+// Offener Sheet überlebt den Android-Kaltstart (Entwurf im Sheet ebenso).
+const showNew = usePersistedRef('belegung.showNew', false, { ttlMs: DRAFT_TTL_MS })
 const detail = ref<Booking | null>(null)
 
 async function onSubmit(draft: BookingDraft) {
@@ -281,6 +283,7 @@ defineExpose({ openNew })
       :couple="couple"
       :currentUserId="user?.uid ?? ''"
       :defaultDate="selectedKey"
+      persistKey="belegung.booking"
       @close="showNew = false"
       @submit="onSubmit"
     />

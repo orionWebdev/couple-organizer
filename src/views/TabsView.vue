@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useCouple } from '@/composables/useCouple'
 import { useFabState } from '@/composables/useFab'
+import NavIcon from '@/components/ui/NavIcon.vue'
 import Toast from '@/components/ui/Toast.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
@@ -21,17 +22,19 @@ const partnerMissing = computed(() =>
 )
 const showInvite = ref(false)
 
-interface NavItem { id: string; label: string; icon: string; color: string; href: string }
+interface NavItem { id: string; label: string; icon: string; iconName: string; color: string; href: string }
 
-// Bereichsfarbe + Icon je Tab. "Planung" (Belegung · Ideen · Reisen · Notizen)
-// sitzt bewusst mittig — es ist der Hub, nicht der letzte Slot. Finanz-Coach ist
-// ein Tab innerhalb von Finanzen. Die id ist zugleich das Routen-Segment.
+// Bereichsfarbe + Icon je Tab. "Start" (Dashboard) sitzt bewusst mittig — der
+// Heimat-/Fokus-Slot in der Mitte. Finanz-Coach ist ein Tab innerhalb von
+// Finanzen. Die id ist zugleich das Routen-Segment. Die Array-Reihenfolge ist
+// zugleich die Anzeigereihenfolge (die Nav ist index-unabhängig, jedes Item
+// trägt seine eigene Bubble).
 const NAV_ITEMS: readonly NavItem[] = [
-  { id: 'dashboard', label: 'Start', icon: '🏠', color: 'var(--dashboard)', href: '/dashboard' },
-  { id: 'haushalt', label: 'Haushalt', icon: '🧽', color: 'var(--haushalt)', href: '/haushalt' },
-  { id: 'planung', label: 'Planung', icon: '🗓️', color: 'var(--planung)', href: '/planung' },
-  { id: 'finanzen', label: 'Finanzen', icon: '💶', color: 'var(--finanzen)', href: '/finanzen' },
-  { id: 'einkaufen', label: 'Essen', icon: '🍽️', color: 'var(--food)', href: '/einkaufen' },
+  { id: 'planung', label: 'Planung', icon: '🗓️', iconName: 'planung', color: 'var(--planung)', href: '/planung' },
+  { id: 'finanzen', label: 'Finanzen', icon: '💶', iconName: 'finanzen', color: 'var(--finanzen)', href: '/finanzen' },
+  { id: 'dashboard', label: 'Start', icon: '🏠', iconName: 'start', color: 'var(--dashboard)', href: '/dashboard' },
+  { id: 'haushalt', label: 'Haushalt', icon: '🧽', iconName: 'haushalt', color: 'var(--haushalt)', href: '/haushalt' },
+  { id: 'einkaufen', label: 'Essen', icon: '🍽️', iconName: 'essen', color: 'var(--food)', href: '/einkaufen' },
 ]
 
 // Routen ohne eigenen Nav-Slot leihen sich den Slot ihres Bereichs. Aktuell
@@ -63,6 +66,26 @@ const activeColor = computed(
 function selectNav(id: string) {
   const item = NAV_ITEMS.find(i => i.id === id)
   if (item) router.push(item.href)
+}
+
+// Klick-Feedback (Animation 2): Feder-Hüpfer aufs Item. Reflow erzwingt den
+// Neustart der Keyframe-Animation, animationend räumt die Klasse wieder ab.
+// Ändert die Navigationslogik nicht — selectNav läuft unverändert weiter.
+//
+// is-tapped kommt bewusst auf den .mnav__icon-Span, NICHT aufs .mnav__item:
+// der Button trägt eine :class-Bindung (is-active), und beim Navigieren patcht
+// Vue dessen Klasse neu und würde ein manuell gesetztes is-tapped sofort wieder
+// entfernen (Animation gekillt). Der Icon-Span hat nur eine statische Klasse,
+// die Vue bei Updates nicht anfasst — dort überlebt is-tapped den Re-Render.
+function onTabClick(e: MouseEvent, id: string) {
+  const icon = (e.currentTarget as HTMLElement).querySelector('.mnav__icon') as HTMLElement | null
+  if (icon) {
+    icon.classList.remove('is-tapped')
+    void icon.offsetWidth // Reflow → Animation startet auch beim erneuten Tippen neu
+    icon.classList.add('is-tapped')
+    icon.addEventListener('animationend', () => icon.classList.remove('is-tapped'), { once: true })
+  }
+  selectNav(id)
 }
 </script>
 
@@ -96,10 +119,10 @@ function selectNav(id: string) {
         class="mnav__item"
         :class="{ 'is-active': activeId === item.id }"
         :style="{ '--nav-accent': item.color }"
-        @click="selectNav(item.id)"
+        @click="onTabClick($event, item.id)"
       >
         <span class="mnav__bubble" />
-        <span class="mnav__icon">{{ item.icon }}</span>
+        <span class="mnav__icon"><NavIcon :name="item.iconName" /></span>
         <span class="mnav__label">{{ item.label }}</span>
       </button>
     </nav>
@@ -195,23 +218,65 @@ function selectNav(id: string) {
 }
 
 .mnav__icon {
-  font-size: 25px;
-  line-height: 1;
   transition: transform 0.35s var(--ease-overshoot);
 }
 
-/* Aktiv: Bereichsfarbe; das Icon steigt in die überstehende Bubble. */
+.mnav__icon :deep(svg) {
+  width: 27px;
+  height: 27px;
+  display: block;
+}
+
+/* Outline (.lo, inaktiv) ↔ gefüllte Silhouette (.fo, aktiv) per Opacity-
+   Crossfade. :deep(), weil .lo/.fo im NavIcon-Kind liegen — scoped Selektoren
+   griffen dort sonst nicht. */
+.mnav__icon :deep(.fo) {
+  opacity: 0;
+  fill: currentColor;
+  stroke: none;
+  transition: opacity 0.3s var(--ease-standard);
+}
+
+.mnav__icon :deep(.lo) {
+  opacity: 1;
+  transition: opacity 0.3s var(--ease-standard);
+}
+
+.mnav__item.is-active .mnav__icon :deep(.fo) {
+  opacity: 1;
+  fill: #fff;
+}
+
+.mnav__item.is-active .mnav__icon :deep(.lo) {
+  opacity: 0;
+}
+
+/* Animation 1: aktiv → Bereichsfarbe, Icon steigt in die überstehende Bubble.
+   Spec nennt -34px; in unserem Layout liegt die Icon-Ruhemitte aber ~10px über
+   der Bubblemitte, sodass -34 es zu weit oben platziert (gemessen). -24px
+   zentriert es in der Bubble — die Bubble selbst bleibt bei -34. Der Bounce-
+   Keyframe ist um dieselben 10px mitverschoben, damit es beim Tap nicht springt. */
 .mnav__item.is-active {
   color: var(--nav-accent);
 }
 
-/* Aufstieg auf -24px statt der -34px des Contracts: die Bubble steigt -34, das
-   Icon startet aber ~10px höher als die Bubblemitte, sodass -34 es zu weit oben
-   platziert. -24 zentriert das Icon in der Bubble (gemessen: Icon-Mitte = Bubble-
-   Mitte). */
 .mnav__item.is-active .mnav__icon {
   transform: translateY(-24px) scale(1.08);
-  color: #fff;
+}
+
+/* Animation 2: Klick-Feedback — Feder-Hüpfer. is-tapped sitzt auf dem
+   .mnav__icon-Span (nicht am Button), damit Vues Re-Render der Button-Klasse
+   die Animation nicht abwürgt (siehe onTabClick). Amplituden aus der Spec,
+   Basis auf -24px verschoben (passend zur aktiven Ruhelage, siehe oben). */
+.mnav__icon.is-tapped {
+  animation: mnav-tap 0.5s var(--ease-overshoot);
+}
+
+@keyframes mnav-tap {
+  0%   { transform: translateY(-24px) scale(1.08); }
+  30%  { transform: translateY(-30px) scale(0.82); }
+  62%  { transform: translateY(-21px) scale(1.16); }
+  100% { transform: translateY(-24px) scale(1.08); }
 }
 
 .mnav__bubble {

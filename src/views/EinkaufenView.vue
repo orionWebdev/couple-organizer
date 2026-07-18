@@ -154,6 +154,12 @@ async function handleAddItem(name: string) {
   await addItem({ listId: activeListId.value, name })
 }
 
+async function handleClearChecked() {
+  if (!activeList.value) return
+  await clearChecked(activeList.value.id)
+  showToast('Erledigte entfernt')
+}
+
 async function handleFinish(payload: {
   checkedIds: string[]
   createExpense: boolean
@@ -208,10 +214,12 @@ function listItemsFor(listId: string) {
       v-else-if="view === 'detail' && activeList"
       :list="activeList"
       :items="activeItems"
+      :couple="couple"
       @toggle="handleToggle"
       @delete="handleDeleteItem"
       @add="handleAddItem"
       @startShopping="startShopping"
+      @clearChecked="handleClearChecked"
       @back="goBack"
       @renameList="handleRenameList(activeList.id, $event)"
       @deleteList="handleDeleteList(activeList.id)"

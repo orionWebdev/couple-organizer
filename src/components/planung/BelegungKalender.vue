@@ -10,14 +10,48 @@ import {
   nextLabel, personColor, fromDateKey, todayKey,
 } from '@/utils/belegung'
 import { dateKey } from '@/utils/mealplan'
-import type { Booking } from '@/types'
+import { categoryDef, resolveIdeaCategories } from '@/utils/ideen'
+import { dayInRange } from '@/utils/dateLabels'
+import type { Booking, BucketListItem, Trip } from '@/types'
 import BookingRow from '@/components/belegung/BookingRow.vue'
 import NewBookingSheet from '@/components/belegung/NewBookingSheet.vue'
 import BookingDetailSheet from '@/components/belegung/BookingDetailSheet.vue'
 
+const props = defineProps<{
+  ideas?: readonly BucketListItem[]
+  trips?: readonly Trip[]
+}>()
+
+const emit = defineEmits<{
+  (e: 'editIdea', item: BucketListItem): void
+  (e: 'openTrip', trip: Trip): void
+}>()
+
 const { user } = useAuth()
 const { couple } = useCouple()
 const coupleId = computed(() => user.value?.coupleId ?? null)
+
+// ── Datierte Ideen/Reisen (optionales `date`, YYYY-MM-DD) ──────
+const ideaCategories = computed(() => resolveIdeaCategories(couple.value))
+const datedIdeas = computed(() => (props.ideas ?? []).filter((i) => i.date && !i.done))
+const datedTrips = computed(() => (props.trips ?? []).filter((t) => !!t.startDate))
+
+function ideaEmoji(item: BucketListItem): string {
+  return categoryDef(item.category, ideaCategories.value).emoji
+}
+
+// Anzahl datierter Plan-Einträge (Ideen + Reisen) je Rasterzelle. Reisen zählen
+// über ihren ganzen Zeitraum (start–end).
+const planCountByDay = computed(() =>
+  days.value.map((d) => {
+    const key = dateKey(d)
+    return datedIdeas.value.filter((i) => i.date === key).length
+      + datedTrips.value.filter((t) => dayInRange(key, t.startDate, t.endDate)).length
+  })
+)
+
+const selectedIdeas = computed(() => datedIdeas.value.filter((i) => i.date === selectedKey.value))
+const selectedTrips = computed(() => datedTrips.value.filter((t) => dayInRange(selectedKey.value, t.startDate, t.endDate)))
 
 const {
   bookings, resources, resourceById, loading,
@@ -154,6 +188,11 @@ defineExpose({ openNew })
                 class="dot"
                 :style="{ background: personColor(couple, booking.owner) }"
               />
+              <span
+                v-for="n in Math.min(planCountByDay[i], 2)"
+                :key="'plan' + n"
+                class="dot dot--plan"
+              />
               <span v-if="byDay[i].length > 3" class="cal-more">+{{ byDay[i].length - 3 }}</span>
             </span>
           </button>
@@ -176,6 +215,36 @@ defineExpose({ openNew })
           :conflict="conflictOn(booking)"
           @click="detail = booking"
         />
+
+        <!-- Datierte Reisen & Ideen dieses Tages -->
+        <button
+          v-for="trip in selectedTrips"
+          :key="'trip' + trip.id"
+          type="button"
+          class="plan-row"
+          @click="emit('openTrip', trip)"
+        >
+          <span class="plan-emoji">{{ trip.emoji }}</span>
+          <span class="plan-text">
+            <span class="plan-title">{{ trip.title }}</span>
+            <span class="plan-kind">Reise</span>
+          </span>
+          <span class="plan-chevron">›</span>
+        </button>
+        <button
+          v-for="idea in selectedIdeas"
+          :key="'idea' + idea.id"
+          type="button"
+          class="plan-row"
+          @click="emit('editIdea', idea)"
+        >
+          <span class="plan-emoji">{{ ideaEmoji(idea) }}</span>
+          <span class="plan-text">
+            <span class="plan-title">{{ idea.name }}</span>
+            <span class="plan-kind">Idee</span>
+          </span>
+          <span class="plan-chevron">›</span>
+        </button>
 
         <button class="add-row" type="button" @click="openNew">
           <span class="add-plus">＋</span>
@@ -383,6 +452,12 @@ defineExpose({ openNew })
   border-radius: 50%;
 }
 
+/* Datierte Ideen/Reisen — bewusst violett, um sie von den personenfarbenen
+   Belegungs-Punkten abzuheben. */
+.dot--plan {
+  background: var(--bucket);
+}
+
 .cal-more {
   font-size: 9px;
   font-weight: 800;
@@ -411,6 +486,63 @@ defineExpose({ openNew })
   font-size: 13px;
   font-weight: 700;
   color: var(--text-meta);
+}
+
+.plan-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 2px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.plan-row + .add-row {
+  margin-top: 8px;
+}
+
+.plan-emoji {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bucket) 14%, var(--surface));
+  font-size: 19px;
+}
+
+.plan-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.plan-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-kind {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--bucket);
+}
+
+.plan-chevron {
+  flex-shrink: 0;
+  font-size: 20px;
+  color: var(--text-faint);
 }
 
 .add-row {

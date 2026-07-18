@@ -2,11 +2,14 @@
 import { ref, computed } from 'vue'
 import type { Recipe } from '@/types'
 import { useMealPlan, type AssignRecipeInput } from '@/composables/useMealPlan'
+import { useShopping } from '@/composables/useShopping'
 import { useCouple } from '@/composables/useCouple'
+import { useAuth } from '@/composables/useAuth'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
-import { primaryTagMeta, recipeCategoryDef, resolveRecipeCategories } from '@/utils/recipeTags'
+import { primaryTagMeta, resolveRecipeCategories } from '@/utils/recipeTags'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import InitialChip from '@/components/ui/InitialChip.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
 import AiRecipeSheet from './AiRecipeSheet.vue'
 
@@ -16,21 +19,33 @@ const props = defineProps<{
 
 const coupleIdRef = computed(() => props.coupleId)
 const {
-  recipes, canCreateRecipe, suggestRecipes, createRecipe, updateRecipe, deleteRecipe,
+  recipes, week, canCreateRecipe, suggestRecipes, createRecipe, updateRecipe,
+  deleteRecipe, toggleRecipeLike, assignExistingRecipe,
 } = useMealPlan(coupleIdRef)
+const { activeListId, addItem: addShoppingItem } = useShopping(coupleIdRef)
 const { couple } = useCouple()
+const { user } = useAuth()
 
+const currentUserId = computed(() => user.value?.uid ?? '')
+const members = computed(() => couple.value?.memberIds ?? [])
 const categories = computed(() => resolveRecipeCategories(couple.value))
 
 const search = ref('')
+
+// ── Filter: „Alle“ · ❤️ Favoriten · ⚡ Schnell · Kategorien ─────
+const favActive = ref(false)
+const schnellActive = ref(false)
 const activeTags = ref<Set<string>>(new Set())
 
-// Wie im Aufgaben-Pool: eine Zeile, horizontal scrollbar, führendes "Alle".
-// Kategorien ohne Rezepte bleiben draußen — die Zeile soll die Sammlung
-// spiegeln, nicht die Kategorieliste.
-const filterCategories = computed(() =>
-  categories.value.filter((c) => recipes.value.some((r) => r.tags.includes(c.id)))
-)
+const QUICK_MAX_MINUTES = 30
+
+const allActive = computed(() => !favActive.value && !schnellActive.value && activeTags.value.size === 0)
+
+function resetFilters() {
+  favActive.value = false
+  schnellActive.value = false
+  activeTags.value = new Set()
+}
 
 function toggleTagFilter(id: string) {
   const next = new Set(activeTags.value)
@@ -39,18 +54,97 @@ function toggleTagFilter(id: string) {
   activeTags.value = next
 }
 
+// Nur Kategorien anzeigen, die tatsächlich Rezepte haben (wie im Aufgaben-Pool).
+const filterCategories = computed(() =>
+  categories.value.filter((c) => recipes.value.some((r) => r.tags.includes(c.id)))
+)
+
+function likedByMe(r: Recipe): boolean {
+  return r.likes.includes(currentUserId.value)
+}
+
 const filteredRecipes = computed(() => {
   const q = search.value.trim().toLowerCase()
   return recipes.value.filter((r) => {
-    const matchesSearch = !q || r.title.toLowerCase().includes(q)
-    const matchesTags = activeTags.value.size === 0 || r.tags.some((t) => activeTags.value.has(t))
-    return matchesSearch && matchesTags
+    if (q && !r.title.toLowerCase().includes(q)) return false
+    if (favActive.value && !likedByMe(r)) return false
+    if (schnellActive.value && !(r.minutes != null && r.minutes <= QUICK_MAX_MINUTES)) return false
+    if (activeTags.value.size > 0 && !r.tags.some((t) => activeTags.value.has(t))) return false
+    return true
   })
 })
 
+// Foto-Hero = das erste Rezept der gefilterten Liste, der Rest kommt ins Grid.
+const heroRecipe = computed(() => filteredRecipes.value[0] ?? null)
+const gridRecipes = computed(() => filteredRecipes.value.slice(1))
+
+// ── Optik-Helfer ───────────────────────────────────────────────
+function photoGradient(r: Recipe): string {
+  const color = primaryTagMeta(r.tags, categories.value).color
+  return `linear-gradient(135deg, color-mix(in srgb, ${color} 34%, var(--surface)), color-mix(in srgb, ${color} 14%, var(--surface)))`
+}
+
+function heroEmoji(r: Recipe): string {
+  return primaryTagMeta(r.tags, categories.value).emoji
+}
+
+function likersLabel(r: Recipe): string {
+  if (r.likes.length === 0) return ''
+  if (members.value.length > 0 && r.likes.length >= members.value.length) return 'beide mögen’s'
+  const names = r.likes.map((uid) => couple.value?.memberNames[uid] ?? '?')
+  return `${names.join(' & ')} mag’s`
+}
+
+const heroMeta = computed(() => {
+  const r = heroRecipe.value
+  if (!r) return ''
+  const parts: string[] = []
+  if (r.minutes) parts.push(`⏱️ ${r.minutes} Min`)
+  const l = likersLabel(r)
+  if (l) parts.push(l)
+  return parts.join(' · ')
+})
+
+async function onToggleLike(r: Recipe) {
+  const ok = await toggleRecipeLike(r.id, currentUserId.value)
+  if (!ok) showToast('Fehler beim Speichern')
+}
+
+// ── Hero-CTA: In Wochenplan (Tagesauswahl) ─────────────────────
+const showDayPicker = ref(false)
+const planRecipe = ref<Recipe | null>(null)
+
+const weekdayLabel = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })
+
+function openPlan(r: Recipe) {
+  planRecipe.value = r
+  showDayPicker.value = true
+}
+
+async function planOnDay(dateKeyValue: string) {
+  if (!planRecipe.value) return
+  const ok = await assignExistingRecipe(dateKeyValue, planRecipe.value.id)
+  showToast(ok ? 'In den Wochenplan übernommen' : 'Fehler beim Einplanen')
+  if (ok) showDayPicker.value = false
+}
+
+// ── Hero-CTA: Zutaten in die Einkaufsliste ─────────────────────
+async function addIngredientsToShopping(r: Recipe) {
+  if (r.ingredients.length === 0) {
+    showToast('Dieses Rezept hat keine Zutaten')
+    return
+  }
+  if (!activeListId.value) {
+    showToast('Bitte zuerst eine Einkaufsliste anlegen')
+    return
+  }
+  for (const ing of r.ingredients) {
+    await addShoppingItem({ listId: activeListId.value, name: ing.name, amount: ing.amount, unit: ing.unit })
+  }
+  showToast('Zutaten zur Einkaufsliste hinzugefügt')
+}
+
 // ── KI-Vorschlag → direkt in die Sammlung ─────────────────────
-// Gleiche Sheet-Komponente wie im Essensplan, aber im Bibliotheksmodus: kein
-// Tagesbezug, dafür wählt man beim Übernehmen die Kategorien selbst.
 const showAiSheet = ref(false)
 
 function openAiSheet() {
@@ -117,8 +211,6 @@ function resetForm() {
 }
 
 function openCreateForm() {
-  // Nur neue Rezepte sind limitiert — bestehende bleiben immer bearbeitbar
-  // (startEdit geht bewusst nicht durch diese Prüfung).
   if (!canCreateRecipe.value) {
     showPaywall('recipeCount')
     return
@@ -171,12 +263,6 @@ async function handleDeleteRecipe(recipe: Recipe) {
   if (ok) showDetail.value = false
 }
 
-// Der "Rezept hinzufügen"-Button lebt in EinkaufenView (außerhalb der
-// Tab-Transition) — ein fixiertes Element hier drin würde während des
-// tab-fade-Übergangs kurzzeitig relativ zum transformierten .wiki statt
-// zum Viewport positioniert (transform erzeugt einen Containing Block
-// für position:fixed-Nachfahren), was als sichtbares Herunterrutschen
-// beim Laden auffiel.
 defineExpose({ openCreateForm, showForm })
 </script>
 
@@ -203,9 +289,21 @@ defineExpose({ openCreateForm, showForm })
         <button
           type="button"
           class="cat-chip"
-          :class="{ 'cat-chip--active': activeTags.size === 0 }"
-          @click="activeTags = new Set()"
+          :class="{ 'cat-chip--active': allActive }"
+          @click="resetFilters"
         >Alle</button>
+        <button
+          type="button"
+          class="cat-chip"
+          :class="{ 'cat-chip--active': favActive }"
+          @click="favActive = !favActive"
+        ><span class="cat-chip__icon">❤️</span><span>Favoriten</span></button>
+        <button
+          type="button"
+          class="cat-chip"
+          :class="{ 'cat-chip--active': schnellActive }"
+          @click="schnellActive = !schnellActive"
+        ><span class="cat-chip__icon">⚡</span><span>Schnell</span></button>
         <button
           v-for="c in filterCategories"
           :key="c.id"
@@ -223,34 +321,81 @@ defineExpose({ openCreateForm, showForm })
       <div v-if="filteredRecipes.length === 0" class="empty">
         {{ recipes.length === 0 ? 'Noch keine Rezepte gespeichert.' : 'Keine Rezepte gefunden.' }}
       </div>
-      <div v-else class="card-grid">
-        <button
-          v-for="r in filteredRecipes"
-          :key="r.id"
-          type="button"
-          class="recipe-card"
-          @click="openDetail(r)"
-        >
-          <span class="card-icon" :style="{ background: primaryTagMeta(r.tags, categories).color }">{{ primaryTagMeta(r.tags, categories).emoji }}</span>
-          <div class="card-body">
-            <div class="card-name">{{ r.title }}</div>
-            <div class="card-meta">
-              <span v-if="r.minutes" class="card-time">⏱ {{ r.minutes }} Min</span>
-              <span v-if="r.tags.length" class="card-tags">
-                <template v-for="t in r.tags.slice(0, 3)" :key="t">
-                  <span
-                    v-if="recipeCategoryDef(t, categories)"
-                    class="tag-dot"
-                    :style="{ background: recipeCategoryDef(t, categories)!.color }"
-                  >{{ recipeCategoryDef(t, categories)!.emoji }}</span>
-                </template>
+
+      <template v-else>
+        <!-- Foto-Hero -->
+        <div class="hero-card">
+          <div class="hero-photo" :style="{ background: photoGradient(heroRecipe!) }">
+            <span class="hero-emoji">{{ heroEmoji(heroRecipe!) }}</span>
+            <span class="foto-tag">📷 Foto hinzufügen</span>
+            <button
+              type="button"
+              class="heart heart--hero"
+              :class="{ 'heart--on': likedByMe(heroRecipe!) }"
+              :aria-label="likedByMe(heroRecipe!) ? 'Herz entfernen' : 'Mit Herz markieren'"
+              @click.stop="onToggleLike(heroRecipe!)"
+            >{{ likedByMe(heroRecipe!) ? '❤️' : '🤍' }}</button>
+          </div>
+          <button class="hero-body" type="button" @click="openDetail(heroRecipe!)">
+            <div class="hero-title-row">
+              <span class="hero-title">{{ heroRecipe!.title }}</span>
+              <span v-if="heroRecipe!.likes.length" class="hero-likers">
+                <InitialChip v-for="uid in heroRecipe!.likes" :key="uid" :uid="uid" :couple="couple" :size="20" />
               </span>
             </div>
+            <div v-if="heroMeta" class="hero-meta">{{ heroMeta }}</div>
+          </button>
+          <div class="hero-actions">
+            <button class="hero-btn hero-btn--fill" type="button" @click="openPlan(heroRecipe!)">In Wochenplan</button>
+            <button class="hero-btn hero-btn--soft" type="button" @click="addIngredientsToShopping(heroRecipe!)">🛒 Zutaten</button>
           </div>
-          <span class="card-chevron">›</span>
+        </div>
+
+        <!-- Karten-Grid -->
+        <div v-if="gridRecipes.length" class="rgrid">
+          <div v-for="r in gridRecipes" :key="r.id" class="rcard">
+            <div class="rphoto" :style="{ background: photoGradient(r) }">
+              <span class="rphoto-emoji">{{ heroEmoji(r) }}</span>
+              <button
+                type="button"
+                class="heart heart--card"
+                :class="{ 'heart--on': likedByMe(r) }"
+                :aria-label="likedByMe(r) ? 'Herz entfernen' : 'Mit Herz markieren'"
+                @click.stop="onToggleLike(r)"
+              >{{ likedByMe(r) ? '❤️' : '🤍' }}</button>
+            </div>
+            <button class="rbody" type="button" @click="openDetail(r)">
+              <div class="rt">{{ r.title }}</div>
+              <div class="rm">
+                <span v-if="r.minutes">⏱️ {{ r.minutes }} Min</span>
+                <span v-if="r.likes.length" class="rm-likers">
+                  <InitialChip v-for="uid in r.likes" :key="uid" :uid="uid" :couple="couple" :size="18" />
+                </span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Tagesauswahl für „In Wochenplan“ -->
+    <BottomSheet :isOpen="showDayPicker" title="Für welchen Tag?" @close="showDayPicker = false">
+      <p class="day-hint">„{{ planRecipe?.title }}“ in den Wochenplan übernehmen.</p>
+      <div class="day-grid">
+        <button
+          v-for="day in week"
+          :key="day.dateKey"
+          type="button"
+          class="day-btn"
+          :class="{ 'day-btn--filled': day.recipe }"
+          @click="planOnDay(day.dateKey)"
+        >
+          <span class="day-label">{{ weekdayLabel.format(day.date) }}</span>
+          <span v-if="day.recipe" class="day-sub">{{ day.recipe.title }}</span>
+          <span v-else class="day-sub day-sub--free">frei</span>
         </button>
       </div>
-    </div>
+    </BottomSheet>
 
     <BottomSheet
       :isOpen="showForm"
@@ -325,13 +470,10 @@ defineExpose({ openCreateForm, showForm })
   flex-direction: column;
 }
 
-/* Responsiver Container, damit das Karten-Grid auf breiten Screens nicht
-   randlos aus dem Layout läuft (siehe .recipe-card min-width Fix unten). */
 .wiki-scroll {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Nur vertikal scrollen — horizontale Gesten gehören dem Tab-Swipe. */
   touch-action: pan-y;
   width: 100%;
   max-width: 880px;
@@ -413,12 +555,15 @@ defineExpose({ openCreateForm, showForm })
   margin-bottom: 10px;
 }
 
-/* Eine Zeile, horizontal scrollbar — wie die Raum-Chips im Aufgaben-Pool.
-   data-hswipe-skip im Template hält den Tab-Swipe von dieser Zeile fern. */
+/* Eine Zeile, horizontal scrollbar — volle Chip-Höhe reserviert. */
 .cat-row {
   display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   overflow-x: auto;
+  overflow-y: visible;
+  min-height: 52px;
+  align-items: center;
   padding-bottom: 2px;
   margin-bottom: 14px;
 }
@@ -446,14 +591,282 @@ defineExpose({ openCreateForm, showForm })
   line-height: 1;
 }
 
-/* Nur der "Alle"-Chip trägt den Bereichs-Akzent; die Kategorie-Chips färben
-   sich aktiv in ihrer eigenen Farbe (Inline-Style im Template). */
 .cat-chip--active {
   border-color: var(--accent);
   background: var(--accent-tint);
   color: var(--text);
 }
 
+/* ── Foto-Hero ─────────────────────────────────────────────── */
+.hero-card {
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.hero-photo {
+  position: relative;
+  height: 150px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 13px;
+  overflow: hidden;
+}
+
+.hero-emoji {
+  font-size: 54px;
+  line-height: 1;
+}
+
+.foto-tag {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(4px);
+  border-radius: 8px;
+  padding: 4px 9px;
+}
+
+.heart {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(60, 45, 30, 0.18);
+  transition: transform 0.12s var(--ease-overshoot);
+}
+
+.heart:active {
+  transform: scale(0.88);
+}
+
+.heart--on {
+  transform: scale(1.05);
+}
+
+.heart--hero {
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  font-size: 17px;
+}
+
+.heart--card {
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+}
+
+.hero-body {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.hero-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hero-title {
+  font-family: var(--font-headline);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-likers {
+  display: inline-flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.hero-meta {
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.hero-actions {
+  display: flex;
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.hero-btn {
+  flex: 1;
+  min-height: 46px;
+  border: none;
+  border-radius: 15px;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s var(--ease-overshoot);
+}
+
+.hero-btn:active {
+  transform: scale(0.97);
+}
+
+.hero-btn--fill {
+  background: var(--food);
+  color: #fff;
+}
+
+.hero-btn--soft {
+  background: var(--food-tint);
+  color: var(--food);
+}
+
+/* ── Karten-Grid ───────────────────────────────────────────── */
+.rgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rcard {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-softer);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.rphoto {
+  position: relative;
+  height: 108px;
+  display: grid;
+  place-items: center;
+}
+
+.rphoto-emoji {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.rbody {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 11px 12px 13px;
+  cursor: pointer;
+}
+
+.rt {
+  font-size: 14.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-meta);
+}
+
+.rm-likers {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ── Tagesauswahl ──────────────────────────────────────────── */
+.day-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.day-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.day-btn {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body);
+  transition: transform 0.12s var(--ease-overshoot), border-color 0.15s var(--ease-standard);
+}
+
+.day-btn:active {
+  transform: scale(0.97);
+}
+
+.day-btn--filled {
+  border-color: color-mix(in srgb, var(--food) 40%, transparent);
+  background: var(--food-tint);
+}
+
+.day-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.day-sub {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-sub--free {
+  color: var(--text-faint);
+}
+
+/* ── Formular (unverändert) ────────────────────────────────── */
 .cat-badges {
   display: flex;
   flex-wrap: wrap;
@@ -545,93 +958,5 @@ defineExpose({ openCreateForm, showForm })
   color: var(--text-faint);
   font-size: 13.5px;
   line-height: 1.5;
-}
-
-/* Karten untereinander (Spalte), keine Grid-Kacheln — min-width:0 bleibt
-   als Absicherung gegen unkürzbaren Button-Inhalt, der die Karte sonst
-   über den Container hinaus aufziehen könnte. */
-.card-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.recipe-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  width: 100%;
-  background: var(--surface);
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: var(--shadow-card);
-  border: 1px solid var(--border-softer);
-  cursor: pointer;
-  text-align: left;
-}
-
-.card-icon {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-}
-
-.card-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.card-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.card-time {
-  font-size: 11px;
-  color: var(--text-meta);
-  flex-shrink: 0;
-}
-
-.card-tags {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.tag-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  flex-shrink: 0;
-}
-
-.card-chevron {
-  flex-shrink: 0;
-  font-size: 20px;
-  color: var(--text-faint);
 }
 </style>

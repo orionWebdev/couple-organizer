@@ -3,128 +3,127 @@ import { computed } from 'vue'
 import type { Couple } from '@/types'
 import type { WeekDay } from '@/composables/useMealPlan'
 import { primaryTagMeta, resolveRecipeCategories } from '@/utils/recipeTags'
+import { partnerId } from '@/utils/belegung'
 
 const props = defineProps<{
   day: WeekDay | null
   couple: Couple | null
+  currentUserId: string
 }>()
-
-const recipeCategories = computed(() => resolveRecipeCategories(props.couple))
 
 const emit = defineEmits<{
   (e: 'setCook', assignee: string): void
   (e: 'open'): void
 }>()
 
+const recipeCategories = computed(() => resolveRecipeCategories(props.couple))
+
 const recipe = computed(() => props.day?.recipe ?? null)
 const icon = computed(() => primaryTagMeta(recipe.value?.tags ?? [], recipeCategories.value))
 const cook = computed(() => props.day?.entry?.cookAssignee ?? null)
 
-// "🕒 25 Min · 4 Zutaten" — beide Teile sind optional, ein Rezept ohne Zeit oder
-// ohne Zutaten soll keine leere Meta-Zeile hinterlassen.
+const partner = computed(() => partnerId(props.couple, props.currentUserId))
+const partnerName = computed(() =>
+  partner.value ? props.couple?.memberNames[partner.value] ?? 'Partner' : 'Partner'
+)
+
+function cookName(uid: string | 'both'): string {
+  if (uid === 'both') return 'Beide'
+  return props.couple?.memberNames[uid] ?? '?'
+}
+
+// "🕒 25 Min · noch niemand eingeteilt" — Zeit optional, dahinter der
+// Koch-Status.
 const meta = computed(() => {
   const r = recipe.value
   if (!r) return ''
   const parts: string[] = []
   if (r.minutes) parts.push(`🕒 ${r.minutes} Min`)
-  if (r.ingredients.length) parts.push(`${r.ingredients.length} Zutaten`)
+  parts.push(cook.value ? `${cookName(cook.value)} kocht` : 'noch niemand eingeteilt')
   return parts.join(' · ')
 })
-
-function chipStyle(active: boolean, color: string) {
-  return {
-    background: active ? color : 'var(--surface)',
-    color: active ? '#fff' : 'var(--text-secondary)',
-    borderColor: active ? color : 'var(--border-soft)',
-  }
-}
-
-function personColor(uid: string): string {
-  return props.couple?.memberIds.indexOf(uid) === 0 ? 'var(--chris)' : 'var(--sarah)'
-}
 </script>
 
 <template>
   <button v-if="!recipe" class="hero hero--empty" type="button" @click="emit('open')">
-    Heute noch nichts geplant 🍽️
+    <span class="empty-emoji">🍽️</span>
+    <span class="empty-text">Heute noch nichts geplant</span>
+    <span class="empty-cta">Essen planen ›</span>
   </button>
 
   <div v-else class="hero">
     <div class="hero-top" @click="emit('open')">
-      <span class="hero-icon" :style="{ background: icon.color }">{{ icon.emoji }}</span>
-      <div class="hero-text">
-        <span class="hero-kicker">Heute Abend</span>
-        <span class="hero-title">{{ recipe.title }}</span>
-        <span v-if="meta" class="hero-meta">{{ meta }}</span>
-      </div>
+      <span class="hero-kicker">Heute Abend</span>
+      <span class="hero-emoji">{{ icon.emoji }}</span>
     </div>
+    <div class="hero-title" @click="emit('open')">{{ recipe.title }}</div>
+    <div class="hero-meta">{{ meta }}</div>
 
     <div class="cook-row">
-      <span class="cook-label">Wer kocht?</span>
-      <button
-        v-for="uid in couple?.memberIds ?? []"
-        :key="uid"
-        type="button"
-        class="cook-pill"
-        :style="chipStyle(cook === uid, personColor(uid))"
-        @click="emit('setCook', uid)"
-      >{{ couple?.memberNames[uid] ?? '?' }}</button>
       <button
         type="button"
-        class="cook-pill"
-        :style="chipStyle(cook === 'both', 'var(--food)')"
-        @click="emit('setCook', 'both')"
-      >Beide</button>
+        class="cook-btn cook-btn--primary"
+        :class="{ 'cook-btn--active': cook === currentUserId }"
+        @click="emit('setCook', currentUserId)"
+      >Ich koche 🍳</button>
+      <button
+        v-if="partner"
+        type="button"
+        class="cook-btn cook-btn--ghost"
+        :class="{ 'cook-btn--active': cook === partner }"
+        @click="emit('setCook', partner)"
+      >{{ partnerName }} fragen</button>
     </div>
   </div>
 </template>
 
 <style scoped>
 .hero {
-  background: linear-gradient(180deg, var(--food-tint), var(--surface));
-  border: 1px solid color-mix(in srgb, var(--food) 22%, transparent);
-  border-radius: var(--radius-card-lg);
+  background: var(--food);
+  border-radius: var(--radius-card);
   padding: 17px;
-  box-shadow: var(--shadow-card);
+  color: #fff;
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--food) 42%, transparent);
 }
 
 .hero--empty {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   padding: 18px;
-  background: var(--surface);
-  border: 1.5px dashed var(--border);
-  color: var(--text-meta);
+  background: var(--food);
+  border: none;
+  border-radius: var(--radius-card);
+  color: #fff;
   font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 700;
-  text-align: center;
   cursor: pointer;
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--food) 42%, transparent);
+  text-align: left;
+}
+
+.empty-emoji {
+  font-size: 26px;
+}
+
+.empty-text {
+  flex: 1;
+  font-family: var(--font-headline);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.empty-cta {
+  font-size: 13px;
+  font-weight: 800;
+  opacity: 0.9;
 }
 
 .hero-top {
   display: flex;
   align-items: center;
-  gap: 13px;
+  justify-content: space-between;
   cursor: pointer;
-}
-
-.hero-icon {
-  flex-shrink: 0;
-  width: 52px;
-  height: 52px;
-  border-radius: 30%;
-  display: grid;
-  place-items: center;
-  font-size: 24px;
-  box-shadow: 0 5px 12px rgba(60, 45, 30, 0.15);
-}
-
-.hero-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .hero-kicker {
@@ -132,49 +131,65 @@ function personColor(uid: string): string {
   font-weight: 800;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: var(--food);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.hero-emoji {
+  font-size: 34px;
+  line-height: 1;
 }
 
 .hero-title {
+  margin: 7px 0 2px;
   font-family: var(--font-headline);
-  font-size: 21px;
+  font-size: 23px;
   font-weight: 700;
+  letter-spacing: -0.4px;
   line-height: 1.1;
-  color: var(--text);
+  cursor: pointer;
 }
 
 .hero-meta {
-  margin-top: 1px;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
-  color: var(--text-meta);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .cook-row {
   display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 14px;
+  gap: 9px;
+  margin-top: 13px;
 }
 
-.cook-label {
+.cook-btn {
   flex: 1;
-  font-size: 13.5px;
-  font-weight: 800;
-  color: var(--text);
-}
-
-.cook-pill {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1.5px solid var(--border-soft);
+  min-height: 46px;
+  border: none;
+  border-radius: 15px;
+  padding: 0 14px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 800;
   cursor: pointer;
-  white-space: nowrap;
-  transition: background var(--dur-fast) var(--ease-standard),
-              color var(--dur-fast) var(--ease-standard),
-              border-color var(--dur-fast) var(--ease-standard);
+  transition: transform 0.12s var(--ease-overshoot), filter 0.2s var(--ease-standard);
+}
+
+.cook-btn:active {
+  transform: scale(0.96);
+}
+
+.cook-btn--primary {
+  background: #fff;
+  color: var(--food);
+}
+
+.cook-btn--ghost {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* Aktiver Koch: die gewählte Seite bleibt betont, die andere tritt zurück. */
+.cook-row:has(.cook-btn--active) .cook-btn:not(.cook-btn--active) {
+  opacity: 0.55;
 }
 </style>

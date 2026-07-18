@@ -8,8 +8,16 @@ import { useAuth } from './useAuth'
 import { useCouple } from './useCouple'
 import { FREE_LIMITS } from '@/utils/premium'
 import type { MealPlanEntry, Recipe, RecipeIngredient, RecipeNutrition } from '@/types'
-import { suggestRecipes as fetchSuggestions, type RecipeSuggestion, type AiResult } from '@/services/ai'
+import { suggestRecipes as fetchSuggestions, planWeek as fetchWeekPlan, type RecipeSuggestion, type AiResult } from '@/services/ai'
 import { currentWeekDates, dateKey as toDateKey } from '@/utils/mealplan'
+
+// Ein von der KI geplantes Gericht, das auf einen konkreten Tag gemünzt ist.
+export interface WeekPlanDay {
+  dateKey: string
+  suggestion: RecipeSuggestion
+}
+
+const AVOID_WINDOW_DAYS = 14
 
 export interface AssignRecipeInput {
   title: string
@@ -48,6 +56,12 @@ export function useMealPlan(coupleId: Ref<string | null>) {
   const canCreateRecipe = computed(
     () => isPremium.value || recipes.value.length < FREE_LIMITS.recipeCount
   )
+
+  // Wochen-Autopilot ist ein reines Plus-Feature. Der Server erzwingt es
+  // ohnehin (weekPlanAi free: 0), aber die View prüft das hier vorab, damit die
+  // Paywall aufgeht statt eine leere Konfig-Maske — und weil der Vercel-
+  // Direktweg keine serverseitige Quote hat.
+  const canPlanWeek = computed(() => isPremium.value)
 
   function startListeningToRecipes(id: string) {
     if (unsubscribeRecipes) unsubscribeRecipes()
@@ -152,6 +166,74 @@ export function useMealPlan(coupleId: Ref<string | null>) {
       error.value = err.message
       return { kind: 'ok', data: [], quota: { used: 0, limit: 0 } }
     }
+  }
+
+  // Plant alle Kochtage der Woche in einem KI-Aufruf. Reichert den Aufruf mit
+  // Kontext an, den nur das Composable kennt: gelikte Rezepte als "gerne wieder"
+  // (favorTitles) und die zuletzt gekochten als "nicht schon wieder"
+  // (avoidTitles). Nie werfen — Quota/Premium kommen als AiResult-Zweig zurück.
+  async function planWeek(opts: { count: number; servings?: number | null; prefs?: string }): Promise<AiResult<RecipeSuggestion[]>> {
+    if (!coupleId.value) return { kind: 'ok', data: [], quota: { used: 0, limit: 0 } }
+
+    const favorTitles = recipes.value
+      .filter((r) => r.likes.length > 0)
+      .map((r) => r.title)
+      .slice(0, 12)
+
+    const cutoffKey = toDateKey(new Date(Date.now() - AVOID_WINDOW_DAYS * 86400000))
+    const recentIds = new Set(entries.value.filter((e) => e.dateKey >= cutoffKey).map((e) => e.recipeId))
+    const avoidTitles = [
+      ...new Set(recipes.value.filter((r) => recentIds.has(r.id)).map((r) => r.title)),
+    ]
+
+    try {
+      const result = await fetchWeekPlan(coupleId.value, {
+        count: opts.count,
+        servings: opts.servings ?? null,
+        prefs: opts.prefs,
+        avoidTitles,
+        favorTitles,
+      })
+      error.value = null
+      return result
+    } catch (err: any) {
+      console.error('Failed to plan week:', err)
+      error.value = err.message
+      return { kind: 'ok', data: [], quota: { used: 0, limit: 0 } }
+    }
+  }
+
+  function suggestionToInput(s: RecipeSuggestion): AssignRecipeInput {
+    return {
+      title: s.title,
+      description: s.description,
+      minutes: s.minutes ?? null,
+      servings: s.servings ?? null,
+      tags: s.tags ?? [],
+      ingredients: s.ingredients,
+      steps: s.steps,
+      nutrition: s.nutrition ?? null,
+      source: 'ai',
+    }
+  }
+
+  // Schreibt einen kompletten Wochenplan. "Mix"-Logik: matcht ein Vorschlag per
+  // Titel ein bereits vorhandenes Rezept (z. B. einen wieder eingeplanten
+  // Favoriten), wird dieses verplant statt ein Duplikat anzulegen — sonst
+  // entsteht ein neues Rezept-Dokument. Gibt zurück, wie viele Tage geschrieben
+  // wurden.
+  async function applyWeekPlan(days: WeekPlanDay[]): Promise<number> {
+    if (!coupleId.value || !user.value) return 0
+    let written = 0
+    for (const day of days) {
+      const wanted = day.suggestion.title.trim().toLowerCase()
+      const existing = recipes.value.find((r) => r.title.trim().toLowerCase() === wanted)
+      const ok = existing
+        ? await assignExistingRecipe(day.dateKey, existing.id)
+        : await assignRecipe(day.dateKey, suggestionToInput(day.suggestion))
+      if (ok) written++
+    }
+    return written
   }
 
   function recipeDocPayload(input: AssignRecipeInput, cleanTitle: string) {
@@ -346,7 +428,10 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     loading,
     error: readonly(error),
     canCreateRecipe,
+    canPlanWeek,
     suggestRecipes,
+    planWeek,
+    applyWeekPlan,
     assignRecipe,
     assignExistingRecipe,
     createRecipe,

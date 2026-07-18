@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import type { Trip } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 
 const TRIP_EMOJIS = ['🧳', '✈️', '🏖️', '🏔️', '🏕️', '🗺️', '🚗', '🚆', '⛺', '🏙️', '🌋', '🎡'] as const
 
 const props = defineProps<{
   isOpen: boolean
   editing?: Trip | null
+  persistKey?: string
 }>()
+
+function draft<T>(field: string, initial: T): Ref<T> {
+  return props.persistKey
+    ? usePersistedRef<T>(`${props.persistKey}.${field}`, initial, { ttlMs: DRAFT_TTL_MS })
+    : (ref(initial) as Ref<T>)
+}
 
 interface TripBasics {
   title: string
@@ -27,13 +35,13 @@ const emit = defineEmits<{
 
 const isEditing = computed(() => !!props.editing)
 
-const title = ref('')
-const emoji = ref<string>(TRIP_EMOJIS[0])
-const location = ref('')
-const startDate = ref('')
-const endDate = ref('')
-const when = ref('')
-const notes = ref('')
+const title = draft('title', '')
+const emoji = draft<string>('emoji', TRIP_EMOJIS[0])
+const location = draft('location', '')
+const startDate = draft('startDate', '')
+const endDate = draft('endDate', '')
+const when = draft('when', '')
+const notes = draft('notes', '')
 
 watch(() => props.isOpen, (open) => {
   if (!open) return

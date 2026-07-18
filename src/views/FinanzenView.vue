@@ -7,6 +7,7 @@ import { setFabAction } from '@/composables/useFab'
 import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
 import { useBackDismiss } from '@/composables/useBackButton'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import BalanceCard from '@/components/finance/BalanceCard.vue'
@@ -40,11 +41,30 @@ const {
   updateEventBudget,
 } = useExpenses(coupleId)
 
-const finView = ref<'dashboard' | 'event'>('dashboard')
-const currentEventId = ref<string | null>(null)
+// Überlebt den Android-Kaltstart. Die Event-Detailansicht hat keine eigene Route.
+const finView = usePersistedRef<'dashboard' | 'event'>('finanzen.finView', 'dashboard', { ttlMs: DRAFT_TTL_MS })
+const currentEventId = usePersistedRef<string | null>('finanzen.eventId', null, { ttlMs: DRAFT_TTL_MS })
 
 const currentEventSummary = computed(() =>
   eventSummaries.value.find((s) => s.event.id === currentEventId.value) ?? null
+)
+
+// Restore-Guard: Wurde 'event' wiederhergestellt, das Event ist aber weg
+// (gelöscht/archiviert), rendert keine Template-Branch → zurück aufs Dashboard.
+const stopEventRestore = watch(
+  () => loading.value,
+  (isLoading) => {
+    if (isLoading) return
+    if (finView.value === 'event' && !currentEventSummary.value) backToDashboard()
+    // Bearbeitete Ausgabe aus der ID zurückholen; ist sie weg (gelöscht), den
+    // Add-Sheet schließen statt beim Absenden eine neue Ausgabe anzulegen.
+    if (editingExpenseId.value) {
+      editingExpense.value = expenses.value.find((e) => e.id === editingExpenseId.value) ?? null
+      if (showAdd.value && !editingExpense.value) { showAdd.value = false; editingExpenseId.value = null }
+    }
+    stopEventRestore()
+  },
+  { immediate: true }
 )
 
 function openEvent(eventId: string) {
@@ -62,7 +82,7 @@ function backToDashboard() {
 useBackDismiss(() => finView.value === 'event', backToDashboard)
 
 type Tab = 'uebersicht' | 'coach'
-const tab = ref<Tab>('uebersicht')
+const tab = usePersistedRef<Tab>('finanzen.tab', 'uebersicht')
 const tabOptions = [
   { label: 'Übersicht', value: 'uebersicht' },
   { label: 'Finanz-Coach', value: 'coach' },
@@ -72,14 +92,18 @@ const tabOptions = [
 const tabOrder: Tab[] = ['uebersicht', 'coach']
 const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
 
-const showAdd = ref(false)
+// Offener Add/Edit-Sheet überlebt den Kaltstart (TTL). Die bearbeitete Ausgabe
+// wird über ihre ID wiederhergestellt (siehe stopEventRestore oben).
+const showAdd = usePersistedRef('finanzen.showAdd', false, { ttlMs: DRAFT_TTL_MS })
 const showSettle = ref(false)
-const startInEventMode = ref(false)
+const startInEventMode = usePersistedRef('finanzen.eventMode', false, { ttlMs: DRAFT_TTL_MS })
+const editingExpenseId = usePersistedRef<string | null>('finanzen.editExpenseId', null, { ttlMs: DRAFT_TTL_MS })
 const editingExpense = ref<Expense | null>(null)
 
 function openAddExpense() {
   startInEventMode.value = false
   editingExpense.value = null
+  editingExpenseId.value = null
   showAdd.value = true
 }
 
@@ -93,17 +117,20 @@ onScopeDispose(() => setFabAction(null))
 function openNewEvent() {
   startInEventMode.value = true
   editingExpense.value = null
+  editingExpenseId.value = null
   showAdd.value = true
 }
 
 function openAddForCurrentEvent() {
   startInEventMode.value = false
   editingExpense.value = null
+  editingExpenseId.value = null
   showAdd.value = true
 }
 
 function openEditExpense(expense: Expense) {
   editingExpense.value = expense
+  editingExpenseId.value = expense.id
   startInEventMode.value = false
   showAdd.value = true
 }
@@ -111,6 +138,7 @@ function openEditExpense(expense: Expense) {
 function closeAdd() {
   showAdd.value = false
   editingExpense.value = null
+  editingExpenseId.value = null
 }
 
 async function onSubmitExpense(payload: Parameters<typeof addExpense>[0]) {
@@ -334,6 +362,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       :addContext="finView"
       :startInEventMode="startInEventMode"
       :editingExpense="editingExpense"
+      persistKey="finance.expense"
       @close="closeAdd"
       @submit="onSubmitExpense"
       @submitEvent="onSubmitEvent"

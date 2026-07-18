@@ -3,6 +3,7 @@ import { ref, computed, nextTick, watch } from 'vue'
 import type { Couple, ShoppingList, ShoppingItem } from '@/types'
 import ShoppingItemRow from './ShoppingItem.vue'
 import { useJustAdded } from '@/composables/useJustAdded'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import { sectionDef, sectionOfItem, sectionOrder } from '@/utils/shoppingSections'
 
 const props = defineProps<{
@@ -22,7 +23,8 @@ const emit = defineEmits<{
   deleteList: []
 }>()
 
-const newName = ref('')
+// Tippt man einen Artikel und minimiert die App, geht der Text sonst verloren.
+const newName = usePersistedRef('shopping.newItem', '', { ttlMs: DRAFT_TTL_MS })
 const inputRef = ref<HTMLInputElement | null>(null)
 
 function handleAdd() {

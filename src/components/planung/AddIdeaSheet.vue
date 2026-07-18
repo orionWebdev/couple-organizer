@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import type { BucketListItem, Couple, IdeaCategory } from '@/types'
 import { resolveIdeaCategories } from '@/utils/ideen'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 
 const props = defineProps<{
   isOpen: boolean
   couple: Couple | null
   currentUserId: string
   editing?: BucketListItem | null
+  persistKey?: string
 }>()
+
+function draft<T>(field: string, initial: T): Ref<T> {
+  return props.persistKey
+    ? usePersistedRef<T>(`${props.persistKey}.${field}`, initial, { ttlMs: DRAFT_TTL_MS })
+    : (ref(initial) as Ref<T>)
+}
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -19,10 +27,10 @@ const emit = defineEmits<{
 const categories = computed(() => resolveIdeaCategories(props.couple))
 const isEditing = computed(() => !!props.editing)
 
-const category = ref<IdeaCategory>('')
-const name = ref('')
-const suggestedBy = ref('')
-const date = ref('') // '' = kein Datum
+const category = draft<IdeaCategory>('category', '')
+const name = draft('name', '')
+const suggestedBy = draft('suggestedBy', '')
+const date = draft('date', '') // '' = kein Datum
 
 // Jedes Öffnen setzt den Stand — beim Bearbeiten aus dem Item, sonst leer.
 watch(() => props.isOpen, (open) => {

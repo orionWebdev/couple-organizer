@@ -19,6 +19,7 @@ export type PremiumFeature =
   | 'choreHistory'
   | 'financeCoach'
   | 'aiRecipes'
+  | 'weekPlan'
   | 'export'
 
 interface PaywallCopy {
@@ -50,6 +51,10 @@ export const PAYWALL_COPY: Record<PremiumFeature, PaywallCopy> = {
   aiRecipes: {
     title: 'KI-Rezeptvorschläge',
     body: `Kostenlos sind ${FREE_LIMITS.aiRecipesPerMonth} Vorschläge pro Monat. Mit TwoDo Plus schlägt euch die KI jeden Tag etwas Neues vor.`
+  },
+  weekPlan: {
+    title: 'Wochen-Autopilot',
+    body: 'Ein Tap, und die KI plant euren ganzen Essensplan für die Woche — abwechslungsreich und passend zu euren Vorlieben. Nur mit TwoDo Plus.'
   },
   export: {
     title: 'Daten exportieren',

@@ -10,6 +10,8 @@ import RecipeSuggestSheet from './RecipeSuggestSheet.vue'
 import AiRecipeSheet from './AiRecipeSheet.vue'
 import WeekAutopilotSheet from './WeekAutopilotSheet.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
+import AiButton from '@/components/ai/AiButton.vue'
+import AiActionSheet, { type AiActionItem } from '@/components/ai/AiActionSheet.vue'
 
 const props = defineProps<{
   coupleId: string | null
@@ -97,6 +99,19 @@ function openAiModal() {
   showAiModal.value = true
 }
 
+// Ein KI-Einstieg für die Küche → Aktions-Sheet mit den zwei KI-Aktionen.
+const showAiActions = ref(false)
+const aiActions: AiActionItem[] = [
+  { key: 'week', icon: '🪄', title: 'Ganze Woche planen', subtitle: '7 Abendessen als kompletter Vorschlag' },
+  { key: 'recipe', icon: '✨', title: 'Rezept vorschlagen', subtitle: 'Eine Idee für heute Abend' },
+]
+
+function onAiAction(key: string) {
+  showAiActions.value = false
+  if (key === 'week') openAutopilot()
+  else openAiModal()
+}
+
 async function handleRemove(entryId: string) {
   const ok = await removeAssignment(entryId)
   if (!ok) showToast('Fehler beim Entfernen')
@@ -149,26 +164,11 @@ async function handleCreateShoppingList() {
 <template>
   <div class="essensplan">
     <div class="essensplan-scroll">
-      <button class="suggest-card autopilot-card" type="button" @click="openAutopilot">
-        <span class="suggest-icon">🪄</span>
-        <div class="suggest-text">
-          <span class="suggest-title">
-            Ganze Woche planen lassen
-            <span v-if="!canPlanWeek" class="plus-tag">Plus</span>
-          </span>
-          <span class="suggest-sub">Ein Tap — Essensplan für die Woche steht</span>
-        </div>
-        <span class="suggest-chevron">›</span>
-      </button>
-
-      <button class="suggest-card" type="button" @click="openAiModal">
-        <span class="suggest-icon">✨</span>
-        <div class="suggest-text">
-          <span class="suggest-title">Rezept vorschlagen lassen</span>
-          <span class="suggest-sub">Idee für einen Tag? Frag einfach</span>
-        </div>
-        <span class="suggest-chevron">›</span>
-      </button>
+      <AiButton
+        title="TwoDo KI"
+        subtitle="Wochenplan & Rezepte vorschlagen"
+        @click="showAiActions = true"
+      />
 
       <div v-if="loading" class="loading-msg">Laden…</div>
       <div v-else class="day-list">
@@ -191,6 +191,13 @@ async function handleCreateShoppingList() {
         🛒 Einkaufsliste aus Plan erstellen
       </button>
     </div>
+
+    <AiActionSheet
+      :isOpen="showAiActions"
+      :actions="aiActions"
+      @select="onAiAction"
+      @close="showAiActions = false"
+    />
 
     <RecipeSuggestSheet
       :isOpen="showSheet"
@@ -245,93 +252,9 @@ async function handleCreateShoppingList() {
   padding: 0 var(--screen-pad);
 }
 
-/* KI-Look angelehnt an Gemini: wandernder Regenbogen-Gradient + weicher Glow. */
-.suggest-card {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 16px;
+/* Ein KI-Einstieg (AiButton) statt der früheren zwei Gradient-Karten. */
+.essensplan-scroll > .ai-btn {
   margin-bottom: 16px;
-  background: linear-gradient(120deg, #4285f4 0%, #9b72cb 35%, #d96570 65%, #f6b73c 100%);
-  background-size: 220% 220%;
-  border: none;
-  border-radius: var(--radius-card-lg);
-  cursor: pointer;
-  text-align: left;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.28) inset,
-    0 6px 20px -4px rgba(155, 114, 203, 0.55),
-    0 0 22px rgba(66, 133, 244, 0.35);
-  animation: suggestGradientShift 6s ease-in-out infinite;
-  transition: transform 0.12s ease;
-}
-
-.suggest-card:active {
-  transform: scale(0.98);
-}
-
-/* Die beiden KI-Karten enger zusammenrücken — der Autopilot ist der Held. */
-.autopilot-card {
-  margin-bottom: 10px;
-}
-
-.plus-tag {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.28);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.4px;
-  vertical-align: middle;
-  text-shadow: none;
-}
-
-@keyframes suggestGradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.suggest-icon {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.55);
-}
-
-.suggest-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.suggest-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
-}
-
-.suggest-sub {
-  font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.suggest-chevron {
-  font-size: 20px;
-  color: rgba(255, 255, 255, 0.85);
-  flex-shrink: 0;
 }
 
 .loading-msg {

@@ -134,7 +134,7 @@ async function writeIngredientsToList(
   if (ingredients.length === 0) return 'empty'
   if (!activeListId.value) return 'no-list'
   for (const ing of ingredients) {
-    await addShoppingItem({ listId: activeListId.value, name: ing.name, amount: ing.amount, unit: ing.unit })
+    await addShoppingItem({ listId: activeListId.value, name: ing.name, amount: ing.amount, unit: ing.unit, merge: true })
   }
   return 'ok'
 }

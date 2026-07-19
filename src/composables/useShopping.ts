@@ -12,6 +12,7 @@ import {
   serverTimestamp,
   setDoc,
   writeBatch,
+  runTransaction,
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
@@ -26,6 +27,10 @@ interface AddShoppingItemInput {
   amount?: number
   unit?: string
   category?: string
+  // Nur die Auto-Aggregation (Plan/Autopilot) fasst gleiche Zutaten zusammen.
+  // Manuelles Hinzufügen (Default) legt IMMER eine neue Zeile an — sonst wirkt
+  // ein zusammengefalteter Eintrag wie "verschwunden".
+  merge?: boolean
 }
 
 function toMillis(timestamp: unknown): number {
@@ -303,45 +308,60 @@ export function useShopping(coupleId: Ref<string | null>) {
     // die Liste sich von allein sinnvoll gruppiert (Obst & Gemüse, Kühlregal …).
     const cleanCategory = input.category?.trim() || sectionForName(cleanName)
 
-    const key = `${normalizeText(cleanName)}__${normalizeUnit(input.unit)}`
-
-    const existing = items.value.find(item =>
-      item.listId === input.listId &&
-      !item.checked &&
-      `${normalizeText(item.name)}__${normalizeUnit(item.unit)}` === key
-    )
+    const newItemData = () => ({
+      coupleId: coupleId.value,
+      listId: input.listId,
+      name: cleanName,
+      ...(input.amount && input.amount > 0 ? { amount: input.amount } : {}),
+      ...(input.unit?.trim() ? { unit: input.unit.trim() } : {}),
+      category: cleanCategory,
+      checked: false,
+      addedBy: user.value!.uid,
+      source: 'manual' as const,
+      sourceWeekKey: null,
+      expenseId: null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
 
     try {
-   if (existing) {
-  // MERGE
-  const existingBase = convertToBaseUnit(existing.amount, existing.unit)
-  const incomingBase = convertToBaseUnit(input.amount, input.unit)
+      if (input.merge) {
+        // Aggregations-Pfad (Einkaufsliste aus Plan/Autopilot): gleiche Zutat
+        // zusammenfassen — aber TRANSAKTIONAL gegen den echten Server-Stand.
+        // Der Kandidat kommt aus dem lokalen Cache (nur um die Doc-ID zu finden);
+        // die Transaktion liest ihn frisch und fällt auf "neu anlegen" zurück,
+        // falls er inzwischen weg/abgehakt ist. So gehen weder Menge noch Zeile
+        // durch gleichzeitiges Schreiben oder veralteten Cache verloren.
+        const key = `${normalizeText(cleanName)}__${normalizeUnit(input.unit)}`
+        const candidate = items.value.find(item =>
+          item.listId === input.listId &&
+          !item.checked &&
+          `${normalizeText(item.name)}__${normalizeUnit(item.unit)}` === key
+        )
 
-  const newAmount = existingBase.amount + incomingBase.amount
-
-  await updateDoc(doc(db, 'shoppingItems', existing.id), {
-    amount: newAmount,
-    unit: existingBase.unit, 
-    updatedAt: serverTimestamp()
-  })
-    } else {
-        // NEUES ITEM
-        await addDoc(collection(db, 'shoppingItems'), {
-          coupleId: coupleId.value,
-          listId: input.listId,
-          name: cleanName,
-          ...(input.amount && input.amount > 0 ? { amount: input.amount } : {}),
-          ...(input.unit?.trim() ? { unit: input.unit.trim() } : {}),
-          category: cleanCategory,
-          checked: false,
-          addedBy: user.value.uid,
-          source: 'manual',
-          sourceWeekKey: null,
-          expenseId: null,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
+        await runTransaction(db, async (tx) => {
+          if (candidate) {
+            const ref = doc(db, 'shoppingItems', candidate.id)
+            const snap = await tx.get(ref)
+            const data = snap.data()
+            if (snap.exists() && data?.checked !== true && data?.listId === input.listId) {
+              const summed =
+                convertToBaseUnit(data.amount, data.unit).amount +
+                convertToBaseUnit(input.amount, input.unit).amount
+              tx.update(ref, {
+                ...(summed > 0 ? { amount: summed, unit: convertToBaseUnit(data.amount, data.unit).unit } : {}),
+                updatedAt: serverTimestamp(),
+              })
+              return
+            }
+          }
+          tx.set(doc(collection(db, 'shoppingItems')), newItemData())
         })
+      } else {
+        // Manuelles Hinzufügen: immer eine neue Zeile, kein stilles Zusammenfalten.
+        await addDoc(collection(db, 'shoppingItems'), newItemData())
       }
+
       await updateDoc(doc(db, 'shoppingLists', input.listId), {
         updatedAt: serverTimestamp()
       })

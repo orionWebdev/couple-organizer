@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { Couple, Recipe } from '@/types'
-import { useMealPlan } from '@/composables/useMealPlan'
+import { useMealPlan, type WeekPlanDay } from '@/composables/useMealPlan'
 import { useShopping } from '@/composables/useShopping'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
@@ -55,9 +55,19 @@ function openAutopilot() {
   showAutopilot.value = true
 }
 
-function onWeekApplied(count: number) {
+async function onWeekApplied(payload: { count: number; days: WeekPlanDay[]; createList: boolean }) {
   showAutopilot.value = false
-  showToast(count > 0 ? `Wochenplan eingeplant (${count} ${count === 1 ? 'Tag' : 'Tage'})` : 'Es wurde nichts eingeplant')
+  const { count, days, createList } = payload
+  let msg = count > 0 ? `Wochenplan eingeplant (${count} ${count === 1 ? 'Tag' : 'Tage'})` : 'Es wurde nichts eingeplant'
+
+  // Einkaufsliste direkt aus den geplanten Vorschlägen bauen — nicht aus dem
+  // reaktiven `week`, das nach dem Schreiben erst per Snapshot nachzieht.
+  if (createList && count > 0) {
+    const res = await writeIngredientsToList(mergeIngredients(days.flatMap((d) => d.suggestion.ingredients)))
+    if (res === 'ok') msg += ' · Einkaufsliste aktualisiert'
+    else if (res === 'no-list') msg += ' · keine aktive Einkaufsliste'
+  }
+  showToast(msg)
 }
 
 const detailRecipe = ref<Recipe | null>(null)
@@ -100,34 +110,39 @@ function onAssigned(success: boolean) {
 
 interface AggregatedIngredient { name: string; amount?: number; unit?: string }
 
-function aggregateIngredients(): AggregatedIngredient[] {
+// Gleiche Zutaten (name + unit) zusammenfassen — genutzt vom Wochenplan-Button
+// (aus den geplanten Rezepten) und vom Autopilot (aus den KI-Vorschlägen).
+function mergeIngredients(items: readonly { name: string; amount?: number; unit?: string }[]): AggregatedIngredient[] {
   const map = new Map<string, AggregatedIngredient>()
-  for (const day of week.value) {
-    if (!day.recipe) continue
-    for (const ing of day.recipe.ingredients) {
-      const key = `${ing.name.trim().toLowerCase()}__${(ing.unit ?? '').trim().toLowerCase()}`
-      const existing = map.get(key)
-      if (existing && typeof existing.amount === 'number' && typeof ing.amount === 'number') {
-        existing.amount += ing.amount
-      } else if (!existing) {
-        map.set(key, { name: ing.name.trim(), amount: ing.amount, unit: ing.unit })
-      }
+  for (const ing of items) {
+    const key = `${ing.name.trim().toLowerCase()}__${(ing.unit ?? '').trim().toLowerCase()}`
+    const existing = map.get(key)
+    if (existing && typeof existing.amount === 'number' && typeof ing.amount === 'number') {
+      existing.amount += ing.amount
+    } else if (!existing) {
+      map.set(key, { name: ing.name.trim(), amount: ing.amount, unit: ing.unit })
     }
   }
   return [...map.values()]
 }
 
-async function handleCreateShoppingList() {
-  const ingredients = aggregateIngredients()
-  if (ingredients.length === 0) return
-  if (!activeListId.value) {
-    showToast('Bitte zuerst eine Einkaufsliste anlegen')
-    return
-  }
+// Schreibt Zutaten in die aktive Liste. Kein Toast hier — der Aufrufer
+// formuliert die Meldung (der Autopilot hängt sie an seine eigene an).
+async function writeIngredientsToList(
+  ingredients: AggregatedIngredient[]
+): Promise<'ok' | 'empty' | 'no-list'> {
+  if (ingredients.length === 0) return 'empty'
+  if (!activeListId.value) return 'no-list'
   for (const ing of ingredients) {
-    await addShoppingItem({ listId: activeListId.value, name: ing.name, amount: ing.amount, unit: ing.unit })
+    await addShoppingItem({ listId: activeListId.value, name: ing.name, amount: ing.amount, unit: ing.unit, merge: true })
   }
-  showToast('Einkaufsliste aktualisiert')
+  return 'ok'
+}
+
+async function handleCreateShoppingList() {
+  const res = await writeIngredientsToList(mergeIngredients(week.value.flatMap((d) => d.recipe?.ingredients ?? [])))
+  if (res === 'no-list') showToast('Bitte zuerst eine Einkaufsliste anlegen')
+  else if (res === 'ok') showToast('Einkaufsliste aktualisiert')
 }
 </script>
 

@@ -140,7 +140,7 @@ async function addIngredientsToShopping(r: Recipe) {
     return
   }
   for (const ing of r.ingredients) {
-    await addShoppingItem({ listId: activeListId.value, name: ing.name, amount: ing.amount, unit: ing.unit })
+    await addShoppingItem({ listId: activeListId.value, name: ing.name, amount: ing.amount, unit: ing.unit, merge: true })
   }
   showToast('Zutaten zur Einkaufsliste hinzugefügt')
 }

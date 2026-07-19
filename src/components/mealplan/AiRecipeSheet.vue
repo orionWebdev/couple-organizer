@@ -6,6 +6,9 @@ import type { AssignRecipeInput } from '@/composables/useMealPlan'
 import type { RecipeCategoryDef } from '@/types'
 import { weekdayLabel } from '@/utils/mealplan'
 import { showPaywall } from '@/composables/usePaywall'
+import { useAiThinking } from '@/composables/useAiThinking'
+
+const aiThinking = useAiThinking()
 
 interface WeekDayLite {
   date: Date
@@ -38,7 +41,7 @@ const categories = computed(() => props.categories ?? [])
 
 const selectedDateKey = ref('')
 const description = ref('')
-const loading = ref(false)
+// Der Denk-Zustand läuft global (Rand-Glow / Denk-Leiste) über useAiThinking.
 const searched = ref(false)
 const suggestions = ref<RecipeSuggestion[]>([])
 const quota = ref<Quota | null>(null)
@@ -53,7 +56,6 @@ watch(() => props.isOpen, (open) => {
   if (!open) return
   selectedDateKey.value = props.initialDateKey ?? week.value[0]?.dateKey ?? ''
   description.value = ''
-  loading.value = false
   searched.value = false
   suggestions.value = []
   quota.value = null
@@ -79,23 +81,33 @@ const quotaLabel = computed(() => {
   return `Noch ${Math.max(0, q.limit - q.used)} von ${q.limit} KI-Vorschlägen diesen Monat`
 })
 
+// Rezept-Idee ist eine kurze Task → im installierten PWA-Modus Rand-Glow,
+// sonst Denk-Leiste. Die eigentliche Arbeit läuft als task; null = Abbruch
+// (Quota/Premium) → Paywall.
 async function handleSubmit() {
-  if (!description.value.trim() || loading.value) return
-  loading.value = true
+  if (!description.value.trim() || aiThinking.busy.value) return
   searched.value = true
   suggestions.value = []
 
-  const result = await props.suggest(description.value.trim())
-  loading.value = false
+  const data = await aiThinking.run({
+    status: 'TwoDo KI sucht ein Rezept …',
+    subtitle: 'Rezept-Idee',
+    short: true,
+    estMs: 6000,
+    task: runSuggest,
+  })
+  if (data) suggestions.value = data
+}
 
+async function runSuggest(): Promise<RecipeSuggestion[] | null> {
+  const result = await props.suggest(description.value.trim())
   if (result.kind === 'quota' || result.kind === 'premium') {
     emit('close')
     showPaywall('aiRecipes')
-    return
+    return null
   }
-
-  suggestions.value = result.data
   quota.value = result.quota
+  return result.data
 }
 
 function recipeInput(s: RecipeSuggestion, tags: string[]): AssignRecipeInput {
@@ -197,19 +209,14 @@ async function handleSave() {
       class="app-field ai-textarea"
       rows="3"
       placeholder="z. B. etwas Schnelles mit Hähnchen und Reis, wenig Aufwand …"
-      :disabled="loading"
+      :disabled="aiThinking.busy.value"
     />
 
-    <button class="ai-submit-btn" :disabled="!description.trim() || loading" @click="handleSubmit">
-      {{ loading ? 'Wird generiert …' : '✨ Rezepte vorschlagen' }}
+    <button class="ai-submit-btn" :disabled="!description.trim() || aiThinking.busy.value" @click="handleSubmit">
+      ✨ Rezepte vorschlagen
     </button>
 
-    <div v-if="loading" class="ai-loading">
-      <div class="ai-loading-orb" />
-      <p class="ai-loading-text">Die KI denkt sich passende Rezepte aus …</p>
-    </div>
-
-    <template v-else>
+    <template v-if="!aiThinking.busy.value">
       <div v-if="searched && suggestions.length === 0" class="empty-hint">
         Keine Vorschläge gefunden — versuch's mit einer anderen Beschreibung.
       </div>
@@ -393,59 +400,6 @@ async function handleSave() {
 @keyframes aiGradientShift {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
-}
-
-/* Pulsierender Lade-Zustand, während Gemini antwortet */
-.ai-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 30px 10px 20px;
-}
-
-.ai-loading-orb {
-  position: relative;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(120deg, #4285f4 0%, #9b72cb 35%, #d96570 65%, #f6b73c 100%);
-  background-size: 220% 220%;
-  animation: aiOrbPulse 1.4s ease-in-out infinite, aiGradientShift 4s ease-in-out infinite;
-  box-shadow: 0 0 26px rgba(155, 114, 203, 0.55);
-}
-
-.ai-loading-orb::before,
-.ai-loading-orb::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: inherit;
-  opacity: 0.55;
-  animation: aiRingPulse 1.4s ease-out infinite;
-}
-
-.ai-loading-orb::after {
-  animation-delay: 0.45s;
-}
-
-@keyframes aiOrbPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-@keyframes aiRingPulse {
-  0% { transform: scale(1); opacity: 0.55; }
-  100% { transform: scale(2.1); opacity: 0; }
-}
-
-.ai-loading-text {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-align: center;
-  margin: 0;
 }
 
 .empty-hint {

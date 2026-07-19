@@ -5,6 +5,9 @@ import type { RecipeSuggestion, AiResult, Quota } from '@/services/ai'
 import type { WeekPlanDay } from '@/composables/useMealPlan'
 import { weekdayLabel, dayMonthLabel } from '@/utils/mealplan'
 import { showPaywall } from '@/composables/usePaywall'
+import { useAiThinking } from '@/composables/useAiThinking'
+
+const aiThinking = useAiThinking()
 
 interface WeekDayLite {
   date: Date
@@ -31,7 +34,6 @@ const step = ref<Step>('config')
 const selected = ref<Set<string>>(new Set())
 const prefs = ref('')
 const servings = ref(2)
-const loading = ref(false)
 const previewDays = ref<WeekPlanDay[]>([])
 const quota = ref<Quota | null>(null)
 // Einkaufsliste gleich mitschreiben — der eigentliche "ein Tap"-Effekt.
@@ -46,7 +48,6 @@ watch(() => props.isOpen, (open) => {
   prefs.value = ''
   servings.value = 2
   step.value = 'config'
-  loading.value = false
   previewDays.value = []
   quota.value = null
   createList.value = true
@@ -71,26 +72,41 @@ const quotaLabel = computed(() => {
   return `Noch ${Math.max(0, q.limit - q.used)} von ${q.limit} Wochenplänen diesen Monat`
 })
 
+// Ganze Woche planen ist eine lange Task → immer Denk-Leiste (Progress + ETA +
+// Abbrechen). Die ETA skaliert grob mit der Anzahl Tage.
 async function generate() {
   const keys = orderedSelectedKeys.value
-  if (!keys.length || loading.value) return
-  loading.value = true
+  if (!keys.length || aiThinking.busy.value) return
 
+  const days = await aiThinking.run({
+    status: 'TwoDo KI plant …',
+    subtitle: `${keys.length} Abendessen`,
+    short: false,
+    estMs: 4000 + keys.length * 1400,
+    task: runPlan,
+  })
+  if (days) {
+    previewDays.value = days
+    step.value = 'preview'
+  }
+}
+
+// KI-Arbeit als task. null = Abbruch (Quota/Premium) → Paywall.
+async function runPlan(): Promise<WeekPlanDay[] | null> {
+  const keys = orderedSelectedKeys.value
   const result = await props.plan({ count: keys.length, servings: servings.value, prefs: prefs.value.trim() })
-  loading.value = false
 
   if (result.kind === 'quota' || result.kind === 'premium') {
     emit('close')
     showPaywall('weekPlan')
-    return
+    return null
   }
 
+  quota.value = result.quota
   // Vorschläge in der Reihenfolge der gewählten Tage zuordnen.
-  previewDays.value = keys
+  return keys
     .map((dateKey, i) => (result.data[i] ? { dateKey, suggestion: result.data[i] } : null))
     .filter((d): d is WeekPlanDay => d !== null)
-  quota.value = result.quota
-  step.value = 'preview'
 }
 
 function removeDay(dateKey: string) {
@@ -140,21 +156,16 @@ async function applyPlan() {
           class="app-field wa-textarea"
           rows="2"
           placeholder="z. B. viel Gemüse, kein Fisch, schnell an Werktagen …"
-          :disabled="loading"
+          :disabled="aiThinking.busy.value"
         />
 
         <button
           class="wa-submit-btn"
-          :disabled="!selected.size || loading"
+          :disabled="!selected.size || aiThinking.busy.value"
           @click="generate"
         >
-          {{ loading ? 'Wird geplant …' : `✨ ${selected.size} ${selected.size === 1 ? 'Tag' : 'Tage'} planen` }}
+          ✨ {{ selected.size }} {{ selected.size === 1 ? 'Tag' : 'Tage' }} planen
         </button>
-
-        <div v-if="loading" class="ai-loading">
-          <div class="ai-loading-orb" />
-          <p class="ai-loading-text">Die KI stellt euren Wochenplan zusammen …</p>
-        </div>
       </template>
 
       <!-- Schritt 2: Vorschau -->
@@ -313,58 +324,6 @@ async function applyPlan() {
 @keyframes aiGradientShift {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
-}
-
-.ai-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 26px 10px 8px;
-}
-
-.ai-loading-orb {
-  position: relative;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(120deg, #4285f4 0%, #9b72cb 35%, #d96570 65%, #f6b73c 100%);
-  background-size: 220% 220%;
-  animation: aiOrbPulse 1.4s ease-in-out infinite, aiGradientShift 4s ease-in-out infinite;
-  box-shadow: 0 0 26px rgba(155, 114, 203, 0.55);
-}
-
-.ai-loading-orb::before,
-.ai-loading-orb::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: inherit;
-  opacity: 0.55;
-  animation: aiRingPulse 1.4s ease-out infinite;
-}
-
-.ai-loading-orb::after {
-  animation-delay: 0.45s;
-}
-
-@keyframes aiOrbPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-@keyframes aiRingPulse {
-  0% { transform: scale(1); opacity: 0.55; }
-  100% { transform: scale(2.1); opacity: 0; }
-}
-
-.ai-loading-text {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-align: center;
-  margin: 0;
 }
 
 .wa-preview-intro {

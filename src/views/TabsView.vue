@@ -9,6 +9,7 @@ import Toast from '@/components/ui/Toast.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
 import PaywallSheet from '@/components/premium/PaywallSheet.vue'
+import AiThinkingHost from '@/components/ai/AiThinkingHost.vue'
 
 // useCouple ist ein Modul-Singleton und startet seinen Listener selbst, sobald
 // user.coupleId gesetzt ist — hier ist nichts mehr anzustoßen.
@@ -123,6 +124,10 @@ function onTabClick(e: MouseEvent, id: string) {
     <!-- Einmal für die ganze App: jede Composable/View öffnet sie über
          showPaywall(feature), ohne sie durchreichen zu müssen. -->
     <PaywallSheet />
+
+    <!-- Einmal für die ganze App: KI-Denk-Zustand (Rand-Glow / Denk-Leiste /
+         Bloom), bespielt aus dem useAiThinking-Singleton. -->
+    <AiThinkingHost />
 
     <nav class="mnav">
       <button

@@ -13,6 +13,7 @@ import BottomSheet from '@/components/ui/BottomSheet.vue'
 import InitialChip from '@/components/ui/InitialChip.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
 import AiRecipeSheet from './AiRecipeSheet.vue'
+import AiButton from '@/components/ai/AiButton.vue'
 
 const props = defineProps<{
   coupleId: string | null
@@ -291,14 +292,11 @@ defineExpose({ openCreateForm, showForm })
 <template>
   <div class="wiki">
     <div class="wiki-scroll">
-      <button class="suggest-card" type="button" @click="openAiSheet">
-        <span class="suggest-icon">✨</span>
-        <div class="suggest-text">
-          <span class="suggest-title">Rezept vorschlagen lassen</span>
-          <span class="suggest-sub">Direkt in eure Sammlung, mit eigener Kategorie</span>
-        </div>
-        <span class="suggest-chevron">›</span>
-      </button>
+      <AiButton
+        title="Rezept-Idee"
+        subtitle="Direkt in eure Sammlung, mit eigener Kategorie"
+        @click="openAiSheet"
+      />
 
       <input
         v-model="search"
@@ -503,74 +501,9 @@ defineExpose({ openCreateForm, showForm })
   padding: 0 var(--screen-pad) 100px;
 }
 
-/* KI-Look angelehnt an Gemini — identisch zur Karte im Essensplan. */
-.suggest-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 16px;
+/* Ein KI-Einstieg (AiButton) statt der früheren Gradient-Karte. */
+.wiki-scroll > .ai-btn {
   margin-bottom: 14px;
-  background: linear-gradient(120deg, #4285f4 0%, #9b72cb 35%, #d96570 65%, #f6b73c 100%);
-  background-size: 220% 220%;
-  border: none;
-  border-radius: var(--radius-card-lg);
-  cursor: pointer;
-  text-align: left;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.28) inset,
-    0 6px 20px -4px rgba(155, 114, 203, 0.55),
-    0 0 22px rgba(66, 133, 244, 0.35);
-  animation: suggestGradientShift 6s ease-in-out infinite;
-  transition: transform 0.12s ease;
-}
-
-.suggest-card:active {
-  transform: scale(0.98);
-}
-
-@keyframes suggestGradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.suggest-icon {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.55);
-}
-
-.suggest-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.suggest-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
-}
-
-.suggest-sub {
-  font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.suggest-chevron {
-  font-size: 20px;
-  color: rgba(255, 255, 255, 0.85);
-  flex-shrink: 0;
 }
 
 .search-field {

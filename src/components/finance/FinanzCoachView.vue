@@ -5,6 +5,10 @@ import { resolveExpenseCategories, categoryMeta } from '@/utils/expenseCategorie
 import { suggestFinanceInsight, type FinanceCategoryDelta } from '@/services/ai'
 import { showPaywall } from '@/composables/usePaywall'
 import { useCouple } from '@/composables/useCouple'
+import AiButton from '@/components/ai/AiButton.vue'
+import { useAiThinking } from '@/composables/useAiThinking'
+
+const aiThinking = useAiThinking()
 
 // Als Finanzen-Tab eingebettet statt eigener Route — bekommt die schon in
 // FinanzenView laufenden Daten als Props statt eine zweite useExpenses-
@@ -79,28 +83,44 @@ const bars = computed(() => {
 
 const animatedTotal = computed(() => Math.round((activeMonth.value?.total ?? 0) * anim.value))
 
-// ── AI-Insight pro Monat (einmalig geladen, danach gecacht) ──
-// 'locked' = Free-Tier. Der Callable lehnt den Aufruf ab, bevor Gemini
-// überhaupt gefragt wird — die Karte wird dann zum Teaser statt zum Fehler.
-interface InsightState { text: string; error: boolean; locked: boolean }
+// ── AI-Insight pro Monat (Button-getriggert, danach gecacht) ──
+// Statt beim Öffnen automatisch zu laden, startet der Coach jetzt auf Tap des
+// pill-AiButton und läuft im globalen Denk-Zustand (Denk-Leiste — lange Task)
+// — konsistent mit der KI-Identität der anderen Seiten. Ergebnis pro Monat
+// gecacht.
+interface InsightState { text: string; error: boolean }
 const insightCache = ref<Record<string, InsightState>>({})
-const insightLoading = ref(false)
-let insightToken = 0
 
-async function loadInsightFor(month: FinanceMonthComparison | null) {
-  if (!month || month.categories.length === 0) return
-  if (!props.couple) return
-  if (insightCache.value[month.monthKey]) return // schon geladen
+const activeInsight = computed<InsightState | null>(() =>
+  activeMonth.value ? insightCache.value[activeMonth.value.monthKey] ?? null : null
+)
 
-  // Ohne Premium den Callable gar nicht erst aufrufen — er würde ohnehin
-  // ablehnen. Der Server bleibt trotzdem die maßgebliche Prüfung.
+const canAnalyze = computed(() =>
+  !!activeMonth.value && activeMonth.value.categories.length > 0
+)
+
+async function startInsight() {
+  if (!canAnalyze.value || aiThinking.busy.value) return
+  // Composable-Konvention: der View öffnet die Paywall, ohne Premium gar nicht
+  // erst den Callable rufen (der Server bleibt die maßgebliche Prüfung).
   if (!isPremium.value) {
-    insightCache.value[month.monthKey] = { text: '', error: false, locked: true }
+    showPaywall('financeCoach')
     return
   }
+  await aiThinking.run({
+    status: 'TwoDo KI analysiert …',
+    subtitle: activeMonth.value?.label,
+    short: true, // meist wenige Sekunden → Rand-Glow
+    estMs: 6000,
+    task: runInsight,
+  })
+}
 
-  const token = ++insightToken
-  insightLoading.value = true
+// KI-Arbeit als task. null = Abbruch (Quota/Premium/Fehler).
+async function runInsight(): Promise<string | null> {
+  const month = activeMonth.value
+  if (!month || !props.couple) return null
+
   try {
     const deltas: FinanceCategoryDelta[] = month.categories.map((c) => ({
       name: categoryMeta(categories.value, c.categoryId).name,
@@ -109,37 +129,20 @@ async function loadInsightFor(month: FinanceMonthComparison | null) {
       deltaPct: c.deltaPct,
     }))
     const result = await suggestFinanceInsight(props.couple.id, deltas, month.label)
-    if (token !== insightToken) return
 
     if (result.kind === 'ok') {
-      insightCache.value[month.monthKey] = { text: result.data, error: false, locked: false }
-    } else {
-      // 'premium' (Free-Tier) und 'quota' (Fair-Use bei Premium) landen beide
-      // auf derselben Teaser-Karte.
-      insightCache.value[month.monthKey] = { text: '', error: false, locked: true }
+      insightCache.value[month.monthKey] = { text: result.data, error: false }
+      return result.data
     }
+    // 'premium'/'quota' → Paywall, kein Bloom.
+    showPaywall('financeCoach')
+    return null
   } catch (err) {
     console.error('Failed to load finance insight:', err)
-    if (token === insightToken) insightCache.value[month.monthKey] = { text: '', error: true, locked: false }
-  } finally {
-    if (token === insightToken) insightLoading.value = false
+    insightCache.value[month.monthKey] = { text: '', error: true }
+    return '' // Fehlertext zeigen (leer, aber error-Flag gesetzt) — kein Abbruch
   }
 }
-
-// Ausgaben laden asynchron per onSnapshot — sobald sie da sind bzw. der Monat
-// wechselt, den passenden Insight (nach)laden.
-watch(
-  [() => props.loading, () => activeMonth.value?.monthKey],
-  ([stillLoading]) => {
-    if (stillLoading) return
-    loadInsightFor(activeMonth.value)
-  },
-  { immediate: true }
-)
-
-const activeInsight = computed<InsightState | null>(() =>
-  activeMonth.value ? insightCache.value[activeMonth.value.monthKey] ?? null : null
-)
 </script>
 
 <template>
@@ -164,9 +167,23 @@ const activeInsight = computed<InsightState | null>(() =>
         </button>
       </div>
 
+      <!-- KI-Coach Einstieg -->
+      <div class="coach-head">
+        <span class="coach-head-title">✨ Finanz-Coach</span>
+        <AiButton variant="pill" icon="📊" title="Analysieren" @click="startInsight" />
+      </div>
+
       <!-- AI-Insight -->
+      <div v-if="activeInsight?.text" class="insight-card">
+        <span class="insight-icon">✨</span>
+        <p class="insight-text">{{ activeInsight.text }}</p>
+      </div>
+      <div v-else-if="activeInsight?.error" class="insight-card">
+        <span class="insight-icon">✨</span>
+        <p class="insight-text">Insight konnte gerade nicht geladen werden — die Zahlen unten stimmen trotzdem.</p>
+      </div>
       <button
-        v-if="activeInsight?.locked"
+        v-else-if="!isPremium"
         type="button"
         class="insight-card insight-card--locked"
         @click="showPaywall('financeCoach')"
@@ -177,14 +194,9 @@ const activeInsight = computed<InsightState | null>(() =>
           <span class="insight-cta">Mit TwoDo Plus freischalten</span>
         </span>
       </button>
-      <div v-else class="insight-card">
+      <div v-else class="insight-card insight-card--hint">
         <span class="insight-icon">✨</span>
-        <p v-if="!activeInsight && insightLoading" class="insight-text insight-text--loading">Analysiere eure Ausgaben …</p>
-        <p v-else-if="activeInsight?.error" class="insight-text">
-          Insight konnte gerade nicht geladen werden — die Zahlen unten stimmen trotzdem.
-        </p>
-        <p v-else-if="activeInsight?.text" class="insight-text">{{ activeInsight.text }}</p>
-        <p v-else class="insight-text">Noch nicht genug Daten für einen Bericht.</p>
+        <p class="insight-text">Tippe „Analysieren" für einen KI-Bericht zum {{ activeMonth?.label }}.</p>
       </div>
 
       <!-- Monatssumme -->
@@ -257,6 +269,22 @@ const activeInsight = computed<InsightState | null>(() =>
   color: var(--text);
 }
 
+/* ── KI-Coach Kopf (pill-AiButton) ───────────────────────── */
+.coach-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.coach-head-title {
+  font-family: var(--font-headline);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text);
+}
+
 /* ── AI-Insight ──────────────────────────────────────────── */
 .insight-card {
   display: flex;
@@ -266,6 +294,10 @@ const activeInsight = computed<InsightState | null>(() =>
   border-radius: var(--radius-card-lg);
   padding: 18px;
   margin-bottom: 16px;
+}
+
+.insight-card--hint .insight-text {
+  color: var(--text-secondary);
 }
 
 .insight-icon {
@@ -279,10 +311,6 @@ const activeInsight = computed<InsightState | null>(() =>
   color: var(--text);
   line-height: 1.55;
   margin: 0;
-}
-
-.insight-text--loading {
-  color: var(--text-secondary);
 }
 
 .insight-card--locked {

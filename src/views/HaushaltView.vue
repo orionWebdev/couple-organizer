@@ -9,6 +9,8 @@ import { showToast } from '@/composables/useToast'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import TaskSheet from '@/components/haushalt/TaskSheet.vue'
+import FairDistributeSheet from '@/components/haushalt/FairDistributeSheet.vue'
+import { showPaywall } from '@/composables/usePaywall'
 import HaushaltZuweisungen from '@/components/haushalt/HaushaltZuweisungen.vue'
 import HaushaltAlle from '@/components/haushalt/HaushaltAlle.vue'
 import HaushaltUebersicht from '@/components/haushalt/HaushaltUebersicht.vue'
@@ -17,7 +19,7 @@ import { isSameDay } from '@/utils/chores'
 import type { Chore, ChoreAssignee, ChoreHistoryEntry } from '@/types'
 
 const { user } = useAuth()
-const { couple } = useCouple()
+const { couple, isPremium } = useCouple()
 
 const coupleId = computed(() => user.value?.coupleId ?? null)
 const {
@@ -157,6 +159,31 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
   const ok = await deleteHistoryEntry(entry.id)
   showToast(ok ? 'Eintrag gelöscht' : FAILURE_MESSAGE)
 }
+
+// Faire Aufgabenverteilung (TwoDo Plus). Composable erzwingt nichts hier — die
+// View öffnet die Paywall, wenn nicht Premium (Hausmuster).
+const showFair = ref(false)
+
+function openFair() {
+  if (!isPremium.value) {
+    showPaywall('choreBalance')
+    return
+  }
+  showFair.value = true
+}
+
+async function applyDistribution(changes: { choreId: string; to: string }[]): Promise<number> {
+  let n = 0
+  for (const c of changes) {
+    if (await reassignChore(c.choreId, c.to)) n++
+  }
+  return n
+}
+
+function onFairApplied(count: number) {
+  showFair.value = false
+  showToast(count > 0 ? `${count} Aufgabe${count === 1 ? '' : 'n'} neu verteilt` : 'Nichts geändert')
+}
 </script>
 
 <template>
@@ -167,6 +194,13 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
     </div>
     <div class="tab-bar-wrap">
       <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
+    </div>
+
+    <div v-if="tab === 'zuweisungen' && !loading" class="fair-row">
+      <button class="fair-btn" type="button" @click="openFair">
+        ⚖️ Aufgaben fair verteilen
+        <span v-if="!isPremium" class="plus-tag">Plus</span>
+      </button>
     </div>
 
     <div v-if="loading" class="loading-msg">Laden…</div>
@@ -226,6 +260,16 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
       @close="closeSheet"
       @submit="onSheetSubmit"
     />
+
+    <FairDistributeSheet
+      :isOpen="showFair"
+      :chores="chores"
+      :history="history"
+      :couple="couple"
+      :apply="applyDistribution"
+      @close="showFair = false"
+      @applied="onFairApplied"
+    />
   </div>
 </template>
 
@@ -265,6 +309,43 @@ async function onHistoryDelete(entry: ChoreHistoryEntry) {
 .tab-bar :deep(.seg-btn) {
   padding: 13px 0;
   font-size: 13px;
+}
+
+.fair-row {
+  padding: 0 var(--screen-pad);
+  margin-bottom: 16px;
+}
+
+.fair-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.fair-btn:active {
+  transform: scale(0.98);
+}
+
+.plus-tag {
+  padding: 1px 7px;
+  border-radius: 20px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
 }
 
 .loading-msg {

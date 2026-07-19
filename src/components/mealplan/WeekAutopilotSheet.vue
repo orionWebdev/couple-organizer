@@ -21,7 +21,10 @@ const props = defineProps<{
   apply: (days: WeekPlanDay[]) => Promise<number>
 }>()
 
-const emit = defineEmits<{ close: []; applied: [count: number] }>()
+const emit = defineEmits<{
+  close: []
+  applied: [payload: { count: number; days: WeekPlanDay[]; createList: boolean }]
+}>()
 
 type Step = 'config' | 'preview'
 const step = ref<Step>('config')
@@ -31,6 +34,8 @@ const servings = ref(2)
 const loading = ref(false)
 const previewDays = ref<WeekPlanDay[]>([])
 const quota = ref<Quota | null>(null)
+// Einkaufsliste gleich mitschreiben — der eigentliche "ein Tap"-Effekt.
+const createList = ref(true)
 
 watch(() => props.isOpen, (open) => {
   if (!open) return
@@ -44,6 +49,7 @@ watch(() => props.isOpen, (open) => {
   loading.value = false
   previewDays.value = []
   quota.value = null
+  createList.value = true
 })
 
 const orderedSelectedKeys = computed(() =>
@@ -95,9 +101,10 @@ const applying = ref(false)
 async function applyPlan() {
   if (!previewDays.value.length || applying.value) return
   applying.value = true
-  const count = await props.apply(previewDays.value)
+  const applied = [...previewDays.value]
+  const count = await props.apply(applied)
   applying.value = false
-  emit('applied', count)
+  emit('applied', { count, days: applied, createList: createList.value })
 }
 </script>
 
@@ -174,6 +181,11 @@ async function applyPlan() {
             <button type="button" class="wa-remove" aria-label="Tag entfernen" @click="removeDay(d.dateKey)">✕</button>
           </div>
         </div>
+
+        <label v-if="previewDays.length" class="wa-list-toggle">
+          <input type="checkbox" v-model="createList" />
+          <span>🛒 Einkaufsliste gleich mit erstellen</span>
+        </label>
 
         <button class="btn-primary wa-apply" :disabled="!previewDays.length || applying" @click="applyPlan">
           {{ applying ? 'Wird eingeplant …' : `Woche übernehmen (${previewDays.length})` }}
@@ -422,8 +434,30 @@ async function applyPlan() {
   cursor: pointer;
 }
 
-.wa-apply {
+.wa-list-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   margin-top: 16px;
+  padding: 11px 13px;
+  border: 1.5px solid var(--border-softer);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.wa-list-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.wa-apply {
+  margin-top: 12px;
 }
 
 .wa-back {

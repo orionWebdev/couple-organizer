@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<title>TwoDo KI — Zustände & Motion</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html, body { margin: 0; }
+  body { font-family: var(--font-body); color: var(--text); }
+  * { -webkit-tap-highlight-color: transparent; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  /* ══ AI-Tokens (Design-Brief §4 — unverändert) ═══════════════════ */
+  :root{
+    --ai-gradient: linear-gradient(120deg,#4285f4 0%,#9b72cb 35%,#d96570 65%,#f6b73c 100%);
+    --ai-gradient-size: 220% 220%;
+    --ai-glow: 0 0 0 1px rgba(255,255,255,.28) inset, 0 6px 20px -4px rgba(155,114,203,.55), 0 0 22px rgba(66,133,244,.35);
+    --ai-textshadow: 0 1px 3px rgba(35,20,60,.6), 0 0 1px rgba(35,20,60,.5);
+    /* Lesbarkeits-Layer: hält weißen Text auch auf der hellen Amber-Phase des Wanderns lesbar */
+    --ai-scrim: linear-gradient(105deg, rgba(28,16,52,.40) 0%, rgba(28,16,52,.12) 52%, rgba(28,16,52,.26) 100%);
+  }
+
+  .doc-head { position: absolute; left: 40px; top: 34px; width: 1360px; }
+  .doc-head h1 { font-family: var(--font-headline); font-weight: 700; font-size: 30px; margin: 0 0 10px; letter-spacing: -0.5px; }
+  .doc-head h1 span { background: var(--ai-gradient); background-size: 180% 180%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .doc-head p { font-size: 15px; font-weight: 600; line-height: 1.6; color: var(--text-secondary); margin: 0; max-width: 96ch; }
+  .doc-head .rec { display: inline-flex; gap: 9px; align-items: flex-start; margin-top: 14px; background: color-mix(in srgb,#9b72cb 8%,var(--surface)); border: 1px solid color-mix(in srgb,#9b72cb 24%,transparent); border-radius: 14px; padding: 11px 15px; max-width: 92ch; }
+  .doc-head .rec b { font-weight: 800; color: #6f4fa0; }
+  .doc-head .rec span { font-size: 13.5px; font-weight: 600; line-height: 1.55; color: var(--text-secondary); }
+
+  .sec-label { position: absolute; font-family: var(--font-headline); font-weight: 600; font-size: 21px; color: var(--text); letter-spacing: -0.3px; }
+  .sec-label small { display: block; font-family: var(--font-body); font-weight: 700; font-size: 13px; color: var(--text-meta); margin-top: 3px; letter-spacing: 0; }
+  .slot { position: absolute; }
+  .slot > .cap { position: absolute; top: -30px; left: 4px; font-weight: 800; font-size: 13.5px; color: #6f665a; white-space: nowrap; }
+  .slot > .cap i { font-style: normal; font-weight: 700; color: #a49a8b; }
+
+  /* ══ Phone ═══════════════════════════════════════════════════════ */
+  .app { width: 392px; height: 812px; border-radius: 46px; background: #0e0c0a; padding: 11px; box-shadow: 0 34px 70px rgba(50,35,20,.26); }
+  .app.dark { background: #000; }
+  .screen { position: relative; width: 100%; height: 100%; border-radius: 35px; overflow: hidden; display: flex; flex-direction: column;
+    --sbg: var(--bg); --scard: var(--surface); --sdeep: var(--surface-deep); --sline: var(--border-softer); --stext: var(--text); --smeta: var(--text-secondary); --sfaint: var(--text-faint);
+    background: var(--sbg); color: var(--stext); }
+  .app.dark .screen { --sbg: #17130f; --scard: #221c17; --sdeep: #2b241d; --sline: #322a22; --stext: #f3ece2; --smeta: #b0a494; --sfaint: #7d7365; }
+  .screen.food { --accent: var(--food); --accent-tint: var(--food-tint); }
+
+  .grad { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .grad::before { content: ""; position: absolute; left: -20%; right: -20%; top: -170px; height: 520px;
+    background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 34%, transparent) 0%, color-mix(in srgb, var(--accent) 12%, transparent) 44%, transparent 72%); }
+  .app.dark .grad::before { background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 28%, transparent) 0%, color-mix(in srgb, var(--accent) 10%, transparent) 46%, transparent 74%); }
+
+  .sb { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 15px 28px 4px; font-size: 14px; font-weight: 800; color: var(--stext); }
+  .sb .r { display: flex; gap: 6px; font-size: 12px; letter-spacing: 1px; }
+  .stage { position: relative; z-index: 1; flex: 1; overflow: hidden; padding: 8px 20px 22px; display: flex; flex-direction: column; gap: 15px; }
+  .head { display: flex; align-items: flex-start; gap: 13px; padding: 6px 2px 0; }
+  .head .hi { font-family: var(--font-headline); font-weight: 700; font-size: 27px; line-height: 1.05; letter-spacing: -0.5px; }
+  .head .dt { font-size: 13.5px; font-weight: 700; color: var(--smeta); margin-top: 4px; }
+  .head .grow { flex: 1; }
+  .iconbtn { width: 46px; height: 46px; border-radius: 50%; background: color-mix(in srgb, var(--scard) 72%, transparent); backdrop-filter: blur(8px); display: grid; place-items: center; font-size: 20px; flex: none; box-shadow: var(--shadow-card); border: 1px solid var(--sline); }
+
+  /* ── A · KI-Button (card) ──────────────────────────────────────── */
+  .aiBtn.card, .aiBtn.pill { background: var(--ai-scrim), var(--ai-gradient); background-size: 100% 100%, var(--ai-gradient-size); }
+  .aiBtn { border: none; cursor: pointer; color: #fff; background: var(--ai-scrim), var(--ai-gradient); background-size: 100% 100%, var(--ai-gradient-size); box-shadow: var(--ai-glow); animation: aiShift 6s ease-in-out infinite; transition: transform .12s ease; text-align: left; font-family: var(--font-body); }
+  .aiBtn:active { transform: scale(.98); }
+  .aiBtn.card { width: 100%; display: flex; align-items: center; gap: 13px; padding: 15px 15px 15px 15px; border-radius: 20px; }
+  .chip34 { width: 34px; height: 34px; border-radius: 11px; background: rgba(255,255,255,.25); box-shadow: inset 0 0 0 1px rgba(255,255,255,.4), 0 2px 8px rgba(0,0,0,.14); display: grid; place-items: center; font-size: 18px; flex: none; }
+  .aiTxt { display: flex; flex-direction: column; line-height: 1.25; flex: 1; min-width: 0; text-shadow: var(--ai-textshadow); }
+  .aiTxt b { font-family: var(--font-headline); font-weight: 600; font-size: 16px; }
+  .aiTxt i { font-style: normal; font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,.9); margin-top: 1px; }
+  .chev { font-size: 26px; line-height: 1; color: rgba(255,255,255,.92); font-weight: 300; margin-right: 2px; }
+  .plusBadge { background: rgba(255,255,255,.28); color: #fff; font-size: 10.5px; font-weight: 800; letter-spacing: .5px; padding: 4px 10px; border-radius: 999px; text-shadow: none; }
+
+  /* KI-Button (pill) */
+  .aiBtn.pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 15px 9px 12px; border-radius: 999px; }
+  .aiBtn.pill .pchip { width: 24px; height: 24px; border-radius: 8px; background: rgba(255,255,255,.24); display: grid; place-items: center; font-size: 14px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.4); }
+  .aiBtn.pill .plabel { font-weight: 800; font-size: 13.5px; text-shadow: var(--ai-textshadow); }
+
+  /* ── Küche: Ausgangs- & Ergebnis-Inhalt ────────────────────────── */
+  .card { background: var(--scard); border: 1px solid var(--sline); border-radius: 22px; padding: 16px; box-shadow: 0 6px 18px rgba(60,45,30,.06); }
+  .app.dark .card { box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+  .lab { font-size: 11px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; color: var(--smeta); }
+  .weekIdle, .weekResult { display: flex; flex-direction: column; gap: 13px; }
+  .weekResult { opacity: 0; transform: translateY(8px); transition: opacity .2s ease-out, transform .2s ease-out; }
+  .app[data-step="result"] .weekIdle { display: none; }
+  .app:not([data-step="result"]) .weekResult { display: none; }
+  .app[data-step="result"] .weekResult { opacity: 1; transform: none; }
+
+  .emptyCard { display: flex; align-items: center; gap: 13px; }
+  .emptyIc { width: 46px; height: 46px; border-radius: 14px; background: var(--sdeep); display: grid; place-items: center; font-size: 23px; flex: none; }
+  .emptyCard b { font-family: var(--font-headline); font-weight: 600; font-size: 15.5px; display: block; }
+  .emptyCard i { font-style: normal; font-size: 12.5px; font-weight: 700; color: var(--smeta); }
+  .recentRow { display: flex; gap: 9px; }
+  .recent { flex: 1; background: var(--sdeep); border-radius: 15px; padding: 12px; }
+  .recent .ph { height: 62px; border-radius: 11px; background: repeating-linear-gradient(135deg, color-mix(in srgb,var(--accent) 12%,var(--sdeep)) 0 8px, color-mix(in srgb,var(--accent) 6%,var(--sdeep)) 8px 16px); margin-bottom: 9px; }
+  .recent b { font-family: var(--font-headline); font-weight: 600; font-size: 13.5px; }
+  .recent i { font-style: normal; font-size: 11.5px; font-weight: 700; color: var(--smeta); }
+
+  .resHead { display: flex; align-items: center; justify-content: space-between; }
+  .resHead .lab { color: var(--accent); }
+  .planCard .day { display: flex; align-items: center; gap: 13px; padding: 11px 0; }
+  .planCard .day + .day { border-top: 1px solid var(--sline); }
+  .planCard .dn { width: 40px; font-family: var(--font-headline); font-weight: 700; font-size: 13px; color: var(--sfaint); flex: none; text-transform: uppercase; letter-spacing: .5px; }
+  .planCard .em { font-size: 21px; flex: none; }
+  .planCard .ml { font-size: 14.5px; font-weight: 800; flex: 1; min-width: 0; }
+  .planCard .ml i { font-style: normal; display: block; font-size: 12px; font-weight: 700; color: var(--smeta); margin-top: 1px; }
+  .actRow { display: flex; gap: 10px; }
+  .btnGrad { flex: 1; border: none; cursor: pointer; color: #fff; background: var(--ai-scrim), var(--ai-gradient); background-size: 100% 100%, var(--ai-gradient-size); box-shadow: var(--ai-glow); animation: aiShift 6s ease-in-out infinite; border-radius: 15px; padding: 14px; font-family: var(--font-headline); font-weight: 600; font-size: 15px; text-shadow: var(--ai-textshadow); transition: transform .12s ease; }
+  .btnGrad:active { transform: scale(.98); }
+  .btnGhost { border: 1px solid var(--sline); background: var(--scard); color: var(--stext); border-radius: 15px; padding: 14px 18px; font-weight: 800; font-size: 14px; cursor: pointer; }
+
+  /* ── B · KI-Aktions-Sheet ──────────────────────────────────────── */
+  .scrim { position: absolute; inset: 0; z-index: 5; background: rgba(30,22,14,.44); opacity: 0; pointer-events: none; transition: opacity .28s ease; }
+  .app[data-step="sheet"] .scrim { opacity: 1; pointer-events: auto; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--scard); border-radius: 28px 28px 0 0; padding: 8px 18px 26px; transform: translateY(112%); transition: transform var(--dur-sheet-open) var(--ease-overshoot); box-shadow: 0 -14px 34px rgba(60,45,30,.2); }
+  .app.dark .sheet { box-shadow: 0 -14px 34px rgba(0,0,0,.5); }
+  .app[data-step="sheet"] .sheet { transform: translateY(0); }
+  .sheetGrip { width: 40px; height: 5px; border-radius: 3px; background: var(--sline); margin: 6px auto 14px; }
+  .sheetTitle { font-family: var(--font-headline); font-weight: 600; font-size: 18px; margin: 0 4px 12px; }
+  .aiRow { display: flex; align-items: center; gap: 13px; width: 100%; padding: 12px; border: none; background: var(--sdeep); border-radius: 17px; cursor: pointer; text-align: left; }
+  .aiRow + .aiRow { margin-top: 9px; }
+  .aiRow .ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; background: var(--ai-gradient); background-size: 200% 200%; box-shadow: var(--ai-glow); flex: none; animation: aiShift 6s ease-in-out infinite; }
+  .aiRow b { font-family: var(--font-headline); font-weight: 600; font-size: 15.5px; display: block; color: var(--stext); }
+  .aiRow i { font-style: normal; font-size: 12.5px; font-weight: 700; color: var(--smeta); margin-top: 1px; display: block; }
+  .aiRow .chev { color: var(--sfaint); font-size: 24px; }
+
+  /* ── C · Denk-Zustand (full-bleed Gradient) ────────────────────── */
+  .thinkModal { position: absolute; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .32s ease; overflow: hidden; }
+  .app[data-step="thinking"] .thinkModal, .app[data-step="done"] .thinkModal { opacity: 1; pointer-events: auto; }
+  .tmGrad { position: absolute; inset: 0; background: var(--ai-gradient); background-size: var(--ai-gradient-size); animation: aiShift 4s ease-in-out infinite, aiBreath 2.4s ease-in-out infinite; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(32px); mix-blend-mode: screen; opacity: .55; }
+  .b1 { width: 230px; height: 230px; background: radial-gradient(circle, rgba(255,255,255,.9), transparent 70%); left: -50px; top: 16%; animation: aiDrift1 7s ease-in-out infinite; }
+  .b2 { width: 190px; height: 190px; background: radial-gradient(circle, rgba(255,238,205,.85), transparent 70%); right: -40px; top: 44%; animation: aiDrift2 8.5s ease-in-out infinite; }
+  .b3 { width: 170px; height: 170px; background: radial-gradient(circle, rgba(198,218,255,.85), transparent 70%); left: 32%; bottom: 6%; animation: aiDrift1 9s ease-in-out infinite reverse; }
+  /* (Scheibenwischer/Sheen entfernt — auf Wunsch) */
+  .bloom { position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; margin: -100px 0 0 -100px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.96), rgba(255,255,255,.4) 40%, transparent 70%); opacity: 0; transform: scale(.2); }
+  .tmStatus { position: relative; z-index: 2; text-align: center; color: #fff; text-shadow: var(--ai-textshadow); padding: 24px; transition: opacity .18s ease; }
+  /* Marken-Loader: die zwei TwoDo-Kreise, die umeinander kreisen */
+  .tmMark { position: relative; width: 58px; height: 40px; margin: 0 auto 20px; animation: aiSpin 2.2s linear infinite; filter: drop-shadow(0 2px 6px rgba(35,20,60,.35)); }
+  .tmMark i { position: absolute; top: 50%; margin-top: -19px; width: 38px; height: 38px; border-radius: 50%; }
+  .tmMark .c1 { left: 0; background: rgba(255,255,255,.95); animation: aiPulse 1.6s ease-in-out infinite; }
+  .tmMark .c2 { right: 0; background: rgba(255,255,255,.34); box-shadow: inset 0 0 0 2.5px rgba(255,255,255,.92); animation: aiPulse 1.6s ease-in-out .8s infinite; }
+  .tmText { font-family: var(--font-headline); font-weight: 600; font-size: 18px; letter-spacing: .2px; }
+
+  /* ── D · „Fertig" (Bloom & Reveal) ─────────────────────────────── */
+  .app[data-step="done"] .tmGrad { animation: aiShift 4s ease-in-out infinite, aiBrighten .48s ease-out forwards; }
+  .app[data-step="done"] .bloom { animation: aiBloom .48s cubic-bezier(.22,1,.36,1) forwards; }
+  .app[data-step="done"] .tmStatus { opacity: 0; }
+  /* Demo-Loop für das statische „Fertig"-Specimen */
+  .app.demoDone .bloom { animation: aiBloomLoop 2.8s ease-in-out infinite; }
+
+  @keyframes aiShift { 0%,100%{ background-position: 0% 50%; } 50%{ background-position: 100% 50%; } }
+  @keyframes aiBreath { 0%,100%{ transform: scale(1); filter: brightness(1); } 50%{ transform: scale(1.04); filter: brightness(1.12); } }
+  @keyframes aiBrighten { 0%{ filter: brightness(1); } 100%{ filter: brightness(1.55); } }
+  @keyframes aiBloom { 0%{ opacity: 0; transform: scale(.2); } 35%{ opacity: 1; } 100%{ opacity: 0; transform: scale(4); } }
+  @keyframes aiBloomLoop { 0%{ opacity: 0; transform: scale(.2); } 18%{ opacity: 1; } 46%{ opacity: 0; transform: scale(3.7); } 100%{ opacity: 0; transform: scale(3.7); } }
+  @keyframes aiDrift1 { 0%,100%{ transform: translate(0,0); } 50%{ transform: translate(42px,-30px); } }
+  @keyframes aiDrift2 { 0%,100%{ transform: translate(0,0); } 50%{ transform: translate(-42px,30px); } }
+  @keyframes aiSpin { to { transform: rotate(360deg); } }
+  @keyframes aiPulse { 0%,100%{ transform: scale(.8); } 50%{ transform: scale(1); } }
+
+  /* ══ 5 · Denk-Zustand — 3 Alternativen zum Vollbild ══════════════ */
+  /* Screen bleibt sichtbar; der KI-Gradient dockt an ein Element / die Ränder */
+  .miniMark { position: relative; width: 26px; height: 16px; flex: none; animation: aiSpin 2.2s linear infinite; }
+  .miniMark i { position: absolute; top: 50%; margin-top: -8px; width: 16px; height: 16px; border-radius: 50%; }
+  .miniMark i:first-child { left: 0; background: #fff; animation: aiPulse 1.6s ease-in-out infinite; }
+  .miniMark i:last-child { right: 0; background: rgba(255,255,255,.34); box-shadow: inset 0 0 0 2px #fff; animation: aiPulse 1.6s ease-in-out .8s infinite; }
+
+  /* Karte als Einstieg: relative + clip nur in den Varianten */
+  .phoneV .aiBtn.card { position: relative; overflow: hidden; }
+  .aiSweep { display: none; position: absolute; inset: 0; }
+  .aiSweep::after { content: ""; position: absolute; top: 0; bottom: 0; width: 42%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); transform: translateX(-140%); animation: aiSweepMove 1.6s ease-in-out infinite; }
+  @keyframes aiSweepMove { to { transform: translateX(320%); } }
+  .aiThinkLayer { display: none; position: absolute; inset: 0; align-items: center; gap: 12px; padding: 0 17px; color: #fff; text-shadow: var(--ai-textshadow); }
+  .aiThinkLayer b { font-family: var(--font-headline); font-weight: 600; font-size: 15px; }
+
+  /* V2 — Effekt lebt IM Auslöser */
+  .phoneV.v2think .aiBtn.card { animation: aiShift 6s ease-in-out infinite, aiBreath 2.6s ease-in-out infinite; }
+  .phoneV.v2think .aiBtn .chip34, .phoneV.v2think .aiBtn .aiTxt, .phoneV.v2think .aiBtn .chev { opacity: 0; }
+  .phoneV.v2think .aiBtn .aiSweep { display: block; }
+  .phoneV.v2think .aiBtn .aiThinkLayer { display: flex; }
+
+  /* V1 — Rand-Glow (Apple Intelligence) — hängt an der App-Shell, respektiert Safe-Areas (PWA-tauglich) */
+  .edgeThink { display: none; position: absolute; z-index: 7; pointer-events: none;
+    inset: env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0); }
+  .phoneV.v1think .edgeThink { display: block; }
+  .edgeRing, .edgeRing2 { position: absolute; inset: 0; border-radius: 35px; background: var(--ai-gradient); background-size: 300% 300%;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; }
+  .edgeRing { padding: 11px; filter: blur(9px); animation: aiShift 4s ease-in-out infinite, edgeBreath 2.6s ease-in-out infinite; }
+  .edgeRing2 { padding: 3px; filter: blur(1px); animation: aiShift 4s ease-in-out infinite; }
+  @keyframes edgeBreath { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+  .edgePill { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 9px 16px 9px 13px; border-radius: 999px; background: var(--ai-scrim), var(--ai-gradient); background-size: 100% 100%, var(--ai-gradient-size); box-shadow: var(--ai-glow); color: #fff; font-family: var(--font-headline); font-weight: 600; font-size: 13px; text-shadow: var(--ai-textshadow); white-space: nowrap; animation: aiShift 6s ease-in-out infinite; }
+
+  /* V3 — Denk-Leiste (Assistant-Dock) */
+  .dockThink { display: none; position: absolute; left: 16px; right: 16px; bottom: 18px; z-index: 7; align-items: center; gap: 13px; padding: 14px 16px 18px; border-radius: 20px; background: var(--ai-scrim), var(--ai-gradient); background-size: 100% 100%, var(--ai-gradient-size); box-shadow: var(--ai-glow), 0 12px 26px rgba(60,45,30,.28); color: #fff; text-shadow: var(--ai-textshadow); animation: aiShift 6s ease-in-out infinite, dockIn .34s var(--ease-overshoot) both; }
+  .phoneV.v3think .dockThink { display: flex; }
+  @keyframes dockIn { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .dockThink .dtx { flex: 1; min-width: 0; }
+  .dockThink .dtx b { display: block; font-family: var(--font-headline); font-weight: 600; font-size: 14.5px; }
+  .dockThink .dtx i { font-style: normal; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.85); }
+  .dockThink .dcancel { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.9); background: rgba(255,255,255,.2); border-radius: 999px; padding: 6px 12px; }
+  .dockThink .dtx i b { font-weight: 800; color: #fff; }
+  .dockBar { position: absolute; left: 16px; right: 16px; bottom: 9px; height: 3px; border-radius: 3px; background: rgba(255,255,255,.28); overflow: hidden; }
+  .dockFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #fff; border-radius: 3px; animation: dockFill 8s linear infinite; }
+  @keyframes dockFill { from { width: 0; } to { width: 100%; } }
+
+  /* ══ 6 · Denk-Zustand — verankert (nav-sicher, native-freundlich) ══ */
+  /* Effekt hängt an einem Element IM Content (oben), nicht an der Bildschirmkante — kollidiert nie mit der Nav */
+  .dotMini { position: relative; width: 22px; height: 14px; flex: none; animation: aiSpin 2.2s linear infinite; }
+  .dotMini i { position: absolute; top: 50%; margin-top: -6px; width: 12px; height: 12px; border-radius: 50%; }
+  .dotMini i:first-child { left: 0; background: #9b72cb; animation: aiPulse 1.6s ease-in-out infinite; }
+  .dotMini i:last-child { right: 0; background: color-mix(in srgb,#9b72cb 32%,transparent); box-shadow: inset 0 0 0 2px #9b72cb; animation: aiPulse 1.6s ease-in-out .8s infinite; }
+  .app.dark .dotMini i:first-child { background: #c3a9e6; }
+  .app.dark .dotMini i:last-child { background: color-mix(in srgb,#c3a9e6 30%,transparent); box-shadow: inset 0 0 0 2px #c3a9e6; }
+
+  .phoneW .aiBtn.card { position: relative; }
+
+  /* W1 · Auslöser-Halo — weicher Gradient-Schein NUR um den Button */
+  .aiHalo { display: none; position: absolute; inset: -7px; border-radius: 26px; z-index: -1; background: var(--ai-gradient); background-size: 300% 300%; filter: blur(16px); opacity: .72; animation: aiShift 4s ease-in-out infinite, edgeBreath 2.6s ease-in-out infinite; }
+  .phoneW.w1think .aiBtn.card { animation: aiShift 6s ease-in-out infinite, aiBreath 2.6s ease-in-out infinite; }
+  .phoneW.w1think .aiHalo { display: block; }
+  .phoneW.w1think .aiBtn .chip34, .phoneW.w1think .aiBtn .aiTxt, .phoneW.w1think .aiBtn .chev { opacity: 0; }
+  .phoneW.w1think .aiBtn .aiThinkLayer { display: flex; }
+
+  /* W2 · Header-Aura — Titel schimmert im Gradient + dünne Fortschrittslinie unter dem Kopf */
+  .phoneW.w2think .head .hi { background: var(--ai-gradient); background-size: 220% 220%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: aiShift 3.5s ease-in-out infinite; }
+  .dtThink { display: none; align-items: center; gap: 8px; margin-top: 5px; font-size: 13px; font-weight: 800; color: #6f4fa0; }
+  .app.dark .dtThink { color: #c3a9e6; }
+  .phoneW.w2think .head .dt { display: none; }
+  .phoneW.w2think .head .dtThink { display: inline-flex; }
+  .headBar { display: none; height: 3px; border-radius: 3px; margin: 11px 2px 0; background: color-mix(in srgb,#9b72cb 16%,transparent); position: relative; overflow: hidden; }
+  .phoneW.w2think .headBar { display: block; }
+  .headBar::after { content: ""; position: absolute; top: 0; bottom: 0; width: 42%; border-radius: 3px; background: var(--ai-gradient); background-size: 300% 300%; animation: barSlide 1.6s ease-in-out infinite, aiShift 3s ease-in-out infinite; }
+  @keyframes barSlide { 0% { left: -42%; } 100% { left: 100%; } }
+
+  /* W3 · Ziel-Karte glüht — der Effekt sitzt dort, wo das Ergebnis erscheint */
+  .emptyCard { position: relative; }
+  .targetRing { display: none; position: absolute; inset: -2px; border-radius: 24px; z-index: 0; background: var(--ai-gradient); background-size: 300% 300%;
+    padding: 2px; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; animation: aiShift 3.5s ease-in-out infinite; }
+  .phoneW.w3think .targetRing { display: block; }
+  .targetThink { display: none; align-items: center; gap: 11px; }
+  .targetThink b { font-family: var(--font-headline); font-weight: 600; font-size: 14.5px; color: var(--stext); }
+  .phoneW.w3think .emptyIc { background: var(--ai-gradient); background-size: 200% 200%; animation: aiShift 3.5s ease-in-out infinite; }
+  .phoneW.w3think .emptyTxt { display: none; }
+  .phoneW.w3think .targetThink { display: flex; }
+
+  /* ══ 7 · Denk-Zustand AUS dem Aktions-Sheet (Modal-Glow) ═════════ */
+  /* Tap auf „Woche planen"/„Rezept" → das Sheet selbst wird zum Denk-Zustand, glüht — kein Vollbild-Sprung */
+  .sheetGlow { display: none; position: absolute; left: -3px; right: -3px; top: -5px; bottom: 0; border-radius: 32px 32px 0 0; z-index: -1; background: var(--ai-gradient); background-size: 300% 300%; filter: blur(22px); opacity: .78; animation: aiShift 4s ease-in-out infinite, edgeBreath 2.8s ease-in-out infinite; }
+  .sheetThink { display: none; }
+  .sheetThinkRow { display: flex; align-items: center; gap: 13px; padding: 13px 12px; background: var(--sdeep); border-radius: 17px; }
+  .sheetThinkRow .sIc { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; background: var(--ai-gradient); background-size: 200% 200%; box-shadow: var(--ai-glow); flex: none; animation: aiShift 4s ease-in-out infinite; }
+  .sheetThinkRow .sTx { flex: 1; min-width: 0; }
+  .sheetThinkRow .sTx b { font-family: var(--font-headline); font-weight: 600; font-size: 15.5px; display: block; color: var(--stext); }
+  .sheetThinkRow .sTx i { font-style: normal; font-size: 12.5px; font-weight: 700; color: var(--smeta); display: block; margin-top: 1px; }
+  .sheetBar { height: 3px; border-radius: 3px; margin: 14px 4px 2px; background: color-mix(in srgb,#9b72cb 16%,transparent); position: relative; overflow: hidden; }
+  .sheetBar::after { content: ""; position: absolute; top: 0; bottom: 0; width: 42%; border-radius: 3px; background: var(--ai-gradient); background-size: 300% 300%; animation: barSlide 1.6s ease-in-out infinite, aiShift 3s ease-in-out infinite; }
+  .app[data-step="sheetthink"] .scrim { opacity: 1; pointer-events: auto; }
+  .app[data-step="sheetthink"] .sheet { transform: translateY(0); }
+  .app[data-step="sheetthink"] .sheetTitle, .app[data-step="sheetthink"] .aiRow { display: none; }
+  .app[data-step="sheetthink"] .sheetThink { display: block; }
+  .app[data-step="sheetthink"] .sheetGlow { display: block; }
+
+  /* ══ Controls & Spec ═════════════════════════════════════════════ */
+  .panel { position: absolute; width: 720px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 22px; padding: 22px 24px; box-shadow: 0 8px 24px rgba(60,45,30,.07); }
+  .panel h3 { font-family: var(--font-headline); font-weight: 600; font-size: 18px; margin: 0 0 4px; }
+  .panel h3 + p { margin: 0 0 16px; font-size: 13.5px; font-weight: 600; color: var(--text-secondary); line-height: 1.5; }
+  .ctrlbar { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ctrl { display: inline-flex; align-items: center; gap: 9px; background: var(--surface-deep); border: 1px solid var(--border-soft); border-radius: 14px; padding: 11px 17px; font-weight: 800; font-size: 14px; color: var(--text); cursor: pointer; transition: transform .12s ease, background .16s ease; }
+  .ctrl:active { transform: scale(.96); }
+  .ctrl.grad { background: var(--ai-scrim), var(--ai-gradient); background-size: 100% 100%, var(--ai-gradient-size); animation: aiShift 6s ease-in-out infinite; color: #fff; border: none; box-shadow: var(--ai-glow); text-shadow: var(--ai-textshadow); }
+  .steps { display: flex; gap: 6px; margin-top: 15px; }
+  .steps span { flex: 1; text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--text-faint); padding: 8px 4px; border-radius: 10px; background: var(--surface-deep); transition: all .2s ease; }
+  .steps span.on { color: #fff; background: var(--ai-gradient); background-size: 200% 200%; }
+
+  .spec { columns: 2; column-gap: 30px; }
+  .spec .grp { break-inside: avoid; margin-bottom: 16px; }
+  .spec .grp b { display: block; font-family: var(--font-headline); font-weight: 600; font-size: 14px; margin-bottom: 7px; }
+  .spec table { width: 100%; border-collapse: collapse; }
+  .spec td { font-size: 12.5px; font-weight: 700; padding: 3px 0; vertical-align: top; color: var(--text-secondary); }
+  .spec td:first-child { color: var(--text); white-space: nowrap; padding-right: 12px; }
+  .spec code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; font-weight: 600; color: #6f4fa0; }
+  .noteList { margin: 4px 0 0; padding: 0; list-style: none; }
+  .noteList li { position: relative; padding-left: 20px; font-size: 13px; font-weight: 600; line-height: 1.55; color: var(--text-secondary); margin-bottom: 8px; }
+  .noteList li::before { content: "→"; position: absolute; left: 0; color: #9b72cb; font-weight: 800; }
+  .noteList li b { color: var(--text); font-weight: 800; }
+
+  /* Detail-Karten */
+  .det { position: absolute; width: 392px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 22px; padding: 20px; box-shadow: 0 6px 18px rgba(60,45,30,.06); }
+  .det.dark { background: #17130f; border-color: #322a22; }
+  .det .dl { font-size: 11px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; color: var(--text-meta); margin-bottom: 14px; }
+  .det.dark .dl { color: #b0a494; }
+  .det .stub { --scard:#fff; --sdeep:#f7f1e6; --sline:#f0e8db; --stext:#2c2823; --smeta:#8c857b; --sfaint:#b8b0a4; --accent: var(--finanzen); }
+  .det.dark .stub { --scard:#221c17; --sdeep:#2b241d; --sline:#322a22; --stext:#f3ece2; --smeta:#b0a494; --sfaint:#7d7365; }
+  .det .stub + .stub { margin-top: 16px; }
+  .finHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 2px; }
+  .finHead b { font-family: var(--font-headline); font-weight: 600; font-size: 16px; color: var(--stext); }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1><span>TwoDo KI</span> — eine Identität, ein Einstieg pro Seite</h1>
+  <p>Ein wiederverwendbares Komponenten-Set (<b>AiButton</b> + <b>AiThinkingModal</b>) ersetzt die vier handgebauten Gradient-Buttons. Der Gemini-Gradient bleibt die KI-Signatur — neu ist der full-bleed <b>Denk-Zustand</b> und die <b>Fertig-Animation</b> kurz vor dem Ergebnis. Alles rein CSS/HTML, Light &amp; Dark, Touch-Targets ≥ 44px.</p>
+  <div class="rec"><b>Empfehlung §9 →</b><span>Multi-Aktion-Seiten (Küche) bekommen <b>einen</b> KI-Button, der ein <b>Aktions-Sheet</b> öffnet — das entlöst die gedoppelten Buttons. Single-Aktion-Seiten (Rezept-Wiki, Finanz-Coach) lösen direkt aus. Die Alternative „mehrere Buttons, nur visuell vereinheitlicht" ist bewusst nicht ausgearbeitet.</span></div>
+</div>
+
+<!-- ══ 1 · Interaktiver Prototyp ══ -->
+<div class="sec-label" style="left:40px;top:308px;">1 · Interaktiver Prototyp<small>Denk → Fertig → Ergebnis — tippe den KI-Button</small></div>
+<div class="slot" id="proto" style="left:40px;top:372px;"></div>
+
+<div class="panel" id="ctrlPanel" style="left:500px;top:372px;">
+  <h3>Sequenz steuern</h3>
+  <p>Tippe im Prototyp den KI-Button → wähle eine Aktion → der Denk-Zustand füllt das Sheet, endet mit dem Bloom und gibt das Ergebnis frei.</p>
+  <div class="ctrlbar">
+    <button class="ctrl grad" data-c="restart">↻ Sequenz starten</button>
+    <button class="ctrl" data-c="reset">Zurücksetzen</button>
+    <button class="ctrl" data-c="theme">◐ Light / Dark</button>
+    <button class="ctrl" data-c="slow">🐢 Zeitlupe</button>
+  </div>
+  <div class="steps" id="stepbar"><span data-s="idle">Idle</span><span data-s="sheet">Sheet</span><span data-s="sheetthink">Denken</span><span data-s="done">Fertig</span><span data-s="result">Ergebnis</span></div>
+</div>
+
+<div class="panel" id="specPanel" style="left:500px;top:620px;">
+  <h3>Motion &amp; Werte — Abweichungen von §4</h3>
+  <p>Die Tokens aus §4 werden 1:1 übernommen. Zusätzliche Werte für Denk-Modal, Blobs, Bloom und Marken-Loader:</p>
+  <div class="spec">
+    <div class="grp"><b>Timing (§6)</b><table>
+      <tr><td>Wandern · Button</td><td><code>aiShift 6s</code> ease-in-out</td></tr>
+      <tr><td>Wandern · Modal</td><td><code>aiShift 4s</code> ease-in-out</td></tr>
+      <tr><td>Atem · Modal</td><td><code>aiBreath 2.4s</code> · scale 1→1.04, brightness 1→1.12</td></tr>
+      <tr><td>Fertig</td><td><code>480ms</code> — Bloom .2→4, Grad brightness →1.55</td></tr>
+      <tr><td>Ergebnis</td><td><code>200ms</code> opacity + 8px rise</td></tr>
+      <tr><td>Button :active</td><td><code>scale(.98)</code> 120ms</td></tr>
+    </table></div>
+    <div class="grp"><b>Denk-Modal-Deko</b><table>
+      <tr><td>Blobs</td><td>3× radial-weiß, <code>blur 32px</code>, opacity .55, <code>mix-blend: screen</code>, Drift 7–9s</td></tr>
+      <tr><td>Loader</td><td>2 TwoDo-Kreise, orbit <code>aiSpin 2.2s</code> + <code>aiPulse 1.6s</code> versetzt</td></tr>
+      <tr><td>Lesbarkeit</td><td>KI-Buttons: <code>--ai-scrim</code> über dem Gradient + verstärkter text-shadow</td></tr>
+      <tr><td>Status</td><td>Fredoka 600, 18px, weiß + <code>text-shadow</code></td></tr>
+      <tr><td>Bloom</td><td>radial-weiß, scale .2→4, opacity Peak bei 35%</td></tr>
+    </table></div>
+    <div class="grp"><b>Neue Tokens</b><table>
+      <tr><td>--ai-textshadow</td><td><code>0 1px 4px rgba(50,32,80,.42)</code></td></tr>
+    </table></div>
+    <div class="grp"><b>Reduced Motion</b>
+      <ul class="noteList">
+        <li>Kein Wandern / Atem / Orbit / Bloom — Modal zeigt den Gradient <b>statisch</b> mit ruhender Marke, Fertig springt direkt auf das Ergebnis.</li>
+        <li>Greift automatisch über die globale <code>prefers-reduced-motion</code>-Regel der App.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 2 · Zustände A–E · LIGHT ══ -->
+<div class="sec-label" style="left:40px;top:1250px;">2 · Zustände A–E — Light<small>Von der Ist-Seite bis zum Ergebnis</small></div>
+<div class="slot" id="A-l" style="left:40px;top:1338px;"><div class="cap">A · KI-Button (idle) <i>· card</i></div></div>
+<div class="slot" id="B-l" style="left:494px;top:1338px;"><div class="cap">B · Aktions-Sheet <i>· Multi-Aktion</i></div></div>
+<div class="slot" id="C-l" style="left:948px;top:1338px;"><div class="cap">C · Denk-Zustand <i>· full-bleed</i></div></div>
+<div class="slot" id="D-l" style="left:1402px;top:1338px;"><div class="cap">D · Fertig <i>· Bloom &amp; Reveal</i></div></div>
+<div class="slot" id="E-l" style="left:1856px;top:1338px;"><div class="cap">E · Ergebnis <i>· Grad nur im Button</i></div></div>
+
+<!-- ══ 3 · Zustände A–E · DARK ══ -->
+<div class="sec-label" style="left:40px;top:2270px;">3 · Zustände A–E — Dark<small>Gleicher Gradient, warme Neutral-Umgebung</small></div>
+<div class="slot" id="A-d" style="left:40px;top:2358px;"><div class="cap">A · KI-Button (idle)</div></div>
+<div class="slot" id="B-d" style="left:494px;top:2358px;"><div class="cap">B · Aktions-Sheet</div></div>
+<div class="slot" id="C-d" style="left:948px;top:2358px;"><div class="cap">C · Denk-Zustand</div></div>
+<div class="slot" id="D-d" style="left:1402px;top:2358px;"><div class="cap">D · Fertig</div></div>
+<div class="slot" id="E-d" style="left:1856px;top:2358px;"><div class="cap">E · Ergebnis</div></div>
+
+<!-- ══ 4 · Komponenten-Detail ══ -->
+<div class="sec-label" style="left:40px;top:3290px;">4 · Komponenten-Detail<small>Varianten des AiButton &amp; Sheet-Zeilen</small></div>
+
+<div class="det" style="left:40px;top:3378px;">
+  <div class="dl">card — voller Einstieg</div>
+  <div class="stub">
+    <button class="aiBtn card"><span class="chip34">✨</span><span class="aiTxt"><b>TwoDo KI</b><i>Wochenplan &amp; Rezepte vorschlagen</i></span><span class="chev">›</span></button>
+  </div>
+  <div class="stub" style="margin-top:16px;">
+    <button class="aiBtn card"><span class="chip34">📊</span><span class="aiTxt"><b>Finanz-Coach</b><i>Ausgaben analysieren</i></span><span class="plusBadge">PLUS</span></button>
+  </div>
+</div>
+
+<div class="det" style="left:466px;top:3378px;">
+  <div class="dl">pill — kompakt im Kartenkopf</div>
+  <div class="stub">
+    <div class="finHead"><b>Diesen Monat</b><button class="aiBtn pill"><span class="pchip">📊</span><span class="plabel">KI-Coach</span></button></div>
+    <div style="height:70px;border-radius:13px;margin-top:12px;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--finanzen) 14%,var(--sdeep)) 0 9px,color-mix(in srgb,var(--finanzen) 7%,var(--sdeep)) 9px 18px);"></div>
+  </div>
+  <div class="stub" style="margin-top:16px;">
+    <div class="finHead"><b>Rezept-Wiki</b><button class="aiBtn pill"><span class="pchip">✨</span><span class="plabel">Rezept-Idee</span></button></div>
+  </div>
+</div>
+
+<div class="det" style="left:892px;top:3378px;">
+  <div class="dl">Aktions-Sheet — Zeilen</div>
+  <div class="stub">
+    <button class="aiRow" style="background:var(--sdeep);"><span class="ic">🪄</span><span><b>Ganze Woche planen</b><i>7 Abendessen als kompletter Vorschlag</i></span><span class="chev">›</span></button>
+    <button class="aiRow" style="background:var(--sdeep);margin-top:9px;"><span class="ic">✨</span><span><b>Rezept vorschlagen</b><i>Eine Idee für heute Abend</i></span><span class="chev">›</span></button>
+  </div>
+</div>
+
+<div class="det dark" style="left:1318px;top:3378px;">
+  <div class="dl">card — dark</div>
+  <div class="stub">
+    <button class="aiBtn card"><span class="chip34">✨</span><span class="aiTxt"><b>TwoDo KI</b><i>Wochenplan &amp; Rezepte vorschlagen</i></span><span class="chev">›</span></button>
+  </div>
+  <div class="stub" style="margin-top:16px;">
+    <div class="finHead"><b style="color:#f3ece2;">Rezept-Wiki</b><button class="aiBtn pill"><span class="pchip">✨</span><span class="plabel">Rezept-Idee</span></button></div>
+  </div>
+</div>
+
+<!-- ══ 5 · Denk-Zustand — 3 Alternativen zum Vollbild ══ -->
+<div class="sec-label" style="left:40px;top:3760px;">5 · Denk-Zustand — 3 Alternativen zum Vollbild<small>Der KI-Gradient dockt an ein Element / die Ränder — der Screen bleibt sichtbar (auto-loop)</small></div>
+<div class="slot" id="V1" style="left:40px;top:3868px;"><div class="cap">Vorschlag 1 · Rand-Glow <i>· Apple-Intelligence</i></div></div>
+<div class="slot" id="V2" style="left:494px;top:3868px;"><div class="cap">Vorschlag 2 · Inline-Karte <i>· Effekt im Auslöser</i></div></div>
+<div class="slot" id="V3" style="left:948px;top:3868px;"><div class="cap">Vorschlag 3 · Denk-Leiste <i>· Assistant-Dock</i></div></div>
+
+<div class="panel" style="left:1402px;top:3868px;width:470px;">
+  <h3>Welche Richtung?</h3>
+  <p>Alle drei behalten den Gemini-Gradient als KI-Signatur, blenden aber den Screen nicht mehr weg — der Nutzer sieht, wofür geplant wird.</p>
+  <div class="spec" style="columns:1;">
+    <div class="grp"><b>1 · Rand-Glow</b><table>
+      <tr><td>Idee</td><td>Animierter Gradient-Ring hugged den ganzen Screen-Rand, weicher Innen-Bleed. Eine kleine Status-Pille unten.</td></tr>
+      <tr><td>Stärke</td><td>Am „Apple“-sten, ambient, unaufdringlich — Inhalt voll lesbar.</td></tr>
+      <tr><td>Achtung</td><td>Ohne Chrome-Text wirkt „Arbeit“ leiser; Status-Pille trägt die Botschaft.</td></tr>
+    </table></div>
+    <div class="grp"><b>2 · Inline-Karte</b><table>
+      <tr><td>Idee</td><td>Der KI-Button selbst wird aktiv: Gradient atmet, ein Shimmer wandert durch, Text wird zu „plant …“ mit Marken-Loader.</td></tr>
+      <tr><td>Stärke</td><td>Effekt hängt exakt am Auslöser — kausal klarster Bezug, minimal.</td></tr>
+      <tr><td>Achtung</td><td>Kleinste Bühne; bei langen Wartezeiten evtl. zu subtil.</td></tr>
+    </table></div>
+    <div class="grp"><b>3 · Denk-Leiste</b><table>
+      <tr><td>Idee</td><td>Eine gedockte Gradient-Leiste (Toast) mit Loader, Titel/Untertitel, <b>determiniertem</b> Fortschritt + Rest-Zeit-Schätzung und Abbrechen.</td></tr>
+      <tr><td>Stärke</td><td>Explizitester Status, Platz für Abbrechen, Progress &amp; „noch ~x Sek.“ — gut für längere Tasks.</td></tr>
+      <tr><td>Achtung</td><td>Mehr Chrome; verdeckt einen Teil unten.</td></tr>
+    </table></div>
+    <div class="grp"><b>PWA-Hinweis (bis Play-Store)</b>
+      <ul class="noteList">
+        <li>Rand-Glow hängt an der <b>App-Shell</b>, nicht am Viewport, und wird per <code>env(safe-area-inset-*)</code> eingerückt — kein Überlappen mit Notch, Home-Indicator oder Adressleiste.</li>
+        <li>Nur bei <code>display-mode: standalone</code> aktivieren; im Browser-Tab mit sichtbarer URL-Leiste stattdessen die <b>Denk-Leiste</b> als Fallback zeigen.</li>
+      </ul>
+    </div>
+    <div class="grp"><b>Empfehlung</b>
+      <ul class="noteList">
+        <li><b>Rand-Glow (1)</b> als Grund-Signatur für kurze Tasks + <b>Denk-Leiste (3)</b>, sobald ein echter Fortschritt/Abbrechen nötig ist. Vollbild nur noch für den finalen Bloom kurz vor dem Ergebnis.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 6 · Denk-Zustand — verankerte Alternativen (nav-sicher) ══ -->
+<div class="sec-label" style="left:40px;top:4790px;">6 · Verankert im Content — nav-sicher &amp; nativ-freundlich<small>Kein Bildschirmrand, kein Badge über der Navigation — der Effekt hängt oben an einem Element (auto-loop)</small></div>
+<div class="slot" id="W1" style="left:40px;top:4898px;"><div class="cap">Vorschlag A · Auslöser-Halo <i>· Schein um den Button</i></div></div>
+<div class="slot" id="W2" style="left:494px;top:4898px;"><div class="cap">Vorschlag B · Header-Aura <i>· Titel + Fortschrittslinie</i></div></div>
+<div class="slot" id="W3" style="left:948px;top:4898px;"><div class="cap">Vorschlag C · Ziel-Karte <i>· glüht, wo das Ergebnis kommt</i></div></div>
+
+<div class="panel" style="left:1402px;top:4898px;width:470px;">
+  <h3>Warum diese drei?</h3>
+  <p>Der Rand-Glow (§5) wirkt auf echten Geräten unnatürlich, und Pille/Leiste sitzen unten in der Navigation. Diese Varianten verankern den Gradient <b>oben im Content</b> — nah am Auslöser, nie über der Nav.</p>
+  <div class="spec" style="columns:1;">
+    <div class="grp"><b>A · Auslöser-Halo</b><table>
+      <tr><td>Idee</td><td>Weicher, atmender Gradient-Schein <b>nur um den KI-Button</b>; Button-Text wird zum Mini-Loader + „plant …“.</td></tr>
+      <tr><td>Stärke</td><td>Kausal glasklar, minimal, keinerlei Kollision — der Effekt sitzt exakt da, wo getippt wurde.</td></tr>
+      <tr><td>Achtung</td><td>Kleine Bühne; für sehr lange Tasks kombiniert mit der Denk-Leiste (§5·3).</td></tr>
+    </table></div>
+    <div class="grp"><b>B · Header-Aura</b><table>
+      <tr><td>Idee</td><td>Seitentitel schimmert im Gradient, Untertitel wird zu „TwoDo KI plant …“, darunter eine dünne <b>Fortschrittslinie</b>.</td></tr>
+      <tr><td>Stärke</td><td>Ambient wie der Rand-Glow, aber sauber oben verankert — ganzer Screen bleibt frei &amp; lesbar.</td></tr>
+      <tr><td>Achtung</td><td>Etwas subtiler; Blick muss kurz nach oben.</td></tr>
+    </table></div>
+    <div class="grp"><b>C · Ziel-Karte glüht</b><table>
+      <tr><td>Idee</td><td>Die Karte, in der das Ergebnis erscheint, bekommt einen animierten Gradient-Rahmen + Inline-Loader.</td></tr>
+      <tr><td>Stärke</td><td>Erwartungs-Anker: der Nutzer sieht genau, <b>wo</b> gleich der Plan landet.</td></tr>
+      <tr><td>Achtung</td><td>Braucht ein sichtbares Ziel-Element (bei Direkt-Aktionen ohne Karte → A oder B).</td></tr>
+    </table></div>
+    <div class="grp"><b>Empfehlung</b>
+      <ul class="noteList">
+        <li><b>A (Auslöser-Halo)</b> als Standard für kurze Tasks — nativ, eindeutig, nav-sicher. <b>C</b> zusätzlich, wenn ein klares Ziel-Element existiert (Wochenplan-Karte).</li>
+        <li>Für lange Tasks weiter die <b>Denk-Leiste (§5·3)</b> mit Fortschritt + Rest-Zeit; Vollbild nur für den finalen Bloom.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 7 · Denk-Zustand aus dem Aktions-Sheet (Modal-Glow) ══ -->
+<div class="sec-label" style="left:40px;top:5810px;">7 · Denk-Zustand aus dem Modal — das Sheet glüht<small>Rezept &amp; Wochenplan starten aus dem Aktions-Sheet — es wird selbst zum Denk-Zustand, statt in ein Vollbild zu springen</small></div>
+<div class="slot" id="S1" style="left:40px;top:5918px;"><div class="cap">Woche planen <i>· Sheet denkt · Light</i></div></div>
+<div class="slot" id="S2" style="left:494px;top:5918px;"><div class="cap">Rezept vorschlagen <i>· Sheet denkt · Light</i></div></div>
+<div class="slot" id="S3" style="left:948px;top:5918px;"><div class="cap">Woche planen <i>· Sheet denkt · Dark</i></div></div>
+
+<div class="panel" style="left:1402px;top:5918px;width:470px;">
+  <h3>Denken bleibt im Sheet</h3>
+  <p>Beide KI-Aktionen werden aus dem Aktions-Sheet ausgelöst — also übernimmt <b>das Sheet selbst</b> den Denk-Zustand. Kein Kontextwechsel, kein Vollbild: die Zeilen weichen einem Status, und das Sheet bekommt einen atmenden Gradient-Glow.</p>
+  <div class="spec" style="columns:1;">
+    <div class="grp"><b>Ablauf</b><table>
+      <tr><td>Tap Zeile</td><td>Sheet bleibt offen; Zeilen &amp; Titel faden aus, Denk-Zeile (Icon + Status + Loader) faded ein.</td></tr>
+      <tr><td>Glow</td><td>Weicher Gradient-Aura hinter dem Sheet (<code>blur 22px</code>, <code>edgeBreath 2.8s</code>) + Gradient-Hairline an der Oberkante.</td></tr>
+      <tr><td>Fortschritt</td><td>Dünne Gradient-Leiste (<code>barSlide 1.6s</code>); Status je Aktion („Plant eure Woche …" / „Sucht ein Rezept …").</td></tr>
+      <tr><td>Ende</td><td>Kurzer Bloom, Sheet schließt, Ergebnis erscheint im Screen.</td></tr>
+    </table></div>
+    <div class="grp"><b>Warum</b>
+      <ul class="noteList">
+        <li>Der Einstieg (Sheet) <b>ist</b> die Bühne — der Nutzer bleibt im Kontext, den er gerade geöffnet hat.</li>
+        <li>Nav-sicher: das Sheet liegt ohnehin über der Navigation, der Glow bleibt in seinem Rahmen.</li>
+        <li><b>Empfehlung:</b> das ist der Standard-Denkweg für Sheet-Aktionen; §6·A/C nur für Direkt-Auslöser ohne Sheet.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<template id="phoneW-tpl">
+  <div class="screen food">
+    <div class="grad"></div>
+    <div class="sb"><span>9:41</span><span class="r">▪▪▪ 100%</span></div>
+    <div class="stage">
+      <div class="head">
+        <div><div class="hi">Küche</div><div class="dt">Was kochen wir diese Woche?</div><div class="dtThink"><span class="dotMini"><i></i><i></i></span>TwoDo KI plant …</div></div>
+        <div class="grow"></div>
+        <div class="iconbtn">🔍</div>
+      </div>
+      <div class="headBar"></div>
+      <button class="aiBtn card"><span class="aiHalo"></span><span class="chip34">✨</span><span class="aiTxt"><b>TwoDo KI</b><i>Wochenplan &amp; Rezepte vorschlagen</i></span><span class="chev">›</span><span class="aiThinkLayer"><span class="miniMark"><i></i><i></i></span><b>Plant eure Woche …</b></span></button>
+      <div class="weekIdle">
+        <div class="card emptyCard"><span class="targetRing"></span><span class="emptyIc">🗓️</span><span class="emptyTxt"><b>Noch kein Plan für diese Woche</b><i>Lass die KI 7 Abendessen vorschlagen</i></span><span class="targetThink"><span class="dotMini"><i></i><i></i></span><b>Plant eure Woche …</b></span></div>
+        <div class="lab" style="padding:2px 2px 0;">Zuletzt gekocht</div>
+        <div class="recentRow">
+          <div class="recent"><div class="ph"></div><b>Ofengemüse</b><i>Mo · vegetarisch</i></div>
+          <div class="recent"><div class="ph"></div><b>Pasta Pesto</b><i>Sa · 20 Min</i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="phoneV-tpl">
+  <div class="screen food">
+    <div class="grad"></div>
+    <div class="sb"><span>9:41</span><span class="r">▪▪▪ 100%</span></div>
+    <div class="stage">
+      <div class="head">
+        <div><div class="hi">Küche</div><div class="dt">Was kochen wir diese Woche?</div></div>
+        <div class="grow"></div>
+        <div class="iconbtn">🔍</div>
+      </div>
+      <button class="aiBtn card"><span class="chip34">✨</span><span class="aiTxt"><b>TwoDo KI</b><i>Wochenplan &amp; Rezepte vorschlagen</i></span><span class="chev">›</span><span class="aiSweep"></span><span class="aiThinkLayer"><span class="miniMark"><i></i><i></i></span><b>Plant eure Woche …</b></span></button>
+      <div class="weekIdle">
+        <div class="card emptyCard"><span class="emptyIc">🗓️</span><span><b>Noch kein Plan für diese Woche</b><i>Lass die KI 7 Abendessen vorschlagen</i></span></div>
+        <div class="lab" style="padding:2px 2px 0;">Zuletzt gekocht</div>
+        <div class="recentRow">
+          <div class="recent"><div class="ph"></div><b>Ofengemüse</b><i>Mo · vegetarisch</i></div>
+          <div class="recent"><div class="ph"></div><b>Pasta Pesto</b><i>Sa · 20 Min</i></div>
+        </div>
+      </div>
+    </div>
+    <div class="edgeThink"><div class="edgeRing"></div><div class="edgeRing2"></div><div class="edgePill"><span class="miniMark"><i></i><i></i></span><span>Plant eure Woche …</span></div></div>
+    <div class="dockThink"><span class="miniMark"><i></i><i></i></span><span class="dtx"><b>TwoDo KI plant …</b><i>7 Abendessen · noch ~<b data-eta>8</b> Sek.</i></span><span class="dcancel">Abbrechen</span><span class="dockBar"><span class="dockFill"></span></span></div>
+  </div>
+</template>
+
+<template id="phone-tpl">
+  <div class="screen food">
+    <div class="grad"></div>
+    <div class="sb"><span>9:41</span><span class="r">▪▪▪ 100%</span></div>
+    <div class="stage">
+      <div class="head">
+        <div><div class="hi">Küche</div><div class="dt">Was kochen wir diese Woche?</div></div>
+        <div class="grow"></div>
+        <div class="iconbtn">🔍</div>
+      </div>
+      <button class="aiBtn card" data-ai><span class="chip34">✨</span><span class="aiTxt"><b>TwoDo KI</b><i>Wochenplan &amp; Rezepte vorschlagen</i></span><span class="chev">›</span></button>
+      <div class="weekIdle">
+        <div class="card emptyCard"><span class="emptyIc">🗓️</span><span><b>Noch kein Plan für diese Woche</b><i>Lass die KI 7 Abendessen vorschlagen</i></span></div>
+        <div class="lab" style="padding:2px 2px 0;">Zuletzt gekocht</div>
+        <div class="recentRow">
+          <div class="recent"><div class="ph"></div><b>Ofengemüse</b><i>Mo · vegetarisch</i></div>
+          <div class="recent"><div class="ph"></div><b>Pasta Pesto</b><i>Sa · 20 Min</i></div>
+        </div>
+      </div>
+      <div class="weekResult">
+        <div class="card planCard">
+          <div class="resHead" style="margin-bottom:6px;"><span class="lab">✨ KI-Vorschlag</span><span class="lab" style="color:var(--sfaint);">Mo–Fr</span></div>
+          <div class="day"><span class="dn">Mo</span><span class="em">🥗</span><span class="ml">Bowl mit Kichererbsen<i>vegetarisch · 25 Min</i></span></div>
+          <div class="day"><span class="dn">Di</span><span class="em">🍝</span><span class="ml">Zucchini-Pasta<i>schnell · 20 Min</i></span></div>
+          <div class="day"><span class="dn">Mi</span><span class="em">🌮</span><span class="ml">Tacos mit Süßkartoffel<i>Rest verwerten</i></span></div>
+          <div class="day"><span class="dn">Do</span><span class="em">🍲</span><span class="ml">Rote-Linsen-Curry<i>Vorrat · 30 Min</i></span></div>
+        </div>
+        <div class="actRow">
+          <button class="btnGrad">Einkaufsliste erstellen</button>
+          <button class="btnGhost">Anpassen</button>
+        </div>
+      </div>
+    </div>
+    <div class="scrim" data-scrim></div>
+    <div class="sheet">
+      <div class="sheetGlow"></div>
+      <div class="sheetGrip"></div>
+      <div class="sheetTitle">Was soll die KI tun?</div>
+      <button class="aiRow" data-act="week"><span class="ic">🪄</span><span><b>Ganze Woche planen</b><i>7 Abendessen als kompletter Vorschlag</i></span><span class="chev">›</span></button>
+      <button class="aiRow" data-act="recipe"><span class="ic">✨</span><span><b>Rezept vorschlagen</b><i>Eine Idee für heute Abend</i></span><span class="chev">›</span></button>
+      <div class="sheetThink">
+        <div class="sheetThinkRow"><span class="sIc" data-sic>🪄</span><span class="sTx"><b data-stx>Plant eure Woche …</b><i data-ssub>7 Abendessen werden zusammengestellt</i></span><span class="dotMini"><i></i><i></i></span></div>
+        <div class="sheetBar"></div>
+      </div>
+    </div>
+    <div class="thinkModal">
+      <div class="tmGrad"></div>
+      <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+      <div class="bloom"></div>
+      <div class="tmStatus"><div class="tmMark"><i class="c1"></i><i class="c2"></i></div><div class="tmText" data-tmtext>Die KI plant eure Woche …</div></div>
+    </div>
+  </div>
+</template>
+
+<script>
+  const tpl = document.getElementById('phone-tpl');
+  function makePhone(step, dark){
+    const app = document.createElement('div');
+    app.className = 'app' + (dark ? ' dark' : '');
+    app.setAttribute('data-step', step);
+    app.appendChild(tpl.content.cloneNode(true));
+    return app;
+  }
+  function fill(id, step, dark, demo){
+    const app = makePhone(step, dark);
+    if (demo) app.classList.add('demoDone');
+    document.getElementById(id).appendChild(app);
+    return app;
+  }
+
+  // Static specimens A–E, light + dark
+  fill('A-l','idle',false); fill('B-l','sheet',false); fill('C-l','thinking',false); fill('D-l','thinking',false,true); fill('E-l','result',false);
+  fill('A-d','idle',true);  fill('B-d','sheet',true);  fill('C-d','thinking',true);  fill('D-d','thinking',true,true);  fill('E-d','result',true);
+
+  // Interactive prototype
+  const proto = makePhone('idle', false);
+  document.getElementById('proto').appendChild(proto);
+  const stepbar = document.getElementById('stepbar');
+  let timers = [], slow = false;
+  const T = m => slow ? m * 2.4 : m;
+
+  function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+  function setStep(s){
+    proto.setAttribute('data-step', s);
+    [...stepbar.children].forEach(el => el.classList.toggle('on', el.dataset.s === s));
+  }
+  function toIdle(){ clearTimers(); setStep('idle'); }
+  function applyAction(app, action){
+    const rec = action === 'recipe';
+    app.querySelector('[data-sic]').textContent = rec ? '✨' : '🪄';
+    app.querySelector('[data-stx]').textContent = rec ? 'Sucht ein Rezept …' : 'Plant eure Woche …';
+    app.querySelector('[data-ssub]').textContent = rec ? 'Passend zu euren Vorräten' : '7 Abendessen werden zusammengestellt';
+  }
+  function startThink(action){
+    clearTimers();
+    applyAction(proto, action);
+    proto.querySelector('[data-tmtext]').textContent =
+      action === 'recipe' ? 'Die KI sucht ein Rezept …' : 'Die KI plant eure Woche …';
+    setStep('sheetthink');
+    timers.push(setTimeout(() => setStep('done'), T(2600)));
+    timers.push(setTimeout(() => setStep('result'), T(2600) + 500));
+  }
+
+  proto.querySelector('[data-ai]').addEventListener('click', () => { if (proto.getAttribute('data-step') === 'idle') setStep('sheet'); });
+  proto.querySelector('[data-scrim]').addEventListener('click', toIdle);
+  proto.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => startThink(b.dataset.act)));
+  proto.querySelector('.btnGhost').addEventListener('click', toIdle);
+  proto.querySelector('.btnGrad').addEventListener('click', () => startThink('week'));
+
+  document.getElementById('ctrlPanel').addEventListener('click', e => {
+    const b = e.target.closest('[data-c]'); if (!b) return;
+    const c = b.dataset.c;
+    if (c === 'restart'){ toIdle(); setStep('sheet'); }
+    else if (c === 'reset') toIdle();
+    else if (c === 'theme') proto.classList.toggle('dark');
+    else if (c === 'slow'){ slow = !slow; b.style.background = slow ? 'var(--surface-deep)' : ''; b.textContent = slow ? '🐢 Zeitlupe: an' : '🐢 Zeitlupe'; }
+  });
+
+  // ── 5 · Denk-Zustand-Alternativen (auto-loop) ──
+  const vtpl = document.getElementById('phoneV-tpl');
+  function makeVariant(id, klass){
+    const app = document.createElement('div');
+    app.className = 'app phoneV ' + klass;
+    app.appendChild(vtpl.content.cloneNode(true));
+    document.getElementById(id).appendChild(app);
+  }
+  makeVariant('V1','v1think');
+  makeVariant('V2','v2think');
+  makeVariant('V3','v3think');
+
+  // V3: determinierte Rest-Zeit-Schätzung, synchron zum Ladebalken (8s-Loop)
+  const etaEl = document.querySelector('#V3 [data-eta]');
+  if (etaEl){ const total = 8; let t0 = performance.now();
+    setInterval(() => { const s = ((performance.now() - t0) / 1000) % total; etaEl.textContent = Math.max(0, Math.ceil(total - s)); }, 250); }
+
+  // ── 6 · Verankerte Alternativen (auto-loop) ──
+  const wtpl = document.getElementById('phoneW-tpl');
+  function makeVariantW(id, klass){
+    const app = document.createElement('div');
+    app.className = 'app phoneW ' + klass;
+    app.appendChild(wtpl.content.cloneNode(true));
+    document.getElementById(id).appendChild(app);
+  }
+  makeVariantW('W1','w1think');
+  makeVariantW('W2','w2think');
+  makeVariantW('W3','w3think');
+
+  // ── 7 · Denk-Zustand aus dem Sheet (Specimen, auto-loop) ──
+  function fillSheet(id, action, dark){
+    const app = fill(id, 'sheetthink', dark);
+    applyAction(app, action);
+  }
+  fillSheet('S1','week',false);
+  fillSheet('S2','recipe',false);
+  fillSheet('S3','week',true);
+</script>
+</body>
+</html>

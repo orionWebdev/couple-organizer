@@ -119,6 +119,8 @@
              0 0 22px rgba(66, 133, 244, 0.35);
   --ai-textshadow: 0 1px 3px rgba(35, 20, 60, 0.6), 0 0 1px rgba(35, 20, 60, 0.5);
   --ai-scrim: linear-gradient(105deg, rgba(28, 16, 52, 0.4) 0%, rgba(28, 16, 52, 0.12) 52%, rgba(28, 16, 52, 0.26) 100%);
+  /* Loader-Farbe auf hellem Grund (Sheet/Karte) — im Dark-Theme heller. */
+  --ai-mark: #9b72cb;
 
   /* Formularfelder/Scrollbars der UA sollen dem gewählten Theme folgen, nicht
      der Systemwahl — deshalb pro Theme-Block gesetzt statt einmal "light dark". */
@@ -167,11 +169,13 @@
     --shadow-card:    0 6px 18px rgba(0, 0, 0, 0.32);
     --shadow-float:   0 12px 28px rgba(0, 0, 0, 0.5);
     --brand-blend:    screen;
+    --ai-mark:        #c3a9e6;
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+  --ai-mark:        #c3a9e6;
   --bg:             #17130f;
   --surface:        #221c17;
   --surface-deep:   #2b241d;
@@ -230,10 +234,9 @@ body,
 @keyframes aiDrift2   { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-42px, 30px); } }
 @keyframes aiSpin     { to { transform: rotate(360deg); } }
 @keyframes aiPulse    { 0%, 100% { transform: scale(0.8); } 50% { transform: scale(1); } }
-/* Inline-Denk-Zustände (4a Rand-Glow / 4b Denk-Leiste) — dockFill wird
-   JS-getrieben (determinierter Fortschritt), braucht daher keinen Keyframe. */
+/* In-Context-Denk-Zustand: atmender Sheet-/Karten-Glow + Fortschrittsleiste. */
 @keyframes edgeBreath { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
-@keyframes dockIn     { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes barSlide   { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
 
 @layer base {
   html,

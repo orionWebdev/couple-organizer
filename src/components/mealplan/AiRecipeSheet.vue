@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import AiThinkingRow from '@/components/ai/AiThinkingRow.vue'
 import type { RecipeSuggestion, AiResult, Quota } from '@/services/ai'
 import type { AssignRecipeInput } from '@/composables/useMealPlan'
 import type { RecipeCategoryDef } from '@/types'
@@ -8,7 +9,11 @@ import { weekdayLabel } from '@/utils/mealplan'
 import { showPaywall } from '@/composables/usePaywall'
 import { useAiThinking } from '@/composables/useAiThinking'
 
-const aiThinking = useAiThinking()
+const { runTask } = useAiThinking()
+
+// Denk-Zustand: das Sheet selbst glüht (thinking), während die KI Vorschläge
+// generiert. Kein Vollbild, keine schwebenden Indikatoren.
+const thinking = ref(false)
 
 interface WeekDayLite {
   date: Date
@@ -41,7 +46,6 @@ const categories = computed(() => props.categories ?? [])
 
 const selectedDateKey = ref('')
 const description = ref('')
-// Der Denk-Zustand läuft global (Rand-Glow / Denk-Leiste) über useAiThinking.
 const searched = ref(false)
 const suggestions = ref<RecipeSuggestion[]>([])
 const quota = ref<Quota | null>(null)
@@ -56,6 +60,7 @@ watch(() => props.isOpen, (open) => {
   if (!open) return
   selectedDateKey.value = props.initialDateKey ?? week.value[0]?.dateKey ?? ''
   description.value = ''
+  thinking.value = false
   searched.value = false
   suggestions.value = []
   quota.value = null
@@ -81,21 +86,22 @@ const quotaLabel = computed(() => {
   return `Noch ${Math.max(0, q.limit - q.used)} von ${q.limit} KI-Vorschlägen diesen Monat`
 })
 
-// Rezept-Idee ist eine kurze Task → im installierten PWA-Modus Rand-Glow,
-// sonst Denk-Leiste. Die eigentliche Arbeit läuft als task; null = Abbruch
-// (Quota/Premium) → Paywall.
+// Das Sheet wird zum Denk-Zustand (glüht), während die KI Vorschläge liefert.
+let runToken = 0
+function cancelThinking() {
+  runToken++
+  thinking.value = false
+}
+
 async function handleSubmit() {
-  if (!description.value.trim() || aiThinking.busy.value) return
+  if (!description.value.trim() || thinking.value) return
+  const token = ++runToken
   searched.value = true
   suggestions.value = []
-
-  const data = await aiThinking.run({
-    status: 'TwoDo KI sucht ein Rezept …',
-    subtitle: 'Rezept-Idee',
-    short: true,
-    estMs: 6000,
-    task: runSuggest,
-  })
+  thinking.value = true
+  const data = await runTask(runSuggest)
+  if (token !== runToken) return // abgebrochen
+  thinking.value = false
   if (data) suggestions.value = data
 }
 
@@ -151,9 +157,19 @@ async function handleSave() {
 </script>
 
 <template>
-  <BottomSheet :isOpen="isOpen" title="✨ KI-Rezeptvorschlag" @close="emit('close')">
+  <BottomSheet :isOpen="isOpen" title="✨ KI-Rezeptvorschlag" :thinking="thinking" @close="emit('close')">
+    <!-- Denk-Zustand: das Sheet glüht, nur die Denk-Zeile + Abbrechen -->
+    <template v-if="thinking">
+      <AiThinkingRow
+        icon="✨"
+        status="Sucht ein Rezept …"
+        subtitle="Passend zu deinen Wünschen"
+      />
+      <button type="button" class="air-cancel" @click="cancelThinking">Abbrechen</button>
+    </template>
+
     <!-- Bibliotheksmodus, Schritt 2: Kategorien für den gewählten Vorschlag -->
-    <template v-if="pending">
+    <template v-else-if="pending">
       <div class="pending-title">{{ pending.title }}</div>
       <p v-if="pending.minutes" class="pending-meta">⏱ {{ pending.minutes }} Min</p>
 
@@ -209,43 +225,60 @@ async function handleSave() {
       class="app-field ai-textarea"
       rows="3"
       placeholder="z. B. etwas Schnelles mit Hähnchen und Reis, wenig Aufwand …"
-      :disabled="aiThinking.busy.value"
     />
 
-    <button class="ai-submit-btn" :disabled="!description.trim() || aiThinking.busy.value" @click="handleSubmit">
+    <button class="ai-submit-btn" :disabled="!description.trim()" @click="handleSubmit">
       ✨ Rezepte vorschlagen
     </button>
 
-    <template v-if="!aiThinking.busy.value">
-      <div v-if="searched && suggestions.length === 0" class="empty-hint">
-        Keine Vorschläge gefunden — versuch's mit einer anderen Beschreibung.
-      </div>
+    <div v-if="searched && suggestions.length === 0" class="empty-hint">
+      Keine Vorschläge gefunden — versuch's mit einer anderen Beschreibung.
+    </div>
 
-      <div v-if="suggestions.length > 0" class="suggestions">
-        <button
-          v-for="(s, i) in suggestions"
-          :key="i"
-          type="button"
-          class="suggestion-card"
-          :disabled="!isLibrary && !selectedDateKey"
-          @click="handlePick(s)"
-        >
-          <div class="suggestion-title">{{ s.title }}</div>
-          <div v-if="s.minutes || s.tags?.length" class="suggestion-meta">
-            <span v-if="s.minutes">{{ s.minutes }} Min</span>
-            <span v-if="s.tags?.length">{{ s.tags.join(', ') }}</span>
-          </div>
-          <div v-if="s.description" class="suggestion-desc">{{ s.description }}</div>
-        </button>
-      </div>
+    <div v-if="suggestions.length > 0" class="suggestions">
+      <button
+        v-for="(s, i) in suggestions"
+        :key="i"
+        type="button"
+        class="suggestion-card"
+        :disabled="!isLibrary && !selectedDateKey"
+        @click="handlePick(s)"
+      >
+        <div class="suggestion-title">{{ s.title }}</div>
+        <div v-if="s.minutes || s.tags?.length" class="suggestion-meta">
+          <span v-if="s.minutes">{{ s.minutes }} Min</span>
+          <span v-if="s.tags?.length">{{ s.tags.join(', ') }}</span>
+        </div>
+        <div v-if="s.description" class="suggestion-desc">{{ s.description }}</div>
+      </button>
+    </div>
 
-      <p v-if="quotaLabel" class="quota-hint">{{ quotaLabel }}</p>
-    </template>
+    <p v-if="quotaLabel" class="quota-hint">{{ quotaLabel }}</p>
     </template>
   </BottomSheet>
 </template>
 
 <style scoped>
+.air-cancel {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: var(--ai-textshadow);
+  cursor: pointer;
+}
+
+.air-cancel:active {
+  transform: scale(0.98);
+}
+
 .field-label {
   font-size: 11px;
   font-weight: 700;

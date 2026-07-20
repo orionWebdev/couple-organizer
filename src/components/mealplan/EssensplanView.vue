@@ -20,7 +20,7 @@ const props = defineProps<{
 
 const coupleIdRef = computed(() => props.coupleId)
 
-const { week, recipes, loading, canCreateRecipe, canPlanWeek, suggestRecipes, planWeek, applyWeekPlan, assignRecipe, assignExistingRecipe, removeAssignment } = useMealPlan(coupleIdRef)
+const { week, weekLabel, isCurrentWeek, shiftWeek, resetWeek, recipes, loading, canCreateRecipe, canPlanWeek, suggestRecipes, planWeek, applyWeekPlan, assignRecipe, assignExistingRecipe, removeAssignment } = useMealPlan(coupleIdRef)
 const { activeListId, addItem: addShoppingItem } = useShopping(coupleIdRef)
 
 const hasAnyRecipe = computed(() => week.value.some((d) => d.recipe))
@@ -164,6 +164,22 @@ async function handleCreateShoppingList() {
 <template>
   <div class="essensplan">
     <div class="essensplan-scroll">
+      <!-- Wochennavigation: vergangene/kommende Wochen sind weiter erreichbar,
+           die Pläne liegen ohnehin dauerhaft in Firestore. -->
+      <div class="week-nav">
+        <button class="week-arrow" type="button" aria-label="Vorige Woche" @click="shiftWeek(-1)">‹</button>
+        <button
+          class="week-label"
+          type="button"
+          :class="{ 'week-label--past': !isCurrentWeek }"
+          @click="resetWeek"
+        >
+          {{ weekLabel }}
+          <span v-if="!isCurrentWeek" class="week-today-hint">· heute</span>
+        </button>
+        <button class="week-arrow" type="button" aria-label="Nächste Woche" @click="shiftWeek(1)">›</button>
+      </div>
+
       <AiButton
         title="TwoDo KI"
         subtitle="Wochenplan & Rezepte vorschlagen"
@@ -250,6 +266,59 @@ async function handleCreateShoppingList() {
   /* Nur vertikal scrollen — horizontale Gesten gehören dem Tab-Swipe. */
   touch-action: pan-y;
   padding: 0 var(--screen-pad);
+}
+
+/* Wochennavigation */
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 14px;
+}
+
+.week-arrow {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-softer);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+
+.week-arrow:active {
+  transform: scale(0.94);
+}
+
+.week-label {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: none;
+  background: transparent;
+  font-family: var(--font-headline);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.week-label--past {
+  color: var(--accent);
+}
+
+.week-today-hint {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-meta);
 }
 
 /* Ein KI-Einstieg (AiButton) statt der früheren zwei Gradient-Karten. */

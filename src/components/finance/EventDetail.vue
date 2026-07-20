@@ -16,9 +16,16 @@ const emit = defineEmits<{
   editExpense: [expense: Expense]
   settle: []
   setBudget: []
+  reopen: []
 }>()
 
+// Archiviert = abgeschlossenes/ausgeglichenes Event. Read-only-Ansicht: alle
+// Ausgaben (auch die ausgeglichenen) sichtbar, kein Ausgleichen/Hinzufügen,
+// dafür „reaktivieren".
+const isArchived = computed(() => props.summary.event.archived)
+
 const unpaidExpenses = computed(() => props.summary.expenses.filter((e) => !e.isPaid))
+const shownExpenses = computed(() => (isArchived.value ? props.summary.expenses : unpaidExpenses.value))
 
 function euro(cents: number): string {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €'
@@ -79,8 +86,11 @@ const settleAmountFormatted = computed(() => {
     </div>
 
     <div class="balance-card">
-      <div class="card-label section-label">{{ summary.event.title.toUpperCase() }}</div>
-      <div class="card-amount mono">{{ totalFormatted }}</div>
+      <div class="card-label section-label">
+        {{ summary.event.title.toUpperCase() }}
+        <span v-if="isArchived" class="archived-tag">✓ Ausgeglichen</span>
+      </div>
+      <div class="card-amount mono">{{ isArchived ? euro(summary.spent) : totalFormatted }}</div>
 
       <template v-if="hasBudget">
         <div class="budget-bar">
@@ -108,7 +118,7 @@ const settleAmountFormatted = computed(() => {
     <template v-else>
       <div class="expense-list">
         <ExpenseRow
-          v-for="exp in unpaidExpenses"
+          v-for="exp in shownExpenses"
           :key="exp.id"
           :expense="exp"
           :couple="couple"
@@ -118,15 +128,20 @@ const settleAmountFormatted = computed(() => {
         />
       </div>
 
-      <div v-if="!isSettled" class="settle-card">
-        <div class="settle-row">
-          <span class="settle-label">Beim Abschließen:</span>
-          <span class="settle-value">{{ settleLine }}&nbsp;<span class="settle-amount mono">{{ settleAmountFormatted }}</span></span>
+      <template v-if="isArchived">
+        <button class="reopen-btn" @click="emit('reopen')">↩︎ Event reaktivieren</button>
+      </template>
+      <template v-else>
+        <div v-if="!isSettled" class="settle-card">
+          <div class="settle-row">
+            <span class="settle-label">Beim Abschließen:</span>
+            <span class="settle-value">{{ settleLine }}&nbsp;<span class="settle-amount mono">{{ settleAmountFormatted }}</span></span>
+          </div>
+          <button class="settle-btn" @click="emit('settle')">Abschließen &amp; Ausgleichen</button>
         </div>
-        <button class="settle-btn" @click="emit('settle')">Abschließen &amp; Ausgleichen</button>
-      </div>
 
-      <button class="add-more-btn" @click="emit('addExpense')">+ Ausgabe hinzufügen</button>
+        <button class="add-more-btn" @click="emit('addExpense')">+ Ausgabe hinzufügen</button>
+      </template>
     </template>
   </div>
 </template>
@@ -226,6 +241,34 @@ const settleAmountFormatted = computed(() => {
 .card-label {
   color: var(--text-secondary);
   margin-bottom: 8px;
+}
+
+.archived-tag {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--success);
+}
+
+.reopen-btn {
+  display: block;
+  width: calc(100% - 2 * var(--screen-pad));
+  margin: 22px var(--screen-pad) 0;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 13px;
+  border-radius: 14px;
+}
+
+.reopen-btn:active {
+  transform: scale(0.98);
 }
 
 .card-amount {

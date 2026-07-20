@@ -1,8 +1,15 @@
 <script setup lang="ts">
+import AiMarkLoader from './AiMarkLoader.vue'
+
 // Der eine KI-Einstieg. Ersetzt die vier handgebauten Gradient-Buttons.
-// Rein präsentational — die Aktion (Sheet öffnen / direkt feuern) liegt beim
-// Aufrufer. Zwei Varianten: 'card' (voller Einstieg) und 'pill' (kompakt, z. B.
-// im Kartenkopf des Finanz-Coach).
+// Zwei Varianten: 'card' (voller Einstieg) und 'pill' (kompakt, z. B. im
+// Kartenkopf des Finanz-Coach).
+//
+// Direkt-Auslöser OHNE Sheet (Finanz-Coach) verankern ihren Denk-Zustand am
+// Button selbst — §6·A Auslöser-Halo: `thinking` blendet den Inhalt aus, zeigt
+// Loader (weiß, auf dem Gradient) + Status und legt einen atmenden Schein
+// dahinter. Sheet-Auslöser (Küche, Rezept-Wiki) lassen `thinking` weg — die
+// glühen im Sheet.
 withDefaults(
   defineProps<{
     variant?: 'card' | 'pill'
@@ -10,8 +17,10 @@ withDefaults(
     title: string
     subtitle?: string
     locked?: boolean
+    thinking?: boolean
+    thinkingStatus?: string
   }>(),
-  { variant: 'card', icon: '✨', locked: false },
+  { variant: 'card', icon: '✨', locked: false, thinking: false },
 )
 
 defineEmits<{ click: [] }>()
@@ -21,32 +30,47 @@ defineEmits<{ click: [] }>()
   <button
     type="button"
     class="ai-btn"
-    :class="`ai-btn--${variant}`"
+    :class="[`ai-btn--${variant}`, { 'is-thinking': thinking }]"
     @click="$emit('click')"
   >
-    <span v-if="variant === 'card'" class="ai-btn-chip">{{ icon }}</span>
-    <span v-else class="ai-btn-pchip">{{ icon }}</span>
+    <!-- 6·A · Auslöser-Halo hinter dem Button -->
+    <span v-if="thinking" class="ai-btn-halo" aria-hidden="true" />
 
-    <span v-if="variant === 'card'" class="ai-btn-txt">
-      <b>{{ title }}</b>
-      <i v-if="subtitle">{{ subtitle }}</i>
+    <!-- Denk-Zustand: Inhalt weg, Loader + Status -->
+    <span v-if="thinking" class="ai-btn-think" role="status" aria-live="polite">
+      <AiMarkLoader :size="22" />
+      <span v-if="thinkingStatus" class="ai-btn-tlabel">{{ thinkingStatus }}</span>
     </span>
-    <span v-else class="ai-btn-plabel">{{ title }}</span>
 
-    <template v-if="variant === 'card'">
-      <!-- Plus-Badge-Slot: gesperrtes Feature zeigt "PLUS" statt Chevron -->
-      <slot name="badge">
-        <span v-if="locked" class="ai-btn-badge">PLUS</span>
-        <span v-else class="ai-btn-chev" aria-hidden="true">›</span>
-      </slot>
+    <!-- Ruhezustand -->
+    <template v-else>
+      <span v-if="variant === 'card'" class="ai-btn-chip">{{ icon }}</span>
+      <span v-else class="ai-btn-pchip">{{ icon }}</span>
+
+      <span v-if="variant === 'card'" class="ai-btn-txt">
+        <b>{{ title }}</b>
+        <i v-if="subtitle">{{ subtitle }}</i>
+      </span>
+      <span v-else class="ai-btn-plabel">{{ title }}</span>
+
+      <template v-if="variant === 'card'">
+        <!-- Plus-Badge-Slot: gesperrtes Feature zeigt "PLUS" statt Chevron -->
+        <slot name="badge">
+          <span v-if="locked" class="ai-btn-badge">PLUS</span>
+          <span v-else class="ai-btn-chev" aria-hidden="true">›</span>
+        </slot>
+      </template>
     </template>
   </button>
 </template>
 
 <style scoped>
 /* Zweilagiger Hintergrund: fixer Scrim (100%) über wanderndem Gradient — sonst
-   wird weißer Text in der hellen Amber-Phase unlesbar. Theme-unabhängig. */
+   wird weißer Text in der hellen Amber-Phase unlesbar. Theme-unabhängig.
+   position:relative (ohne z-index) hält den Halo dahinter, ohne einen eigenen
+   Stacking-Context zu erzeugen. */
 .ai-btn {
+  position: relative;
   border: none;
   cursor: pointer;
   color: #fff;
@@ -61,6 +85,52 @@ defineEmits<{ click: [] }>()
 
 .ai-btn:active {
   transform: scale(0.98);
+}
+
+/* Denk-Zustand: Button atmet leicht mit. */
+.ai-btn.is-thinking {
+  animation: aiShift 6s ease-in-out infinite, aiBreath 2.6s ease-in-out infinite;
+}
+
+/* ── 6·A · Auslöser-Halo ───────────────────────────────────── */
+.ai-btn-halo {
+  position: absolute;
+  inset: -7px;
+  z-index: -1;
+  border-radius: 26px;
+  background: var(--ai-gradient);
+  background-size: 300% 300%;
+  filter: blur(16px);
+  opacity: 0.72;
+  animation: aiShift 4s ease-in-out infinite, edgeBreath 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.ai-btn--pill .ai-btn-halo {
+  inset: -6px;
+  border-radius: 999px;
+}
+
+/* Loader (weiß, auf dem Gradient) + Status */
+.ai-btn-think {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  --ai-mark: #fff;
+}
+
+.ai-btn-tlabel {
+  font-family: var(--font-headline);
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: var(--ai-textshadow);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Variante card ─────────────────────────────────────────── */
@@ -134,6 +204,11 @@ defineEmits<{ click: [] }>()
   gap: 8px;
   padding: 9px 15px 9px 12px;
   border-radius: 999px;
+}
+
+/* Im Denk-Zustand darf die Pill wachsen, damit Loader + Status Platz haben. */
+.ai-btn--pill.is-thinking {
+  padding: 9px 16px;
 }
 
 .ai-btn-pchip {

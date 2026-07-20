@@ -125,8 +125,8 @@ function onTabClick(e: MouseEvent, id: string) {
          showPaywall(feature), ohne sie durchreichen zu müssen. -->
     <PaywallSheet />
 
-    <!-- Einmal für die ganze App: KI-Denk-Zustand (Rand-Glow / Denk-Leiste /
-         Bloom), bespielt aus dem useAiThinking-Singleton. -->
+    <!-- Einmal für die ganze App: der Vollbild-Bloom als „Fertig"-Flourish.
+         Der Denk-Zustand selbst lebt in-context (Sheet-Glow / Ziel-Karte). -->
     <AiThinkingHost />
 
     <nav class="mnav">

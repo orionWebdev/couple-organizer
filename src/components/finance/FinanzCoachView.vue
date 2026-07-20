@@ -8,7 +8,10 @@ import { useCouple } from '@/composables/useCouple'
 import AiButton from '@/components/ai/AiButton.vue'
 import { useAiThinking } from '@/composables/useAiThinking'
 
-const aiThinking = useAiThinking()
+const { runTask, playBloom } = useAiThinking()
+
+// Denk-Zustand lebt in der Ziel-Karte selbst (kein Overlay, kein Rand-Glow).
+const thinking = ref(false)
 
 // Als Finanzen-Tab eingebettet statt eigener Route — bekommt die schon in
 // FinanzenView laufenden Daten als Props statt eine zweite useExpenses-
@@ -99,25 +102,37 @@ const canAnalyze = computed(() =>
   !!activeMonth.value && activeMonth.value.categories.length > 0
 )
 
+let runToken = 0
+function cancelThinking() {
+  runToken++
+  thinking.value = false
+}
+
 async function startInsight() {
-  if (!canAnalyze.value || aiThinking.busy.value) return
+  if (!canAnalyze.value || thinking.value) return
   // Composable-Konvention: der View öffnet die Paywall, ohne Premium gar nicht
   // erst den Callable rufen (der Server bleibt die maßgebliche Prüfung).
   if (!isPremium.value) {
     showPaywall('financeCoach')
     return
   }
-  await aiThinking.run({
-    status: 'TwoDo KI analysiert …',
-    subtitle: activeMonth.value?.label,
-    short: true, // meist wenige Sekunden → Rand-Glow
-    estMs: 6000,
-    task: runInsight,
-  })
+  // Die Insight-Karte selbst wird zum Denk-Zustand (glüht + Loader), danach
+  // faded der Text ein.
+  const token = ++runToken
+  thinking.value = true
+  const res = await runTask(runInsight)
+  if (token !== runToken) return // abgebrochen → Ergebnis verwerfen, nichts cachen
+  // Kurzer Bloom vorm Reveal (nur bei echtem Ergebnis, nicht bei Paywall-Abbruch).
+  if (res) await playBloom()
+  if (token !== runToken) return
+  thinking.value = false
+  if (res) insightCache.value[res.monthKey] = res.state
 }
 
-// KI-Arbeit als task. null = Abbruch (Quota/Premium/Fehler).
-async function runInsight(): Promise<string | null> {
+// KI-Arbeit als task. Schreibt NICHT selbst in den Cache (sonst würde ein
+// abgebrochener Aufruf die Karte doch noch füllen) — das macht startInsight
+// nach der Token-Prüfung. null = Paywall (Quota/Premium).
+async function runInsight(): Promise<{ monthKey: string; state: InsightState } | null> {
   const month = activeMonth.value
   if (!month || !props.couple) return null
 
@@ -131,16 +146,14 @@ async function runInsight(): Promise<string | null> {
     const result = await suggestFinanceInsight(props.couple.id, deltas, month.label)
 
     if (result.kind === 'ok') {
-      insightCache.value[month.monthKey] = { text: result.data, error: false }
-      return result.data
+      return { monthKey: month.monthKey, state: { text: result.data, error: false } }
     }
-    // 'premium'/'quota' → Paywall, kein Bloom.
+    // 'premium'/'quota' → Paywall.
     showPaywall('financeCoach')
     return null
   } catch (err) {
     console.error('Failed to load finance insight:', err)
-    insightCache.value[month.monthKey] = { text: '', error: true }
-    return '' // Fehlertext zeigen (leer, aber error-Flag gesetzt) — kein Abbruch
+    return { monthKey: month.monthKey, state: { text: '', error: true } }
   }
 }
 </script>
@@ -167,13 +180,20 @@ async function runInsight(): Promise<string | null> {
         </button>
       </div>
 
-      <!-- KI-Coach Einstieg -->
+      <!-- KI-Coach Einstieg — Direkt-Auslöser: Denk-Zustand am Button (§6·A Halo) -->
       <div class="coach-head">
         <span class="coach-head-title">✨ Finanz-Coach</span>
-        <AiButton variant="pill" icon="📊" title="Analysieren" @click="startInsight" />
+        <AiButton
+          variant="pill"
+          icon="📊"
+          title="Analysieren"
+          :thinking="thinking"
+          thinkingStatus="Analysiert eure Ausgaben …"
+          @click="thinking ? cancelThinking() : startInsight()"
+        />
       </div>
 
-      <!-- AI-Insight -->
+      <!-- AI-Insight (der Denk-Zustand sitzt am Button, nicht hier) -->
       <div v-if="activeInsight?.text" class="insight-card">
         <span class="insight-icon">✨</span>
         <p class="insight-text">{{ activeInsight.text }}</p>

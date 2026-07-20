@@ -30,6 +30,7 @@ const {
   openMonthlyExpenseIds,
   loading,
   activeEventSummaries,
+  archivedEventSummaries,
   eventSummaries,
   financeMonths,
   addExpense,
@@ -194,6 +195,19 @@ async function onSettleEvent() {
   backToDashboard()
 }
 
+// Ein archiviertes Event zurück in die aktive Liste holen (z. B. versehentlich
+// abgeschlossen). Die Ausgaben bleiben ausgeglichen (isPaid) — bei Bedarf lässt
+// sich dann wieder etwas hinzufügen/verrechnen.
+async function onReopenEvent() {
+  if (!currentEventSummary.value) return
+  await setEventArchived(currentEventSummary.value.event.id, false)
+  showToast('Event reaktiviert')
+  backToDashboard()
+}
+
+// Archiv abgeschlossener Events — eingeklappt, bis man reinschaut.
+const showArchive = ref(false)
+
 // ── Optionales Budget eines Events ────────────────────────────
 // Gleiche Eingabe-Semantik wie beim Monatsbudget: leeres Feld entfernt es,
 // eine unlesbare Eingabe wird abgelehnt statt still zu verwerfen.
@@ -292,6 +306,25 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
                 </button>
               </TransitionGroup>
 
+              <!-- Archiv abgeschlossener Events — direkt bei den aktiven Events -->
+              <div v-if="!loading && archivedEventSummaries.length" class="archive-section">
+                <button class="archive-toggle" type="button" @click="showArchive = !showArchive">
+                  <span class="archive-caret" :class="{ 'archive-caret--open': showArchive }">›</span>
+                  Archiv
+                  <span class="archive-count">{{ archivedEventSummaries.length }}</span>
+                </button>
+                <div v-if="showArchive" class="events-rail archive-rail">
+                  <EventCard
+                    v-for="summary in archivedEventSummaries"
+                    :key="summary.event.id"
+                    :summary="summary"
+                    :couple="couple"
+                    muted
+                    @click="openEvent(summary.event.id)"
+                  />
+                </div>
+              </div>
+
               <!-- Expense list -->
               <div v-if="loading" class="loading-row">Laden…</div>
               <div v-else-if="sortedExpenses.length === 0" class="empty-state">
@@ -335,6 +368,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       @editExpense="openEditExpense"
       @settle="onSettleEvent"
       @setBudget="openEventBudgetSheet"
+      @reopen="onReopenEvent"
     />
 
     <BottomSheet
@@ -468,6 +502,52 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
   overflow-x: auto;
   padding: 0 var(--screen-pad) 4px;
   margin-bottom: 24px;
+}
+
+/* Archiv abgeschlossener Events — sitzt direkt unter der Events-Rail. Deren
+   margin-bottom (24px) liefert den Abstand nach oben. */
+.archive-section {
+  margin: -8px 0 24px;
+  padding: 0 var(--screen-pad);
+}
+
+.archive-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.archive-caret {
+  display: inline-block;
+  font-size: 16px;
+  transition: transform 0.2s var(--ease-standard);
+}
+
+.archive-caret--open {
+  transform: rotate(90deg);
+}
+
+.archive-count {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-deep);
+  color: var(--text-meta);
+  font-size: 11px;
+  text-align: center;
+}
+
+.archive-rail {
+  margin: 12px calc(-1 * var(--screen-pad)) 0;
+  padding-top: 4px;
 }
 
 .new-event-card {

@@ -1,23 +1,12 @@
 <script setup lang="ts">
 import { useAiThinking } from '@/composables/useAiThinking'
-import AiThinkingIndicator from './AiThinkingIndicator.vue'
 import AiThinkingModal from './AiThinkingModal.vue'
 
-// Einmal für die ganze App (in TabsView) gemountet — bespielt aus dem
-// useAiThinking-Singleton. Während 'thinking' der inline Denk-Zustand
-// (Rand-Glow oder Denk-Leiste), zur 'done'-Phase der kurze Vollbild-Bloom.
-const { step, mode, status, subtitle, etaSeconds, progress, cancel } = useAiThinking()
+// Einmal in TabsView gemountet. Der Denk-Zustand selbst lebt in-context (Sheet-
+// Glow / Ziel-Karte); global bleibt nur der kurze Vollbild-Bloom.
+const { bloomActive } = useAiThinking()
 </script>
 
 <template>
-  <AiThinkingIndicator
-    v-if="step === 'thinking'"
-    :mode="mode"
-    :status="status"
-    :subtitle="subtitle"
-    :etaSeconds="etaSeconds"
-    :progress="progress"
-    @cancel="cancel"
-  />
-  <AiThinkingModal :open="step === 'done'" />
+  <AiThinkingModal :open="bloomActive" />
 </template>

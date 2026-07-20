@@ -7,11 +7,9 @@ import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
 import MealPlanDayRow from './MealPlanDayRow.vue'
 import RecipeSuggestSheet from './RecipeSuggestSheet.vue'
-import AiRecipeSheet from './AiRecipeSheet.vue'
-import WeekAutopilotSheet from './WeekAutopilotSheet.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
 import AiButton from '@/components/ai/AiButton.vue'
-import AiActionSheet, { type AiActionItem } from '@/components/ai/AiActionSheet.vue'
+import KitchenAiSheet from './KitchenAiSheet.vue'
 
 const props = defineProps<{
   coupleId: string | null
@@ -41,24 +39,12 @@ async function assignWithPaywall(dateKey: string, input: Parameters<typeof assig
 const showSheet = ref(false)
 const suggestDateKey = ref<string | null>(null)
 
-// Separates KI-Modal ("Rezept vorschlagen lassen"): freie Beschreibung,
-// eigener animierter Ladezustand — bewusst getrennt von der Tages-Sheet oben.
-const showAiModal = ref(false)
-
-// Wochen-Autopilot (TwoDo Plus): plant die ganze Woche auf einen Tap. Gate
-// vorab, damit die Paywall statt der Konfig-Maske aufgeht.
-const showAutopilot = ref(false)
-
-function openAutopilot() {
-  if (!canPlanWeek.value) {
-    showPaywall('weekPlan')
-    return
-  }
-  showAutopilot.value = true
-}
+// Der eine KI-Einstieg: ein Sheet, das die beiden KI-Aktionen zeigt und beim
+// Tap selbst zum glühenden Denk-Zustand wird (KitchenAiSheet).
+const showKitchenAi = ref(false)
 
 async function onWeekApplied(payload: { count: number; days: WeekPlanDay[]; createList: boolean }) {
-  showAutopilot.value = false
+  showKitchenAi.value = false
   const { count, days, createList } = payload
   let msg = count > 0 ? `Wochenplan eingeplant (${count} ${count === 1 ? 'Tag' : 'Tage'})` : 'Es wurde nichts eingeplant'
 
@@ -86,30 +72,9 @@ const weekForSheet = computed(() => week.value.map((d) => ({
   recipeTitle: d.recipe?.title ?? null,
 })))
 
-const defaultSuggestDateKey = computed(() =>
-  week.value.find((d) => !d.recipe)?.dateKey ?? week.value[0]?.dateKey ?? null
-)
-
 function openDaySuggest(dateKey: string) {
   suggestDateKey.value = dateKey
   showSheet.value = true
-}
-
-function openAiModal() {
-  showAiModal.value = true
-}
-
-// Ein KI-Einstieg für die Küche → Aktions-Sheet mit den zwei KI-Aktionen.
-const showAiActions = ref(false)
-const aiActions: AiActionItem[] = [
-  { key: 'week', icon: '🪄', title: 'Ganze Woche planen', subtitle: '7 Abendessen als kompletter Vorschlag' },
-  { key: 'recipe', icon: '✨', title: 'Rezept vorschlagen', subtitle: 'Eine Idee für heute Abend' },
-]
-
-function onAiAction(key: string) {
-  showAiActions.value = false
-  if (key === 'week') openAutopilot()
-  else openAiModal()
 }
 
 async function handleRemove(entryId: string) {
@@ -119,7 +84,7 @@ async function handleRemove(entryId: string) {
 
 function onAssigned(success: boolean) {
   showSheet.value = false
-  showAiModal.value = false
+  showKitchenAi.value = false
   showToast(success ? 'Rezept eingeplant' : 'Fehler beim Einplanen')
 }
 
@@ -183,7 +148,7 @@ async function handleCreateShoppingList() {
       <AiButton
         title="TwoDo KI"
         subtitle="Wochenplan & Rezepte vorschlagen"
-        @click="showAiActions = true"
+        @click="showKitchenAi = true"
       />
 
       <div v-if="loading" class="loading-msg">Laden…</div>
@@ -208,11 +173,17 @@ async function handleCreateShoppingList() {
       </button>
     </div>
 
-    <AiActionSheet
-      :isOpen="showAiActions"
-      :actions="aiActions"
-      @select="onAiAction"
-      @close="showAiActions = false"
+    <KitchenAiSheet
+      :isOpen="showKitchenAi"
+      :week="weekForSheet"
+      :canPlanWeek="canPlanWeek"
+      :plan="planWeek"
+      :apply="applyWeekPlan"
+      :suggest="suggestRecipes"
+      :assign="assignWithPaywall"
+      @close="showKitchenAi = false"
+      @applied="onWeekApplied"
+      @assigned="onAssigned"
     />
 
     <RecipeSuggestSheet
@@ -224,25 +195,6 @@ async function handleCreateShoppingList() {
       :assignExisting="assignExistingRecipe"
       @close="showSheet = false"
       @assigned="onAssigned"
-    />
-
-    <AiRecipeSheet
-      :isOpen="showAiModal"
-      :week="weekForSheet"
-      :initialDateKey="defaultSuggestDateKey"
-      :suggest="suggestRecipes"
-      :assign="assignWithPaywall"
-      @close="showAiModal = false"
-      @assigned="onAssigned"
-    />
-
-    <WeekAutopilotSheet
-      :isOpen="showAutopilot"
-      :week="weekForSheet"
-      :plan="planWeek"
-      :apply="applyWeekPlan"
-      @close="showAutopilot = false"
-      @applied="onWeekApplied"
     />
 
     <RecipeDetailModal

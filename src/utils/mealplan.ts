@@ -27,3 +27,13 @@ export function weekdayLabel(date: Date): string {
 export function dayMonthLabel(date: Date): string {
   return dayMonthFormatter.format(date)
 }
+
+// „14.–20. Juli" bzw. „30. Juni – 6. Juli" für einen Wochenbereich (Mo–So).
+export function weekRangeLabel(dates: Date[]): string {
+  const first = dates[0]
+  const last = dates[dates.length - 1]
+  if (first.getMonth() === last.getMonth()) {
+    return `${first.getDate()}.–${dayMonthLabel(last)}`
+  }
+  return `${dayMonthLabel(first)} – ${dayMonthLabel(last)}`
+}

@@ -9,7 +9,7 @@ import { useCouple } from './useCouple'
 import { FREE_LIMITS } from '@/utils/premium'
 import type { MealPlanEntry, Recipe, RecipeIngredient, RecipeNutrition } from '@/types'
 import { suggestRecipes as fetchSuggestions, planWeek as fetchWeekPlan, type RecipeSuggestion, type AiResult } from '@/services/ai'
-import { currentWeekDates, dateKey as toDateKey } from '@/utils/mealplan'
+import { currentWeekDates, dateKey as toDateKey, weekRangeLabel } from '@/utils/mealplan'
 
 // Ein von der KI geplantes Gericht, das auf einen konkreten Tag gemünzt ist.
 export interface WeekPlanDay {
@@ -140,7 +140,35 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     startListeningToEntries(id)
   }, { immediate: true })
 
-  const weekDates = computed(() => currentWeekDates())
+  // Angezeigte Woche relativ zur aktuellen (0 = diese, -1 = letzte, +1 = nächste).
+  // Vergangene Wochenpläne bleiben in `mealPlans` erhalten — das Planen einer
+  // neuen Woche ersetzt nur die Einträge derselben Tage —, sind aber ohne
+  // Navigation nicht sichtbar. Der Offset macht sie wieder erreichbar.
+  // Dashboard/andere Aufrufer lassen ihn auf 0, sehen also weiter „diese Woche".
+  const weekOffset = ref(0)
+
+  const weekDates = computed(() => {
+    const base = new Date()
+    const shifted = new Date(base.getFullYear(), base.getMonth(), base.getDate() + weekOffset.value * 7)
+    return currentWeekDates(shifted)
+  })
+
+  const isCurrentWeek = computed(() => weekOffset.value === 0)
+
+  const weekLabel = computed(() => {
+    if (weekOffset.value === 0) return 'Diese Woche'
+    if (weekOffset.value === -1) return 'Letzte Woche'
+    if (weekOffset.value === 1) return 'Nächste Woche'
+    return weekRangeLabel(weekDates.value)
+  })
+
+  function shiftWeek(delta: number) {
+    weekOffset.value += delta
+  }
+
+  function resetWeek() {
+    weekOffset.value = 0
+  }
 
   const week = computed<WeekDay[]>(() =>
     weekDates.value.map((date) => {
@@ -424,6 +452,11 @@ export function useMealPlan(coupleId: Ref<string | null>) {
 
   return {
     week,
+    weekLabel,
+    weekOffset: readonly(weekOffset),
+    isCurrentWeek,
+    shiftWeek,
+    resetWeek,
     recipes: readonly(recipes),
     loading,
     error: readonly(error),

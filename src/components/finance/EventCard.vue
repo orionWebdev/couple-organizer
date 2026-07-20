@@ -5,13 +5,16 @@ import type { Couple, FinanceEventSummary } from '@/types'
 const props = defineProps<{
   summary: FinanceEventSummary
   couple: Couple | null
+  // Archivierte Events: `total` (offen) ist nach dem Ausgleichen 0 — hier zählt
+  // `spent` (alles Ausgegebene), und die Karte wird gedämpft dargestellt.
+  muted?: boolean
 }>()
 
 const emit = defineEmits<{ click: [] }>()
 
 const totalFormatted = computed(() => {
-  const euros = props.summary.total / 100
-  return euros.toFixed(2).replace('.', ',') + ' €'
+  const cents = props.muted ? props.summary.spent : props.summary.total
+  return (cents / 100).toFixed(2).replace('.', ',') + ' €'
 })
 
 const personA = computed(() => props.couple?.memberIds[0] ?? null)
@@ -37,14 +40,17 @@ const itemCount = computed(() => props.summary.expenses.length)
 </script>
 
 <template>
-  <button class="card" @click="emit('click')">
+  <button class="card" :class="{ 'card--muted': muted }" @click="emit('click')">
     <div class="card-name">{{ summary.event.title }}</div>
     <div class="card-total mono">{{ totalFormatted }}</div>
     <div class="card-bar">
       <div class="card-bar-chris" :style="{ width: chrisW + '%' }" />
       <div class="card-bar-sarah" :style="{ width: sarahW + '%' }" />
     </div>
-    <div class="card-meta">{{ itemCount }} {{ itemCount === 1 ? 'Ausgabe' : 'Ausgaben' }}</div>
+    <div class="card-meta">
+      <span v-if="muted" class="card-tag">✓ ausgeglichen</span>
+      <span v-else>{{ itemCount }} {{ itemCount === 1 ? 'Ausgabe' : 'Ausgaben' }}</span>
+    </div>
   </button>
 </template>
 
@@ -89,5 +95,22 @@ const itemCount = computed(() => props.summary.expenses.length)
 .card-meta {
   font-size: 11.5px;
   color: var(--text-meta);
+}
+
+/* Archiviert: gedämpft, aber lesbar. */
+.card--muted {
+  background: var(--surface-deep);
+  box-shadow: none;
+}
+
+.card--muted .card-total,
+.card--muted .card-name {
+  color: var(--text-secondary);
+}
+
+.card-tag {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--success);
 }
 </style>

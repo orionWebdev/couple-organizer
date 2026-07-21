@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
@@ -12,11 +12,19 @@ import { useBucketList } from '@/composables/useBucketList'
 import { usePlanung } from '@/composables/usePlanung'
 import { showToast } from '@/composables/useToast'
 import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
-import { dateKey } from '@/utils/mealplan'
+import { useCoach } from '@/composables/useCoach'
+import { useAiThinking } from '@/composables/useAiThinking'
+import { showPaywall } from '@/composables/usePaywall'
+import { dateKey, weekRangeLabel, currentWeekDates } from '@/utils/mealplan'
+import { resolveExpenseCategories } from '@/utils/expenseCategories'
+import { resolveIdeaCategories } from '@/utils/ideen'
+import { buildCoachSnapshot } from '@/utils/coachSnapshot'
 import type { Chore, ExpenseCategory } from '@/types'
+import type { CoachAction } from '@/services/ai'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import MealHero from '@/components/dashboard/MealHero.vue'
+import CoachCard from '@/components/dashboard/CoachCard.vue'
 import QuickTasksCard from '@/components/dashboard/QuickTasksCard.vue'
 import BelegungTodayCard from '@/components/dashboard/BelegungTodayCard.vue'
 import FinanceCard from '@/components/dashboard/FinanceCard.vue'
@@ -40,7 +48,8 @@ const favoriteChores = computed(() =>
   chores.value.filter((c) => myFavoriteChoreIds.value.has(c.id))
 )
 const {
-  expenses, monthlySummaries, balanceInfo, addExpense, createEvent,
+  expenses, monthlySummaries, balanceInfo, financeMonths, activeEventSummaries,
+  addExpense, createEvent,
   loading: expensesLoading,
 } = useExpenses(coupleId)
 const { bookings, resources, resourceById, loading: belegungLoading } = useBelegung(coupleId)
@@ -132,6 +141,79 @@ async function onSubmitEvent(payload: { title: string; dateLabel: string }) {
   showToast(`„${payload.title}" angelegt ✓`)
 }
 
+// ── Wochen-Check-in (Paar-Coach) ───────────────────────────────
+// Der Snapshot entsteht aus den Composables, die auf dieser Seite ohnehin schon
+// laufen — es kommt kein einziger zusätzlicher Listener dazu.
+const { currentReport, generateWeekReport, loading: coachLoading } = useCoach(coupleId)
+const { runTask, playBloom } = useAiThinking()
+const coachThinking = ref(false)
+
+const coachReport = computed(() => currentReport.value?.report ?? null)
+
+// Nur nennen, wenn es der Partner war — "von dir" wäre eine Nullaussage.
+const coachCreatedByName = computed(() => {
+  const uid = currentReport.value?.createdBy
+  if (!uid || uid === currentUserId.value) return null
+  return couple.value?.memberNames[uid] ?? null
+})
+
+let coachToken = 0
+function cancelCoach() {
+  coachToken++
+  coachThinking.value = false
+}
+
+async function startCoach() {
+  if (coachThinking.value || !couple.value) return
+  const token = ++coachToken
+  coachThinking.value = true
+
+  const outcome = await runTask(async () => {
+    const snapshot = buildCoachSnapshot({
+      weekLabel: weekRangeLabel(currentWeekDates()),
+      couple: couple.value,
+      fairness: { couple: couple.value, chores: chores.value, history: history.value },
+      money: {
+        couple: couple.value,
+        monthKey: monthKey.value,
+        monthLabel: monthLabel.value,
+        categories: resolveExpenseCategories(couple.value),
+        month: financeMonths.value.find((m) => m.monthKey === monthKey.value) ?? null,
+        summary: currentMonth.value,
+        balance: balanceInfo.value,
+        expenses: expenses.value,
+        events: activeEventSummaries.value,
+      },
+      together: {
+        couple: couple.value,
+        ideas: ideas.value,
+        ideaCategories: resolveIdeaCategories(couple.value),
+        trips: trips.value,
+        mealEntries: week.value.map((d) => d.entry),
+      },
+    })
+    return generateWeekReport(snapshot)
+  })
+
+  if (token !== coachToken) return // abgebrochen → Ergebnis verwerfen
+  if (outcome?.kind === 'ok') await playBloom()
+  if (token !== coachToken) return
+  coachThinking.value = false
+
+  if (outcome?.kind === 'paywall') showPaywall('financeCoach')
+  else if (outcome?.kind === 'error') showToast(outcome.message)
+  else if (!outcome) showToast('Check-in konnte nicht erstellt werden')
+}
+
+// Der Coach schlägt vor, die App führt aus — jede Aktion landet in einem Flow,
+// den es schon gibt. Der Coach schreibt selbst nichts.
+function onCoachAction(action: CoachAction) {
+  if (action === 'rebalanceChores') router.push('/haushalt?coach=fair')
+  else if (action === 'settleUp') router.push('/finanzen?coach=settle')
+  else if (action === 'planIdea') router.push('/planung')
+  else if (action === 'setBudget') openBudgetSheet()
+}
+
 // ── Navigation ─────────────────────────────────────────────────
 function goToEssen() { router.push('/einkaufen') }
 function goToPlanung() { router.push('/planung') }
@@ -211,6 +293,18 @@ async function saveBudget() {
           :currentUserId="currentUserId"
           @setCook="setCook"
           @open="goToEssen"
+        />
+
+        <!-- Wochen-Check-in: das Ritual gehört in die Fokus-Zone, direkt unter
+             das Heute — nicht ans Seitenende zwischen die Regale. -->
+        <CoachCard
+          :report="coachReport"
+          :thinking="coachThinking"
+          :loading="coachLoading"
+          :createdByName="coachCreatedByName"
+          @generate="startCoach"
+          @cancel="cancelCoach"
+          @action="onCoachAction"
         />
 
         <!-- Meine Schnell-Aufgaben -->

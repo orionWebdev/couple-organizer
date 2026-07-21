@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import type { Couple, FinanceMonthComparison } from '@/types'
+import type {
+  Couple,
+  Expense,
+  ExpenseBalanceSummary,
+  FinanceEventSummary,
+  FinanceMonthComparison,
+  MonthlyExpenseSummary,
+} from '@/types'
 import { resolveExpenseCategories, categoryMeta } from '@/utils/expenseCategories'
-import { suggestFinanceInsight, type FinanceCategoryDelta } from '@/services/ai'
+import { coachInsight, type CoachAction, type CoachReport } from '@/services/ai'
+import { buildMoneySnapshot } from '@/utils/coachSnapshot'
 import { showPaywall } from '@/composables/usePaywall'
-import { useCouple } from '@/composables/useCouple'
 import AiButton from '@/components/ai/AiButton.vue'
+import CoachReportCard from '@/components/ai/CoachReportCard.vue'
 import { useAiThinking } from '@/composables/useAiThinking'
 
 const { runTask, playBloom } = useAiThinking()
@@ -15,14 +23,20 @@ const thinking = ref(false)
 
 // Als Finanzen-Tab eingebettet statt eigener Route — bekommt die schon in
 // FinanzenView laufenden Daten als Props statt eine zweite useExpenses-
-// Instanz für dieselbe Seite zu starten.
+// Instanz für dieselbe Seite zu starten. Der Coach braucht mehr davon als die
+// reinen Kategorie-Deltas: Budget, Paar-Split und offener Saldo sind genau das,
+// was der frühere Ein-Satz-Insight nie zu sehen bekam.
 const props = defineProps<{
   couple: Couple | null
   months: readonly FinanceMonthComparison[]
+  monthlySummaries: readonly MonthlyExpenseSummary[]
+  balanceInfo: ExpenseBalanceSummary
+  events: readonly FinanceEventSummary[]
+  expenses: readonly Expense[]
   loading: boolean
 }>()
 
-const { isPremium } = useCouple()
+const emit = defineEmits<{ action: [action: CoachAction] }>()
 
 const categories = computed(() => resolveExpenseCategories(props.couple))
 
@@ -86,16 +100,15 @@ const bars = computed(() => {
 
 const animatedTotal = computed(() => Math.round((activeMonth.value?.total ?? 0) * anim.value))
 
-// ── AI-Insight pro Monat (Button-getriggert, danach gecacht) ──
-// Statt beim Öffnen automatisch zu laden, startet der Coach jetzt auf Tap des
-// pill-AiButton und läuft im globalen Denk-Zustand (Denk-Leiste — lange Task)
-// — konsistent mit der KI-Identität der anderen Seiten. Ergebnis pro Monat
-// gecacht.
-interface InsightState { text: string; error: boolean }
-const insightCache = ref<Record<string, InsightState>>({})
+// ── Coach pro Monat (Button-getriggert, danach gecacht) ───────
+// Statt beim Öffnen automatisch zu laden, startet der Coach auf Tap des
+// pill-AiButton — konsistent mit der KI-Identität der anderen Seiten. Ergebnis
+// pro Monat gecacht.
+interface CoachState { report: CoachReport | null; error: string | null }
+const reportCache = ref<Record<string, CoachState>>({})
 
-const activeInsight = computed<InsightState | null>(() =>
-  activeMonth.value ? insightCache.value[activeMonth.value.monthKey] ?? null : null
+const activeReport = computed<CoachState | null>(() =>
+  activeMonth.value ? reportCache.value[activeMonth.value.monthKey] ?? null : null
 )
 
 const canAnalyze = computed(() =>
@@ -108,16 +121,11 @@ function cancelThinking() {
   thinking.value = false
 }
 
+// Kein Premium-Gate mehr im View: der Coach ist im Free-Tier 1×/Monat drin
+// (AI_LIMITS.coachAi), und zählen kann das nur der Server. Lehnt er ab, kommt
+// das als AiResult-Zweig zurück und öffnet hier die Paywall.
 async function startInsight() {
   if (!canAnalyze.value || thinking.value) return
-  // Composable-Konvention: der View öffnet die Paywall, ohne Premium gar nicht
-  // erst den Callable rufen (der Server bleibt die maßgebliche Prüfung).
-  if (!isPremium.value) {
-    showPaywall('financeCoach')
-    return
-  }
-  // Die Insight-Karte selbst wird zum Denk-Zustand (glüht + Loader), danach
-  // faded der Text ein.
   const token = ++runToken
   thinking.value = true
   const res = await runTask(runInsight)
@@ -126,34 +134,46 @@ async function startInsight() {
   if (res) await playBloom()
   if (token !== runToken) return
   thinking.value = false
-  if (res) insightCache.value[res.monthKey] = res.state
+  if (res) reportCache.value[res.monthKey] = res.state
 }
 
 // KI-Arbeit als task. Schreibt NICHT selbst in den Cache (sonst würde ein
 // abgebrochener Aufruf die Karte doch noch füllen) — das macht startInsight
 // nach der Token-Prüfung. null = Paywall (Quota/Premium).
-async function runInsight(): Promise<{ monthKey: string; state: InsightState } | null> {
+async function runInsight(): Promise<{ monthKey: string; state: CoachState } | null> {
   const month = activeMonth.value
   if (!month || !props.couple) return null
 
   try {
-    const deltas: FinanceCategoryDelta[] = month.categories.map((c) => ({
-      name: categoryMeta(categories.value, c.categoryId).name,
-      currentEuros: c.current / 100,
-      previousEuros: c.previous / 100,
-      deltaPct: c.deltaPct,
-    }))
-    const result = await suggestFinanceInsight(props.couple.id, deltas, month.label)
+    const snapshot = buildMoneySnapshot({
+      couple: props.couple,
+      monthKey: month.monthKey,
+      monthLabel: month.label,
+      categories: categories.value,
+      month,
+      summary: props.monthlySummaries.find((m) => m.monthKey === month.monthKey) ?? null,
+      balance: props.balanceInfo,
+      expenses: props.expenses,
+      events: props.events,
+    })
+    const result = await coachInsight(props.couple.id, 'money', snapshot)
 
     if (result.kind === 'ok') {
-      return { monthKey: month.monthKey, state: { text: result.data, error: false } }
+      return { monthKey: month.monthKey, state: { report: result.data, error: null } }
     }
-    // 'premium'/'quota' → Paywall.
+    // Ein Ausfall der KI ist KEINE Paywall — sonst bekäme der Nutzer bei einem
+    // Ratenlimit ein Kaufangebot statt der Auskunft "gleich nochmal probieren".
+    if (result.kind === 'error') {
+      return { monthKey: month.monthKey, state: { report: null, error: result.message } }
+    }
     showPaywall('financeCoach')
     return null
   } catch (err) {
-    console.error('Failed to load finance insight:', err)
-    return { monthKey: month.monthKey, state: { text: '', error: true } }
+    console.error('Failed to load coach report:', err)
+    return {
+      monthKey: month.monthKey,
+      state: { report: null, error: 'Die Auswertung konnte nicht geladen werden.' }
+    }
   }
 }
 </script>
@@ -193,30 +213,20 @@ async function runInsight(): Promise<{ monthKey: string; state: InsightState } |
         />
       </div>
 
-      <!-- AI-Insight (der Denk-Zustand sitzt am Button, nicht hier) -->
-      <div v-if="activeInsight?.text" class="insight-card">
+      <!-- Coach-Bericht (der Denk-Zustand sitzt am Button, nicht hier) -->
+      <CoachReportCard
+        v-if="activeReport?.report"
+        :report="activeReport.report"
+        class="coach-report"
+        @action="emit('action', $event)"
+      />
+      <div v-else-if="activeReport?.error" class="insight-card">
         <span class="insight-icon">✨</span>
-        <p class="insight-text">{{ activeInsight.text }}</p>
+        <p class="insight-text">{{ activeReport.error }} Die Zahlen unten stimmen trotzdem.</p>
       </div>
-      <div v-else-if="activeInsight?.error" class="insight-card">
-        <span class="insight-icon">✨</span>
-        <p class="insight-text">Insight konnte gerade nicht geladen werden — die Zahlen unten stimmen trotzdem.</p>
-      </div>
-      <button
-        v-else-if="!isPremium"
-        type="button"
-        class="insight-card insight-card--locked"
-        @click="showPaywall('financeCoach')"
-      >
-        <span class="insight-icon">🔒</span>
-        <span class="insight-locked-body">
-          <span class="insight-text">Der Finanz-Coach erkennt, wo eure Ausgaben diesen Monat aus dem Rahmen fallen.</span>
-          <span class="insight-cta">Mit TwoDo Plus freischalten</span>
-        </span>
-      </button>
       <div v-else class="insight-card insight-card--hint">
         <span class="insight-icon">✨</span>
-        <p class="insight-text">Tippe „Analysieren" für einen KI-Bericht zum {{ activeMonth?.label }}.</p>
+        <p class="insight-text">Tippe „Analysieren" für eine Einschätzung zum {{ activeMonth?.label }} — Budget, Paar-Split und was zwischen euch offen steht.</p>
       </div>
 
       <!-- Monatssumme -->
@@ -333,29 +343,8 @@ async function runInsight(): Promise<{ monthKey: string; state: InsightState } |
   margin: 0;
 }
 
-.insight-card--locked {
-  width: 100%;
-  text-align: left;
-  align-items: center;
-  cursor: pointer;
-  font: inherit;
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-
-.insight-card--locked:active {
-  transform: scale(0.98);
-}
-
-.insight-locked-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.insight-cta {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--finanzen);
+.coach-report {
+  margin-bottom: 16px;
 }
 
 /* ── Monatssumme ─────────────────────────────────────────── */

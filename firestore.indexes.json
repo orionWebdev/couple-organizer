@@ -111,6 +111,14 @@
         { "fieldPath": "coupleId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "coachReports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "coupleId", "order": "ASCENDING" },
+        { "fieldPath": "weekKey", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

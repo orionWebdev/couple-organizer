@@ -3,7 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { db } from './admin'
 import type { AiBucket } from './limits'
 
-// usage/{coupleId} → { recipeAi: { "2026-07": 3 }, financeAi: { "2026-07": 1 } }
+// usage/{coupleId} → { recipeAi: { "2026-07": 3 }, coachAi: { "2026-07": 1 } }
 // Pro Paar, nicht pro Nutzer: das Abo gehört dem Paar, also auch die Quote.
 function monthKey(now = new Date()): string {
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`

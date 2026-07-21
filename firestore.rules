@@ -190,5 +190,16 @@ service cloud.firestore {
         && isCoupleMember(request.resource.data.coupleId);
       allow update, delete: if isCoupleMember(resource.data.coupleId);
     }
+
+    // Wochenberichte des Paar-Coachs. Beide Partner sehen denselben Bericht —
+    // wer ihn auslöst, erzeugt ihn für beide. Kein update: ein Bericht ist eine
+    // Momentaufnahme seiner Woche und wird nicht nachträglich verändert.
+    match /coachReports/{reportId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow delete: if isCoupleMember(resource.data.coupleId);
+    }
   }
 }

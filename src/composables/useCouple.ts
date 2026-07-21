@@ -5,7 +5,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { Couple, CouplePlan, ExpenseCategoryDef, IdeaCategoryDef, RecipeCategoryDef } from '@/types'
+import type { Couple, CouplePlan, ExpenseCategoryDef, FoodProfile, IdeaCategoryDef, RecipeCategoryDef } from '@/types'
 import { DEFAULT_EXPENSE_CATEGORIES } from '@/utils/expenseCategories'
 import { DEFAULT_IDEA_CATEGORIES } from '@/utils/ideen'
 import { DEFAULT_RECIPE_CATEGORIES, nextRecipeCategoryColor } from '@/utils/recipeTags'
@@ -186,6 +186,20 @@ export function useCouple() {
     if (!couple.value) return false
     try {
       await updateDoc(doc(db, 'couples', couple.value.id), { monthlyBudget })
+      error.value = null
+      return true
+    } catch (e: any) {
+      error.value = e.message
+      return false
+    }
+  }
+
+  // Dauerhafte Ess-Vorlieben. Wird immer als ganzes Objekt geschrieben (wie die
+  // Kategorie-Listen) — das Formular liefert ohnehin alle Felder.
+  async function updateFoodProfile(foodProfile: FoodProfile): Promise<boolean> {
+    if (!couple.value) return false
+    try {
+      await updateDoc(doc(db, 'couples', couple.value.id), { foodProfile })
       error.value = null
       return true
     } catch (e: any) {
@@ -402,6 +416,7 @@ export function useCouple() {
     joinCouple,
     watchCouple,
     updateBudget,
+    updateFoodProfile,
     regenerateInviteCode,
     updateMyIcon,
     addExpenseCategory,

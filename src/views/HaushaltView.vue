@@ -264,6 +264,7 @@ function onFairApplied(count: number) {
           :couple="couple"
           @assign="onHistoryAssign"
           @delete="onHistoryDelete"
+          @rebalance="openFair"
         />
       </Transition>
     </div>

@@ -1,6 +1,6 @@
 import { ref, computed, onScopeDispose, readonly, type Ref, watch } from 'vue'
 import {
-  collection, query, where, orderBy, limit, onSnapshot, addDoc, serverTimestamp
+  collection, query, where, orderBy, limit, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
@@ -23,7 +23,12 @@ export interface CoachReportDoc {
   createdAt: unknown
 }
 
-const RECENT_LIMIT = 8
+// Kein Archiv: gezeigt wird immer nur die laufende Woche. Geladen werden ein
+// paar Einträge mehr, weil pro Woche mehrere Blickwinkel abgelegt sein können
+// ('week' fürs Dashboard, 'fairness' fürs Haushalt) und die Abfrage nach
+// weekKey sortiert, nicht nach lens. Vorher waren es 8 — das täuschte einen
+// Verlauf vor, den keine Oberfläche anzeigt.
+const RECENT_LIMIT = 4
 
 // ISO-Wochenschlüssel. Das Jahr kommt vom Donnerstag der Woche, sonst landet
 // der 31.12. in Woche 1 des Vorjahres.
@@ -81,36 +86,44 @@ export function useCoach(coupleId: Ref<string | null>) {
 
   const currentWeekKey = computed(() => weekKeyOf())
 
-  // Der Bericht der laufenden Woche — das, was die Dashboard-Karte zeigt.
-  const currentReport = computed<CoachReportDoc | null>(
-    () => reports.value.find((r) => r.weekKey === currentWeekKey.value && r.lens === 'week') ?? null
-  )
+  function reportFor(lens: CoachLens): CoachReportDoc | null {
+    return reports.value.find((r) => r.weekKey === currentWeekKey.value && r.lens === lens) ?? null
+  }
 
-  const hasCurrentReport = computed(() => !!currentReport.value)
+  // Die Berichte der laufenden Woche, je Blickwinkel.
+  const currentReport = computed(() => reportFor('week'))
+  const currentFairnessReport = computed(() => reportFor('fairness'))
 
-  // Erzeugt das Check-in für die laufende Woche und legt es für BEIDE ab.
+  // Erzeugt einen Bericht für die laufende Woche und legt ihn für BEIDE ab.
   // Nie werfen (Haus-Konvention); Quota/Premium kommen als AiResult-Zweig zurück
   // und werden hier als 'paywall' signalisiert, damit der View sie öffnen kann.
-  async function generateWeekReport(
+  async function generateReport(
+    lens: CoachLens,
     snapshot: unknown
   ): Promise<
     { kind: 'ok'; report: CoachReport } | { kind: 'paywall' } | { kind: 'error'; message: string }
   > {
     if (!coupleId.value || !user.value || generating.value) {
-      return { kind: 'error', message: 'Check-in konnte nicht gestartet werden.' }
+      return { kind: 'error', message: 'Die Auswertung konnte nicht gestartet werden.' }
     }
     generating.value = true
     try {
-      const result = await coachInsight(coupleId.value, 'week', snapshot)
+      const result = await coachInsight(coupleId.value, lens, snapshot)
       // Ein KI-Ausfall ist keine Paywall — der Unterschied entscheidet, ob der
       // Nutzer ein Kaufangebot oder ein "gleich nochmal" zu sehen bekommt.
       if (result.kind === 'error') return { kind: 'error', message: result.message }
       if (result.kind !== 'ok') return { kind: 'paywall' }
 
+      // Ersetzt einen schon vorhandenen Bericht desselben Blickwinkels für diese
+      // Woche — sonst sammeln sich Dubletten und `reportFor` erwischt eine
+      // beliebige davon.
+      const existing = reportFor(lens)
+      if (existing) await deleteDoc(doc(db, 'coachReports', existing.id))
+
       await addDoc(collection(db, 'coachReports'), {
         coupleId: coupleId.value,
         weekKey: currentWeekKey.value,
-        lens: 'week' as CoachLens,
+        lens,
         report: result.data,
         createdBy: user.value.uid,
         createdAt: serverTimestamp()
@@ -137,9 +150,8 @@ export function useCoach(coupleId: Ref<string | null>) {
     loading,
     generating: readonly(generating),
     error: readonly(error),
-    currentWeekKey,
     currentReport,
-    hasCurrentReport,
-    generateWeekReport
+    currentFairnessReport,
+    generateReport
   }
 }

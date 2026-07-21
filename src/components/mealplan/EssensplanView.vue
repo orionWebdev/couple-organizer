@@ -18,7 +18,7 @@ const props = defineProps<{
 
 const coupleIdRef = computed(() => props.coupleId)
 
-const { week, weekLabel, isCurrentWeek, shiftWeek, resetWeek, recipes, loading, canCreateRecipe, canPlanWeek, suggestRecipes, planWeek, applyWeekPlan, assignRecipe, assignExistingRecipe, removeAssignment } = useMealPlan(coupleIdRef)
+const { week, weekLabel, isCurrentWeek, shiftWeek, resetWeek, recipes, loading, canCreateRecipe, canPlanWeek, libraryFillCapacity, fillWeekFromLibrary, suggestRecipes, planWeek, applyWeekPlan, assignRecipe, assignExistingRecipe, removeAssignment } = useMealPlan(coupleIdRef)
 const { activeListId, addItem: addShoppingItem } = useShopping(coupleIdRef)
 
 const hasAnyRecipe = computed(() => week.value.some((d) => d.recipe))
@@ -56,6 +56,18 @@ async function onWeekApplied(payload: { count: number; days: WeekPlanDay[]; crea
     else if (res === 'no-list') msg += ' · keine aktive Einkaufsliste'
   }
   showToast(msg)
+}
+
+// Aus der eigenen Sammlung gefüllt — kein KI-Aufruf. Die Zutaten stehen an den
+// vorhandenen Rezepten, die Einkaufsliste holt sie sich über den regulären
+// "Einkaufsliste aus Plan erstellen"-Knopf.
+function onWeekFilled(count: number) {
+  showKitchenAi.value = false
+  showToast(
+    count > 0
+      ? `${count} ${count === 1 ? 'Tag' : 'Tage'} aus euren Rezepten eingeplant`
+      : 'Es wurde nichts eingeplant'
+  )
 }
 
 const detailRecipe = ref<Recipe | null>(null)
@@ -146,8 +158,8 @@ async function handleCreateShoppingList() {
       </div>
 
       <AiButton
-        title="TwoDo KI"
-        subtitle="Wochenplan & Rezepte vorschlagen"
+        title="Wochenplan füllen"
+        subtitle="Aus euren Rezepten oder mit KI"
         @click="showKitchenAi = true"
       />
 
@@ -181,9 +193,12 @@ async function handleCreateShoppingList() {
       :apply="applyWeekPlan"
       :suggest="suggestRecipes"
       :assign="assignWithPaywall"
+      :libraryCapacity="libraryFillCapacity"
+      :fillFromLibrary="fillWeekFromLibrary"
       @close="showKitchenAi = false"
       @applied="onWeekApplied"
       @assigned="onAssigned"
+      @filled="onWeekFilled"
     />
 
     <RecipeSuggestSheet

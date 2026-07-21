@@ -29,6 +29,9 @@ const props = defineProps<{
   canPlanWeek: boolean
   plan: (opts: { count: number; servings?: number | null; prefs?: string }) => Promise<AiResult<RecipeSuggestion[]>>
   apply: (days: WeekPlanDay[]) => Promise<number>
+  /** Wie viele Tage die eigene Sammlung gerade hergibt (0 = Knopf gesperrt). */
+  libraryCapacity: number
+  fillFromLibrary: (dateKeys: string[]) => Promise<number>
   suggest: (
     query: string,
     count?: number,
@@ -41,6 +44,7 @@ const emit = defineEmits<{
   close: []
   applied: [payload: { count: number; days: WeekPlanDay[]; createList: boolean }]
   assigned: [ok: boolean]
+  filled: [count: number]
 }>()
 
 const { runTask, playBloom } = useAiThinking()
@@ -57,7 +61,9 @@ const savingProfile = ref(false)
 
 type Mode = 'actions' | 'config' | 'thinking' | 'suggestions' | 'preview' | 'profile'
 const mode = ref<Mode>('actions')
-const action = ref<'week' | 'recipe'>('week')
+// 'library' ist die einzige Aktion ohne KI-Aufruf.
+const action = ref<'week' | 'recipe' | 'library'>('week')
+const filling = ref(false)
 
 // Rezept-Config
 const selectedDateKey = ref('')
@@ -107,10 +113,16 @@ const thinkingCopy = computed(() =>
     : { icon: '✨', status: 'Sucht ein Rezept …', subtitle: 'Passend zu deinen Wünschen' },
 )
 
+const CONFIG_TITLES: Record<'week' | 'recipe' | 'library', string> = {
+  week: '🪄 Ganze Woche planen',
+  recipe: '✨ Rezept vorschlagen',
+  library: '📖 Aus euren Rezepten',
+}
+
 const sheetTitle = computed(() => {
   if (mode.value === 'thinking') return undefined
-  if (mode.value === 'actions') return 'Was soll die KI tun?'
-  if (mode.value === 'config') return action.value === 'week' ? '🪄 Ganze Woche planen' : '✨ Rezept vorschlagen'
+  if (mode.value === 'actions') return 'Wochenplan füllen'
+  if (mode.value === 'config') return CONFIG_TITLES[action.value]
   if (mode.value === 'suggestions') return '✨ Vorschläge'
   if (mode.value === 'profile') return '🍽 Euer Ess-Profil'
   return undefined // preview hat eigenen Kopf
@@ -128,7 +140,7 @@ async function saveProfile(next: FoodProfile) {
 }
 
 // ── Aktion wählen → Config ───────────────────────────────────
-function selectAction(a: 'week' | 'recipe') {
+function selectAction(a: 'week' | 'recipe' | 'library') {
   if (a === 'week' && !props.canPlanWeek) {
     showPaywall('weekPlan')
     return
@@ -143,11 +155,23 @@ function selectAction(a: 'week' | 'recipe') {
     suggestions.value = []
     expandedIndex.value = null
   } else {
+    // Woche wie Sammlung: standardmäßig die noch leeren Tage vorwählen.
     const empty = props.week.filter((d) => !d.recipeTitle).map((d) => d.dateKey)
     selectedDays.value = new Set(empty.length ? empty : props.week.map((d) => d.dateKey))
     prefs.value = ''
   }
   mode.value = 'config'
+}
+
+// Aus der eigenen Sammlung füllen — kein KI-Aufruf, kein Denk-Zustand, kein
+// Vorschau-Schritt: das Ergebnis steht sofort im Plan und ist dort korrigierbar.
+async function fillFromLibrary() {
+  const keys = orderedSelectedKeys.value
+  if (!keys.length || filling.value) return
+  filling.value = true
+  const count = await props.fillFromLibrary(keys)
+  filling.value = false
+  emit('filled', count)
 }
 
 function toggleDay(key: string) {
@@ -306,6 +330,23 @@ async function applyWeek() {
 
       <!-- Aktionen -->
       <div v-else-if="mode === 'actions'" class="kai-actions">
+        <!-- Kostenlos zuerst. Der fehlende Gradient ist die Botschaft: nur die
+             beiden unteren Zeilen verbrauchen eine KI-Anfrage. -->
+        <button
+          type="button"
+          class="ai-row lib-row"
+          :disabled="libraryCapacity === 0"
+          @click="selectAction('library')"
+        >
+          <span class="lib-row-ic">📖</span>
+          <span class="ai-row-txt">
+            <b>Aus euren Rezepten</b>
+            <i v-if="libraryCapacity === 0">Noch keine passenden Rezepte gespeichert</i>
+            <i v-else>{{ libraryCapacity }} Rezepte parat · ohne KI, sofort</i>
+          </span>
+          <span class="ai-row-chev" aria-hidden="true">›</span>
+        </button>
+
         <button type="button" class="ai-row" @click="selectAction('week')">
           <span class="ai-row-ic">🪄</span>
           <span class="ai-row-txt"><b>Ganze Woche planen</b><i>7 Abendessen als kompletter Vorschlag</i></span>
@@ -369,6 +410,39 @@ async function applyWeek() {
           @save="saveProfile"
         />
         <button class="kai-back" type="button" @click="mode = 'config'">‹ Zurück</button>
+      </div>
+
+      <!-- Config: aus der eigenen Sammlung (ohne KI) -->
+      <div v-else-if="mode === 'config' && action === 'library'" class="kai-config">
+        <div class="field-label">Welche Tage sollen gefüllt werden?</div>
+        <div class="day-picker">
+          <button
+            v-for="d in week"
+            :key="d.dateKey"
+            type="button"
+            class="day-pill"
+            :class="{ 'day-pill--active': selectedDays.has(d.dateKey) }"
+            @click="toggleDay(d.dateKey)"
+          >{{ weekdayLabel(d.date) }}</button>
+        </div>
+
+        <p class="lib-note">
+          Genommen wird aus euren gespeicherten Rezepten: was es in den letzten zwei Wochen
+          schon gab, wird übersprungen, Favoriten kommen zuerst.
+        </p>
+        <p v-if="selectedDays.size > libraryCapacity" class="lib-warn">
+          Für {{ selectedDays.size }} Tage reichen die Rezepte nicht — es werden
+          {{ libraryCapacity }} gefüllt.
+        </p>
+
+        <button
+          class="btn-primary lib-cta"
+          :disabled="!selectedDays.size || filling"
+          @click="fillFromLibrary"
+        >
+          {{ filling ? 'Wird eingeplant …' : `📖 ${Math.min(selectedDays.size, libraryCapacity)} ${Math.min(selectedDays.size, libraryCapacity) === 1 ? 'Tag' : 'Tage'} füllen` }}
+        </button>
+        <button class="kai-back" type="button" @click="mode = 'actions'">‹ Zurück</button>
       </div>
 
       <!-- Config: Woche -->
@@ -498,6 +572,18 @@ async function applyWeek() {
 .ai-row-txt b { display: block; font-family: var(--font-headline); font-weight: 600; font-size: 15.5px; color: var(--text); }
 .ai-row-txt i { display: block; font-style: normal; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); margin-top: 1px; }
 .ai-row-chev { font-size: 24px; line-height: 1; color: var(--text-faint); }
+
+/* Die kostenlose Zeile trägt bewusst KEINEN Gradient und kein Glühen — der
+   optische Unterschied ist die ehrlichste Auskunft darüber, was eine Anfrage
+   kostet und was nicht. */
+.lib-row:disabled { opacity: 0.5; pointer-events: none; }
+.lib-row-ic {
+  flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px;
+  font-size: 22px; background: var(--surface); border: 1.5px solid var(--border-softer);
+}
+.lib-note { font-size: 12px; color: var(--text-meta); line-height: 1.5; margin: 16px 0 0; }
+.lib-warn { font-size: 12px; color: var(--danger); line-height: 1.5; margin: 8px 0 0; }
+.lib-cta { margin-top: 18px; }
 
 /* ── Config ── */
 .field-label { font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-meta); margin-bottom: 7px; }

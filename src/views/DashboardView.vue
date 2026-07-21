@@ -144,7 +144,7 @@ async function onSubmitEvent(payload: { title: string; dateLabel: string }) {
 // ── Wochen-Check-in (Paar-Coach) ───────────────────────────────
 // Der Snapshot entsteht aus den Composables, die auf dieser Seite ohnehin schon
 // laufen — es kommt kein einziger zusätzlicher Listener dazu.
-const { currentReport, generateWeekReport, loading: coachLoading } = useCoach(coupleId)
+const { currentReport, generateReport, loading: coachLoading } = useCoach(coupleId)
 const { runTask, playBloom } = useAiThinking()
 const coachThinking = ref(false)
 
@@ -192,7 +192,7 @@ async function startCoach() {
         mealEntries: week.value.map((d) => d.entry),
       },
     })
-    return generateWeekReport(snapshot)
+    return generateReport('week', snapshot)
   })
 
   if (token !== coachToken) return // abgebrochen → Ergebnis verwerfen
@@ -200,7 +200,7 @@ async function startCoach() {
   if (token !== coachToken) return
   coachThinking.value = false
 
-  if (outcome?.kind === 'paywall') showPaywall('financeCoach')
+  if (outcome?.kind === 'paywall') showPaywall('coach')
   else if (outcome?.kind === 'error') showToast(outcome.message)
   else if (!outcome) showToast('Check-in konnte nicht erstellt werden')
 }

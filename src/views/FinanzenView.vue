@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onScopeDispose } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useExpenses } from '@/composables/useExpenses'
@@ -19,7 +20,9 @@ import FinanzCoachView from '@/components/finance/FinanzCoachView.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { useJustAdded } from '@/composables/useJustAdded'
 import type { Expense } from '@/types'
+import type { CoachAction } from '@/services/ai'
 
+const router = useRouter()
 const { user } = useAuth()
 const { couple } = useCouple()
 
@@ -33,6 +36,7 @@ const {
   archivedEventSummaries,
   eventSummaries,
   financeMonths,
+  monthlySummaries,
   addExpense,
   updateExpense,
   deleteExpense,
@@ -182,6 +186,33 @@ async function onSettle() {
   showSettle.value = false
   await markAllPaid(openMonthlyExpenseIds.value)
   showToast('Saldo ausgeglichen')
+}
+
+// Einstieg aus dem Wochen-Check-in (/finanzen?coach=settle). Query danach
+// entfernen, sonst öffnet ein Zurück-Navigieren den Dialog erneut.
+const route = useRoute()
+watch(
+  () => route.query.coach,
+  (value) => {
+    if (value !== 'settle') return
+    onCoachAction('settleUp')
+    router.replace({ path: route.path, query: {} })
+  },
+  { immediate: true }
+)
+
+// Der Coach schlägt vor, die App führt aus: die Aktion aus dem Bericht landet
+// in genau den Flows, die es hier schon gibt. Der Coach schreibt selbst nichts.
+function onCoachAction(action: CoachAction) {
+  if (action === 'settleUp') {
+    if (!openMonthlyExpenseIds.value.length) {
+      showToast('Es steht gerade nichts offen')
+      return
+    }
+    showSettle.value = true
+    return
+  }
+  if (action === 'setBudget') router.push('/settings')
 }
 
 async function onSettleEvent() {
@@ -350,7 +381,12 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
               class="rise-stagger"
               :couple="couple"
               :months="financeMonths"
+              :monthlySummaries="monthlySummaries"
+              :balanceInfo="balanceInfo"
+              :events="activeEventSummaries"
+              :expenses="expenses"
               :loading="loading"
+              @action="onCoachAction"
             />
           </Transition>
         </div>

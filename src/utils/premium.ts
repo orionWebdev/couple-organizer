@@ -9,7 +9,8 @@ export const FREE_LIMITS = {
   belegungResources: 1,
   recipeCount: 10,
   choreHistoryMonths: 2,
-  aiRecipesPerMonth: 3
+  aiRecipesPerMonth: 3,
+  coachPerMonth: 1
 } as const
 
 export type PremiumFeature =
@@ -47,7 +48,7 @@ export const PAYWALL_COPY: Record<PremiumFeature, PaywallCopy> = {
   },
   financeCoach: {
     title: 'Finanz-Coach',
-    body: 'Der Coach erkennt, wo eure Ausgaben diesen Monat aus dem Rahmen fallen — in einem Satz, ohne Tabellen wälzen.'
+    body: `Der Coach liest euren Monat im Zusammenhang: Budget, wer wie viel ausgelegt hat und was zwischen euch offen steht — und sagt, was als Nächstes dran ist. Kostenlos ist ${FREE_LIMITS.coachPerMonth}× im Monat.`
   },
   aiRecipes: {
     title: 'KI-Rezeptvorschläge',

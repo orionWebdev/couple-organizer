@@ -8,7 +8,8 @@ import { useAuth } from './useAuth'
 import { useCouple } from './useCouple'
 import { FREE_LIMITS } from '@/utils/premium'
 import type { MealPlanEntry, Recipe, RecipeIngredient, RecipeNutrition } from '@/types'
-import { suggestRecipes as fetchSuggestions, planWeek as fetchWeekPlan, type RecipeSuggestion, type AiResult } from '@/services/ai'
+import { suggestRecipes as fetchSuggestions, planWeek as fetchWeekPlan, type RecipeContext, type RecipeSuggestion, type AiResult } from '@/services/ai'
+import { resolveFoodProfile } from '@/utils/foodProfile'
 import { currentWeekDates, dateKey as toDateKey, weekRangeLabel } from '@/utils/mealplan'
 
 // Ein von der KI geplantes Gericht, das auf einen konkreten Tag gemünzt ist.
@@ -40,7 +41,7 @@ export interface WeekDay {
 
 export function useMealPlan(coupleId: Ref<string | null>) {
   const { user } = useAuth()
-  const { isPremium } = useCouple()
+  const { couple, isPremium } = useCouple()
   const recipes = ref<Recipe[]>([])
   const entries = ref<MealPlanEntry[]>([])
   const loadingRecipes = ref(true)
@@ -179,30 +180,19 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     })
   )
 
-  // Nie an den Aufrufer werfen — analog zu den anderen use*.ts-Composables.
-  // Quota-/Premium-Ablehnungen sind aber KEIN Fehler: sie kommen als eigener
-  // AiResult-Zweig zurück, damit der Aufrufer die Paywall öffnen kann statt
-  // einen Toast zu zeigen.
-  async function suggestRecipes(searchQuery: string, count = 3): Promise<AiResult<RecipeSuggestion[]>> {
-    if (!coupleId.value) return { kind: 'ok', data: [], quota: { used: 0, limit: 0 } }
-    try {
-      const result = await fetchSuggestions(coupleId.value, searchQuery, count)
-      error.value = null
-      return result
-    } catch (err: any) {
-      console.error('Failed to fetch recipe suggestions:', err)
-      error.value = err.message
-      return { kind: 'ok', data: [], quota: { used: 0, limit: 0 } }
-    }
-  }
-
-  // Plant alle Kochtage der Woche in einem KI-Aufruf. Reichert den Aufruf mit
-  // Kontext an, den nur das Composable kennt: gelikte Rezepte als "gerne wieder"
-  // (favorTitles) und die zuletzt gekochten als "nicht schon wieder"
-  // (avoidTitles). Nie werfen — Quota/Premium kommen als AiResult-Zweig zurück.
-  async function planWeek(opts: { count: number; servings?: number | null; prefs?: string }): Promise<AiResult<RecipeSuggestion[]>> {
-    if (!coupleId.value) return { kind: 'ok', data: [], quota: { used: 0, limit: 0 } }
-
+  // Der Kontext, den nur dieses Composable kennt: gelikte Rezepte als "gerne
+  // wieder" (favorTitles), die zuletzt gekochten als "nicht schon wieder"
+  // (avoidTitles) und das dauerhafte Ess-Profil vom Couple-Doc.
+  //
+  // Wird bewusst von BEIDEN KI-Aufrufen genutzt. Der Einzelvorschlag bekam ihn
+  // früher nicht — er war der einzige KI-Aufruf der App ohne jeden Kontext, was
+  // dazu führte, dass der eingetippte Wunsch wirkungslos wirkte.
+  // `avoidExtra`: Titel, die zusätzlich zu den kürzlich gekochten nicht kommen
+  // sollen. Das braucht das Neu-Denken eines einzelnen Wochentags — der neue
+  // Vorschlag darf keines der Gerichte sein, die schon in der Vorschau stehen.
+  function buildRecipeContext(
+    opts: { servings?: number | null; prefs?: string; avoidExtra?: string[] } = {}
+  ): RecipeContext {
     const favorTitles = recipes.value
       .filter((r) => r.likes.length > 0)
       .map((r) => r.title)
@@ -211,24 +201,59 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     const cutoffKey = toDateKey(new Date(Date.now() - AVOID_WINDOW_DAYS * 86400000))
     const recentIds = new Set(entries.value.filter((e) => e.dateKey >= cutoffKey).map((e) => e.recipeId))
     const avoidTitles = [
-      ...new Set(recipes.value.filter((r) => recentIds.has(r.id)).map((r) => r.title)),
+      ...new Set([
+        ...recipes.value.filter((r) => recentIds.has(r.id)).map((r) => r.title),
+        ...(opts.avoidExtra ?? []),
+      ]),
     ]
 
-    try {
-      const result = await fetchWeekPlan(coupleId.value, {
-        count: opts.count,
-        servings: opts.servings ?? null,
-        prefs: opts.prefs,
-        avoidTitles,
-        favorTitles,
-      })
-      error.value = null
-      return result
-    } catch (err: any) {
-      console.error('Failed to plan week:', err)
-      error.value = err.message
-      return { kind: 'ok', data: [], quota: { used: 0, limit: 0 } }
+    const profile = resolveFoodProfile(couple.value)
+
+    return {
+      // Explizit gewählte Portionen schlagen die Standard-Portionen des Profils.
+      servings: opts.servings ?? profile.servings,
+      prefs: opts.prefs,
+      profile,
+      avoidTitles,
+      favorTitles,
     }
+  }
+
+  // Nie an den Aufrufer werfen — analog zu den anderen use*.ts-Composables.
+  // Quota-/Premium-Ablehnungen sind aber KEIN Fehler: sie kommen als eigener
+  // AiResult-Zweig zurück, damit der Aufrufer die Paywall öffnen kann statt
+  // einen Toast zu zeigen.
+  // ai.ts wirft nicht mehr — jeder Ausgang kommt als AiResult-Zweig zurück und
+  // wird hier unverändert durchgereicht. Früher wurde jeder Fehler zu
+  // `{ kind: 'ok', data: [] }` geglättet; im Wochenplan sah ein Ausfall der KI
+  // dadurch aus wie "keine Vorschläge", und der View meldete "Kein Tag mehr
+  // übrig".
+  const NO_COUPLE: AiResult<RecipeSuggestion[]> = {
+    kind: 'error',
+    message: 'Kein Paar geladen.',
+    retryable: false,
+  }
+
+  async function suggestRecipes(
+    searchQuery: string,
+    count = 3,
+    opts: { servings?: number | null; prefs?: string; avoidExtra?: string[] } = {}
+  ): Promise<AiResult<RecipeSuggestion[]>> {
+    if (!coupleId.value) return NO_COUPLE
+    const result = await fetchSuggestions(coupleId.value, searchQuery, count, buildRecipeContext(opts))
+    error.value = result.kind === 'error' ? result.message : null
+    return result
+  }
+
+  // Plant alle Kochtage der Woche in einem KI-Aufruf.
+  async function planWeek(opts: { count: number; servings?: number | null; prefs?: string }): Promise<AiResult<RecipeSuggestion[]>> {
+    if (!coupleId.value) return NO_COUPLE
+    const result = await fetchWeekPlan(coupleId.value, {
+      ...buildRecipeContext(opts),
+      count: opts.count,
+    })
+    error.value = result.kind === 'error' ? result.message : null
+    return result
   }
 
   function suggestionToInput(s: RecipeSuggestion): AssignRecipeInput {

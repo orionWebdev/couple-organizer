@@ -2,12 +2,16 @@
 import { ref, computed, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import AiThinkingRow from '@/components/ai/AiThinkingRow.vue'
+import SuggestionCard from './SuggestionCard.vue'
 import type { RecipeSuggestion, AiResult, Quota } from '@/services/ai'
 import type { AssignRecipeInput } from '@/composables/useMealPlan'
 import type { RecipeCategoryDef } from '@/types'
 import { weekdayLabel } from '@/utils/mealplan'
 import { showPaywall } from '@/composables/usePaywall'
+import { showToast } from '@/composables/useToast'
 import { useAiThinking } from '@/composables/useAiThinking'
+import { useCouple } from '@/composables/useCouple'
+import { resolveFoodProfile } from '@/utils/foodProfile'
 
 const { runTask } = useAiThinking()
 
@@ -27,7 +31,11 @@ interface WeekDayLite {
 // 'library' speichert ihn mit selbst gewählten Kategorien ins Rezept-Wiki.
 const props = defineProps<{
   isOpen: boolean
-  suggest: (query: string, count?: number) => Promise<AiResult<RecipeSuggestion[]>>
+  suggest: (
+    query: string,
+    count?: number,
+    opts?: { servings?: number | null; prefs?: string }
+  ) => Promise<AiResult<RecipeSuggestion[]>>
   mode?: 'day' | 'library'
   // Nur im Tagesmodus:
   week?: WeekDayLite[]
@@ -44,10 +52,16 @@ const isLibrary = computed(() => props.mode === 'library')
 const week = computed(() => props.week ?? [])
 const categories = computed(() => props.categories ?? [])
 
+const { couple } = useCouple()
+const foodProfile = computed(() => resolveFoodProfile(couple.value))
+
 const selectedDateKey = ref('')
 const description = ref('')
 const searched = ref(false)
 const suggestions = ref<RecipeSuggestion[]>([])
+// Tap klappt einen Vorschlag auf; übernommen wird er erst über den Button.
+const expandedIndex = ref<number | null>(null)
+const servings = ref(2)
 const quota = ref<Quota | null>(null)
 
 // Bibliotheksmodus: der angetippte Vorschlag wartet hier, bis die Kategorien
@@ -63,6 +77,8 @@ watch(() => props.isOpen, (open) => {
   thinking.value = false
   searched.value = false
   suggestions.value = []
+  expandedIndex.value = null
+  servings.value = foodProfile.value.servings
   quota.value = null
   pending.value = null
   pendingTags.value = new Set()
@@ -98,22 +114,32 @@ async function handleSubmit() {
   const token = ++runToken
   searched.value = true
   suggestions.value = []
+  expandedIndex.value = null
   thinking.value = true
-  const data = await runTask(runSuggest)
+  const res = await runTask(() => props.suggest(description.value.trim(), 3, { servings: servings.value }))
   if (token !== runToken) return // abgebrochen
   thinking.value = false
-  if (data) suggestions.value = data
-}
 
-async function runSuggest(): Promise<RecipeSuggestion[] | null> {
-  const result = await props.suggest(description.value.trim())
-  if (result.kind === 'quota' || result.kind === 'premium') {
+  // Ein Fehlschlag muss als solcher erscheinen — nicht als "keine Vorschläge
+  // gefunden", was den Nutzer die Beschreibung umschreiben ließe.
+  if (!res || res.kind === 'error') {
+    searched.value = false
+    showToast(res?.kind === 'error' ? res.message : 'Vorschläge konnten nicht geladen werden')
+    return
+  }
+  if (res.kind !== 'ok') {
     emit('close')
     showPaywall('aiRecipes')
-    return null
+    return
   }
-  quota.value = result.quota
-  return result.data
+
+  quota.value = res.quota
+  suggestions.value = res.data
+  expandedIndex.value = res.data.length === 1 ? 0 : null
+}
+
+function toggleSuggestion(i: number) {
+  expandedIndex.value = expandedIndex.value === i ? null : i
 }
 
 function recipeInput(s: RecipeSuggestion, tags: string[]): AssignRecipeInput {
@@ -219,7 +245,14 @@ async function handleSave() {
       </p>
     </template>
 
-    <div class="field-label" :class="{ 'query-label': !isLibrary }">Was stellst du dir vor?</div>
+    <div class="field-label" :class="{ 'query-label': !isLibrary }">Für wie viele Portionen?</div>
+    <div class="serv-stepper">
+      <button type="button" class="serv-btn" :disabled="servings <= 1" @click="servings--">–</button>
+      <span class="serv-val">{{ servings }}</span>
+      <button type="button" class="serv-btn" :disabled="servings >= 12" @click="servings++">+</button>
+    </div>
+
+    <div class="field-label query-label">Was stellst du dir vor?</div>
     <textarea
       v-model="description"
       class="app-field ai-textarea"
@@ -236,21 +269,18 @@ async function handleSave() {
     </div>
 
     <div v-if="suggestions.length > 0" class="suggestions">
-      <button
+      <SuggestionCard
         v-for="(s, i) in suggestions"
         :key="i"
-        type="button"
-        class="suggestion-card"
+        :suggestion="s"
+        :expanded="expandedIndex === i"
         :disabled="!isLibrary && !selectedDateKey"
-        @click="handlePick(s)"
-      >
-        <div class="suggestion-title">{{ s.title }}</div>
-        <div v-if="s.minutes || s.tags?.length" class="suggestion-meta">
-          <span v-if="s.minutes">{{ s.minutes }} Min</span>
-          <span v-if="s.tags?.length">{{ s.tags.join(', ') }}</span>
-        </div>
-        <div v-if="s.description" class="suggestion-desc">{{ s.description }}</div>
-      </button>
+        :actionLabel="isLibrary
+          ? 'Ins Rezept-Wiki übernehmen'
+          : `Für ${selectedDay ? weekdayLabel(selectedDay.date) : 'den Tag'} einplanen`"
+        @toggle="toggleSuggestion(i)"
+        @pick="handlePick(s)"
+      />
     </div>
 
     <p v-if="quotaLabel" class="quota-hint">{{ quotaLabel }}</p>
@@ -449,43 +479,36 @@ async function handleSave() {
   gap: 8px;
 }
 
-.suggestion-card {
-  text-align: left;
+/* Portionen-Stepper (gleiche Optik wie im Küchen-Sheet) */
+.serv-stepper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.serv-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   border: 1.5px solid var(--border-softer);
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 11px 13px;
+  background: var(--surface-deep);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
-.suggestion-card:active {
-  border-color: var(--accent);
-  background: var(--accent-tint);
-}
-
-.suggestion-card:disabled {
-  opacity: 0.5;
+.serv-btn:disabled {
+  opacity: 0.4;
   pointer-events: none;
 }
 
-.suggestion-title {
-  font-size: 14px;
+.serv-val {
+  font-family: var(--font-headline);
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
-}
-
-.suggestion-meta {
-  display: flex;
-  gap: 8px;
-  font-size: 11.5px;
-  color: var(--text-meta);
-  margin-top: 2px;
-}
-
-.suggestion-desc {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 5px;
-  line-height: 1.4;
+  min-width: 22px;
+  text-align: center;
 }
 </style>

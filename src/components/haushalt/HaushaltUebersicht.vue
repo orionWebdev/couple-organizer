@@ -4,6 +4,7 @@ import type { Chore, ChoreAssignee, ChoreHistoryEntry, Couple } from '@/types'
 import { personVisual } from '@/utils/chores'
 import { pointsForHistory } from '@/utils/points'
 import HaushaltVerlauf from './HaushaltVerlauf.vue'
+import FairnessCard from './FairnessCard.vue'
 
 const props = defineProps<{
   chores: readonly Chore[]
@@ -14,6 +15,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   assign: [entry: ChoreHistoryEntry, assignee: ChoreAssignee]
   delete: [entry: ChoreHistoryEntry]
+  rebalance: []
 }>()
 
 function toMillis(timestamp: unknown): number {
@@ -134,6 +136,16 @@ const statRows = computed(() => {
 
 <template>
   <div class="uebersicht">
+    <!-- Fairness zuerst: die Frage "wer trägt gerade mehr" ist wichtiger als
+         der Punktestand des Monats — und sie ist der Grund, warum es die App
+         gibt. Die Zahlen rechnet der Code, die KI liefert nur die Worte. -->
+    <FairnessCard
+      :chores="chores"
+      :history="history"
+      :couple="couple"
+      @rebalance="emit('rebalance')"
+    />
+
     <!-- Punktestand-Leaderboard -->
     <div class="leaderboard-card">
       <div class="lead-head">

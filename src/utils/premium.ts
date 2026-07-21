@@ -19,6 +19,7 @@ export type PremiumFeature =
   | 'recipeCount'
   | 'choreHistory'
   | 'financeCoach'
+  | 'coach'
   | 'aiRecipes'
   | 'weekPlan'
   | 'choreBalance'
@@ -49,6 +50,12 @@ export const PAYWALL_COPY: Record<PremiumFeature, PaywallCopy> = {
   financeCoach: {
     title: 'Finanz-Coach',
     body: `Der Coach liest euren Monat im Zusammenhang: Budget, wer wie viel ausgelegt hat und was zwischen euch offen steht — und sagt, was als Nächstes dran ist. Kostenlos ist ${FREE_LIMITS.coachPerMonth}× im Monat.`
+  },
+  // Eigener Text: wer das Wochen-Check-in oder den Fairness-Blick antippt, soll
+  // nicht mit „Finanz-Coach" abgespeist werden — das ist ein anderes Versprechen.
+  coach: {
+    title: 'Euer Paar-Coach',
+    body: `Einmal pro Woche ein ehrlicher Blick auf euch beide: wer gerade mehr trägt, was zwischen euch offen steht, und ein Satz, mit dem ihr es ansprechen könnt. Kostenlos ist ${FREE_LIMITS.coachPerMonth}× im Monat.`
   },
   aiRecipes: {
     title: 'KI-Rezeptvorschläge',

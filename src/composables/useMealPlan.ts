@@ -10,6 +10,7 @@ import { FREE_LIMITS } from '@/utils/premium'
 import type { MealPlanEntry, Recipe, RecipeIngredient, RecipeNutrition } from '@/types'
 import { suggestRecipes as fetchSuggestions, planWeek as fetchWeekPlan, type RecipeContext, type RecipeSuggestion, type AiResult } from '@/services/ai'
 import { resolveFoodProfile } from '@/utils/foodProfile'
+import { pickWeekFromLibrary, libraryCapacity } from '@/utils/weekFill'
 import { currentWeekDates, dateKey as toDateKey, weekRangeLabel } from '@/utils/mealplan'
 
 // Ein von der KI geplantes Gericht, das auf einen konkreten Tag gemünzt ist.
@@ -256,6 +257,27 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     return result
   }
 
+  // Wie viele Tage ließen sich gerade ohne KI füllen — für Beschriftung und
+  // Deaktiviert-Zustand des kostenlosen Wochen-Knopfs.
+  const libraryFillCapacity = computed(() => libraryCapacity(recipes.value, entries.value))
+
+  // Füllt Tage aus der eigenen Sammlung. Kein KI-Aufruf, kein neues Rezept-Doc
+  // (assignExistingRecipe verplant das vorhandene) — fällt damit auch nicht
+  // unters Rezept-Limit. Gibt zurück, wie viele Tage geschrieben wurden.
+  async function fillWeekFromLibrary(dateKeys: readonly string[]): Promise<number> {
+    if (!coupleId.value) return 0
+    const picks = pickWeekFromLibrary({
+      recipes: recipes.value,
+      entries: entries.value,
+      dateKeys,
+    })
+    let written = 0
+    for (const p of picks) {
+      if (await assignExistingRecipe(p.dateKey, p.recipeId)) written++
+    }
+    return written
+  }
+
   function suggestionToInput(s: RecipeSuggestion): AssignRecipeInput {
     return {
       title: s.title,
@@ -487,6 +509,8 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     error: readonly(error),
     canCreateRecipe,
     canPlanWeek,
+    libraryFillCapacity,
+    fillWeekFromLibrary,
     suggestRecipes,
     planWeek,
     applyWeekPlan,

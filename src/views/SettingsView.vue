@@ -9,6 +9,7 @@ import { useExpenses } from '@/composables/useExpenses'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
 import { buildExpensesCsv, buildBookingsIcs, saveOrShare } from '@/services/export'
+import { resolveFoodProfile, foodProfileSummary, hasFoodProfileContent } from '@/utils/foodProfile'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import IconGridPicker from '@/components/ui/IconGridPicker.vue'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
@@ -31,6 +32,12 @@ const CATEGORY_LINKS = [
 ] as const
 
 const AVATAR_ICONS = ['🦊', '🦉', '🐻', '🐨', '🐢', '🦄', '🐸', '🐙', '🌵', '🍩', '🌟', '🔥', '🎧', '🎨', '⚡', '🌈']
+
+// Zeigt in der Settings-Zeile, ob überhaupt schon etwas hinterlegt ist.
+const foodProfileHint = computed(() => {
+  const p = resolveFoodProfile(couple.value)
+  return hasFoodProfileContent(p) ? foodProfileSummary(p) : 'Portionen, Vorlieben & No-Gos'
+})
 
 function goBack() {
   router.push('/dashboard')
@@ -266,6 +273,19 @@ async function confirmDanger() {
           <span class="profile-text">
             <span class="cat-link-title">Meine Routinen</span>
             <span class="profile-hint">Favoriten fürs Dashboard</span>
+          </span>
+          <span class="chevron">›</span>
+        </button>
+      </div>
+
+      <!-- Essen: dauerhaftes Profil, fließt in jeden KI-Rezeptaufruf ein -->
+      <div class="section-label section-gap">Essen</div>
+      <div class="card cat-card">
+        <button class="cat-link" type="button" @click="router.push('/settings/essprofil')">
+          <span class="cat-link-icon">🍽</span>
+          <span class="profile-text">
+            <span class="cat-link-title">Ess-Profil</span>
+            <span class="profile-hint">{{ foodProfileHint }}</span>
           </span>
           <span class="chevron">›</span>
         </button>

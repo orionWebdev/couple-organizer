@@ -26,6 +26,19 @@ export interface RecipeCategoryDef {
   color: string
 }
 
+// Dauerhafte Ess-Vorlieben des Paares. Liegen auf dem Couple-Doc, weil sie in
+// JEDEN Rezept-Aufruf einfließen sollen (Einzelvorschlag wie Wochenplan) —
+// vorher musste "kein Fisch" bei jedem Aufruf neu getippt werden.
+// Freitext statt Enums: die KI liest es ohnehin als Prompt, und jede feste
+// Liste wäre in dem Moment falsch, in dem jemand "keine Pilze" braucht.
+export interface FoodProfile {
+  servings: number // Standard-Portionen
+  likes: string // "viel Gemüse, asiatisch"
+  dislikes: string // "kein Fisch, keine Oliven"
+  diet: string // "vegetarisch" o. ä.
+  weekdayMaxMinutes: number | null // werktags verfügbare Kochzeit; null = egal
+}
+
 // Das Abo gehört dem Paar, nicht der Person: kauft einer, haben beide Premium.
 // Deshalb liegen die Felder auf dem Couple-Doc und nicht auf dem User.
 export type CouplePlan = 'free' | 'premium'
@@ -40,6 +53,7 @@ export interface Couple {
   expenseCategories?: ExpenseCategoryDef[] // optional — absent = DEFAULT_EXPENSE_CATEGORIES (src/utils/expenseCategories.ts)
   ideaCategories?: IdeaCategoryDef[] // optional — absent = DEFAULT_IDEA_CATEGORIES (src/utils/ideen.ts)
   recipeCategories?: RecipeCategoryDef[] // optional — absent = DEFAULT_RECIPE_CATEGORIES (src/utils/recipeTags.ts)
+  foodProfile?: FoodProfile // optional — absent = DEFAULT_FOOD_PROFILE (src/utils/foodProfile.ts)
   createdAt: Timestamp
 
   // Entitlement — ausschließlich vom Backend geschrieben (Admin SDK), für

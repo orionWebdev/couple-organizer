@@ -22,12 +22,12 @@ Wenn du mit Claude Code an diesem Thema weiterarbeitest: **diese Datei zuerst le
 ## ✅ Erledigt (Code steht, typecheckt, baut)
 
 ### Cloud Functions (`functions/`)
-TypeScript, Node 22, `europe-west1`. Vier Endpunkte:
-- `suggestRecipes` / `suggestFinanceInsight` — Gemini-Proxys. Key liegt im Secret Manager, nicht mehr im Bundle.
+TypeScript, Node 22, `europe-west1`. Fünf Endpunkte:
+- `suggestRecipes` / `planWeek` / `coachInsight` — Gemini-Proxys. Key liegt im Secret Manager, nicht mehr im Bundle.
 - `syncEntitlement` — fragt RevenueCat direkt, gegen Webhook-Latenz nach dem Kauf.
 - `revenueCatWebhook` — der belastbare Pfad. Secret-Header, idempotent über `webhookEvents/{event.id}`.
 
-Quoten pro Paar in `usage/{coupleId}`: free 3 KI-Rezepte/Monat, Finanz-Coach premium-only.
+Quoten pro Paar in `usage/{coupleId}` (`functions/src/lib/limits.ts`): KI-Rezepte free 3/Monat, Wochen-Autopilot premium-only, Paar-Coach free 1/Monat.
 
 ### Gemini-Key aus dem Bundle
 `src/services/gemini.ts` + `geminiFinance.ts` gelöscht → `src/services/ai.ts` (Callables).
@@ -39,7 +39,7 @@ Gegenprobe: `npm run build && grep -rl generativelanguage dist/` → leer.
 - `usePremium.ts` (RevenueCat), `usePaywall.ts` + `PaywallSheet.vue`, `/premium`-Route.
 
 ### Gating (7 Stellen)
-Einkaufslisten (2) · Ressourcen (1) · Rezepte (10) · Haushalts-Verlauf (2 Monate) · Finanz-Coach · KI-Rezepte (3/Monat) · Export.
+Einkaufslisten (2) · Ressourcen (1) · Rezepte (10) · Haushalts-Verlauf (2 Monate) · Paar-Coach (1/Monat) · KI-Rezepte (3/Monat) · Wochen-Autopilot · Export.
 Muster: Composable erzwingt (`canX`-Computed), View öffnet die Paywall. Nie ein stiller No-Op.
 
 ### Capacitor / Android
@@ -96,6 +96,24 @@ Die App läuft für euch beide **auf Vercel** (`npm run build`, kein Firebase Ho
   → Wenn dir das zu heiß wird: neuen Key in AI Studio, in der Cloud Console per **HTTP-Referrer auf die Vercel-Domain** einschränken, alten löschen.
 - Nötig auf Vercel: `VITE_GEMINI_API_KEY` als **Env-Variable im Projekt** setzen (Build-Time!), sonst fällt die Weiche auf die Callables zurück und die KI ist tot.
 - **Nach dem Functions-Deploy**: `VITE_GEMINI_API_KEY` in Vercel **und** `.env.local` + `env.d.ts` entfernen, `src/services/aiDirect.ts` löschen. Die Weiche greift dann nicht mehr, alles läuft über die Callables.
+
+### 🚧 Der echte Engpass: 20 Gemini-Anfragen pro TAG
+
+Gemessen am 2026-07-21 gegen den Live-Key:
+
+```
+quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier
+metric : generate_content_free_tier_requests   value: 20   model: gemini-2.5-flash
+```
+
+**20 Anfragen pro Tag fürs ganze Google-Projekt** — geteilt von beiden Partnern, über alle KI-Funktionen hinweg. Ein Wochenplan = 1, ein Rezeptvorschlag = 1, ein Neu-Denken = 1, ein Check-in = 1. Damit ist eine normale Woche Nutzung an einem Nachmittag aufgebraucht.
+
+Fallstricke dabei:
+- Die API antwortet mit `retryDelay: 17s` — **irreführend**. Das ist ein generischer Backoff-Hinweis, kein Minutenlimit. Zurückgesetzt wird täglich.
+- Es gibt **zwei** verschiedene 429er (Minuten- und Tageslimit). `src/services/ai.ts` unterscheidet sie am `quotaId`/`PerDay`-Marker und formuliert entsprechend — sonst schickt die App den Nutzer in eine Minute Wartezeit, die nichts ändert.
+- `gemini-2.5-pro` ist im Free-Tier **gar nicht** nutzbar (`limit: 0`). Deshalb läuft auch der Coach auf Flash; die Konstante `COACH_MODEL` liegt getrennt, damit es nach Billing eine Zeile ist.
+
+**Auflösung: Billing auf dem Google-Projekt aktivieren.** Damit fällt das Projekt in den bezahlten Tier mit deutlich höheren Tageslimits; bei zwei Nutzern reden wir über Cent-Beträge. Es ist dieselbe Kreditkarte, die auch Blaze braucht — löst also beides auf einmal. **Bis dahin bleiben die KI-Funktionen praktisch unbenutzbar**, egal wie gut der Code ist.
 
 **Premium/Paywall auf Vercel**: Kaufen geht im Web nicht (`usePremium().canPurchase` ist nur nativ true). Damit euch die sieben Gates nicht aussperren, in der Firestore-Konsole auf eurem `couples/{id}`-Doc von Hand `plan: "premium"` + `premiumUntil` (Timestamp weit in der Zukunft) setzen — siehe unten. Der Finanz-Coach hängt an genau diesem Flag.
 

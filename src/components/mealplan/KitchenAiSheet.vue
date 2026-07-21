@@ -2,11 +2,17 @@
 import { ref, computed, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import AiThinkingRow from '@/components/ai/AiThinkingRow.vue'
+import SuggestionCard from './SuggestionCard.vue'
+import FoodProfileForm from './FoodProfileForm.vue'
+import type { FoodProfile } from '@/types'
 import type { RecipeSuggestion, AiResult } from '@/services/ai'
 import type { WeekPlanDay, AssignRecipeInput } from '@/composables/useMealPlan'
 import { weekdayLabel, dayMonthLabel, dateKey as toDateKey } from '@/utils/mealplan'
 import { showPaywall } from '@/composables/usePaywall'
+import { showToast } from '@/composables/useToast'
 import { useAiThinking } from '@/composables/useAiThinking'
+import { useCouple } from '@/composables/useCouple'
+import { resolveFoodProfile, foodProfileSummary, hasFoodProfileContent } from '@/utils/foodProfile'
 
 interface WeekDayLite {
   date: Date
@@ -23,7 +29,11 @@ const props = defineProps<{
   canPlanWeek: boolean
   plan: (opts: { count: number; servings?: number | null; prefs?: string }) => Promise<AiResult<RecipeSuggestion[]>>
   apply: (days: WeekPlanDay[]) => Promise<number>
-  suggest: (query: string, count?: number) => Promise<AiResult<RecipeSuggestion[]>>
+  suggest: (
+    query: string,
+    count?: number,
+    opts?: { servings?: number | null; prefs?: string; avoidExtra?: string[] }
+  ) => Promise<AiResult<RecipeSuggestion[]>>
   assign: (dateKey: string, input: AssignRecipeInput) => Promise<boolean>
 }>()
 
@@ -34,8 +44,18 @@ const emit = defineEmits<{
 }>()
 
 const { runTask, playBloom } = useAiThinking()
+const { couple, updateFoodProfile } = useCouple()
 
-type Mode = 'actions' | 'config' | 'thinking' | 'suggestions' | 'preview'
+// Dauerhaftes Ess-Profil: liefert die Standard-Portionen und wird im
+// 'profile'-Schritt bearbeitet. Der Aufruf selbst reichert die KI-Anfrage in
+// useMealPlan.buildRecipeContext() damit an — hier wird es nur angezeigt.
+const foodProfile = computed(() => resolveFoodProfile(couple.value))
+const profileSummary = computed(() =>
+  hasFoodProfileContent(foodProfile.value) ? foodProfileSummary(foodProfile.value) : null
+)
+const savingProfile = ref(false)
+
+type Mode = 'actions' | 'config' | 'thinking' | 'suggestions' | 'preview' | 'profile'
 const mode = ref<Mode>('actions')
 const action = ref<'week' | 'recipe'>('week')
 
@@ -43,6 +63,8 @@ const action = ref<'week' | 'recipe'>('week')
 const selectedDateKey = ref('')
 const description = ref('')
 const suggestions = ref<RecipeSuggestion[]>([])
+// Welcher Vorschlag ist aufgeklappt? Tap klappt auf, erst der Button plant ein.
+const expandedIndex = ref<number | null>(null)
 
 // Wochen-Config
 const selectedDays = ref<Set<string>>(new Set())
@@ -51,6 +73,9 @@ const prefs = ref('')
 const previewDays = ref<WeekPlanDay[]>([])
 const createList = ref(true)
 const applying = ref(false)
+// Vorschau: aufgeklappter Tag und der Tag, der gerade neu gedacht wird.
+const expandedPreview = ref<string | null>(null)
+const rerollingKey = ref<string | null>(null)
 
 const dayByKey = computed(() => new Map(props.week.map((d) => [d.dateKey, d])))
 const selectedDay = computed(() => dayByKey.value.get(selectedDateKey.value) ?? null)
@@ -69,9 +94,11 @@ watch(() => props.isOpen, (open) => {
   if (!open) return
   mode.value = 'actions'
   suggestions.value = []
+  expandedIndex.value = null
   previewDays.value = []
   createList.value = true
   applying.value = false
+  savingProfile.value = false
 })
 
 const thinkingCopy = computed(() =>
@@ -85,8 +112,20 @@ const sheetTitle = computed(() => {
   if (mode.value === 'actions') return 'Was soll die KI tun?'
   if (mode.value === 'config') return action.value === 'week' ? '🪄 Ganze Woche planen' : '✨ Rezept vorschlagen'
   if (mode.value === 'suggestions') return '✨ Vorschläge'
+  if (mode.value === 'profile') return '🍽 Euer Ess-Profil'
   return undefined // preview hat eigenen Kopf
 })
+
+async function saveProfile(next: FoodProfile) {
+  savingProfile.value = true
+  const ok = await updateFoodProfile(next)
+  savingProfile.value = false
+  showToast(ok ? 'Ess-Profil gespeichert' : 'Fehler beim Speichern')
+  if (!ok) return
+  // Neue Standard-Portionen sofort in die offene Konfiguration übernehmen.
+  servings.value = next.servings
+  mode.value = 'config'
+}
 
 // ── Aktion wählen → Config ───────────────────────────────────
 function selectAction(a: 'week' | 'recipe') {
@@ -95,14 +134,17 @@ function selectAction(a: 'week' | 'recipe') {
     return
   }
   action.value = a
+  // Portionen starten immer auf dem Profilwert — in beiden Pfaden. Der Stepper
+  // überschreibt ihn nur für diesen einen Lauf.
+  servings.value = foodProfile.value.servings
   if (a === 'recipe') {
     selectedDateKey.value = props.week.find((d) => !d.recipeTitle)?.dateKey ?? props.week[0]?.dateKey ?? toDateKey(new Date())
     description.value = ''
     suggestions.value = []
+    expandedIndex.value = null
   } else {
     const empty = props.week.filter((d) => !d.recipeTitle).map((d) => d.dateKey)
     selectedDays.value = new Set(empty.length ? empty : props.week.map((d) => d.dateKey))
-    servings.value = 2
     prefs.value = ''
   }
   mode.value = 'config'
@@ -134,18 +176,25 @@ async function generateRecipe() {
   if (!description.value.trim()) return
   const token = ++runToken
   mode.value = 'thinking'
-  const data = await runTask(async () => {
-    const res = await props.suggest(description.value.trim(), 3)
-    if (res.kind === 'quota' || res.kind === 'premium') {
-      showPaywall('aiRecipes')
-      return null
-    }
-    return res.data
-  })
+  const res = await runTask(() => props.suggest(description.value.trim(), 3, { servings: servings.value }))
   if (token !== runToken) return // abgebrochen / abgelöst
-  if (data === null) { emit('close'); return }
-  suggestions.value = data
+
+  // Ein Fehlschlag führt zurück in die Konfiguration und sagt, was los war —
+  // er darf nicht als "keine Vorschläge" durchgehen.
+  if (!res || res.kind === 'error') {
+    mode.value = 'config'
+    showToast(res?.kind === 'error' ? res.message : 'Vorschläge konnten nicht geladen werden')
+    return
+  }
+  if (res.kind !== 'ok') { showPaywall('aiRecipes'); emit('close'); return }
+
+  suggestions.value = res.data
+  expandedIndex.value = res.data.length === 1 ? 0 : null
   mode.value = 'suggestions'
+}
+
+function toggleSuggestion(i: number) {
+  expandedIndex.value = expandedIndex.value === i ? null : i
 }
 
 async function pickSuggestion(s: RecipeSuggestion) {
@@ -161,24 +210,69 @@ async function generateWeek() {
   if (!keys.length) return
   const token = ++runToken
   mode.value = 'thinking'
-  const days = await runTask(async () => {
-    const res = await props.plan({ count: keys.length, servings: servings.value, prefs: prefs.value.trim() })
-    if (res.kind === 'quota' || res.kind === 'premium') {
-      showPaywall('weekPlan')
-      return null
-    }
-    return keys
-      .map((dateKey, i) => (res.data[i] ? { dateKey, suggestion: res.data[i] } : null))
-      .filter((d): d is WeekPlanDay => d !== null)
-  })
+  const res = await runTask(() =>
+    props.plan({ count: keys.length, servings: servings.value, prefs: prefs.value.trim() })
+  )
   if (token !== runToken) return // abgebrochen / abgelöst
-  if (days === null) { emit('close'); return }
-  previewDays.value = days
+
+  if (!res || res.kind === 'error') {
+    mode.value = 'config'
+    showToast(res?.kind === 'error' ? res.message : 'Der Wochenplan konnte nicht erstellt werden')
+    return
+  }
+  if (res.kind !== 'ok') { showPaywall('weekPlan'); emit('close'); return }
+
+  // Liefert die KI weniger Gerichte als Tage, bleiben die überzähligen Tage
+  // einfach ungeplant — aber gar nichts zurückzubekommen ist ein Fehler und
+  // keine leere Vorschau.
+  if (!res.data.length) {
+    mode.value = 'config'
+    showToast('Die KI hat keinen Plan geliefert — probier es noch einmal')
+    return
+  }
+
+  previewDays.value = keys
+    .map((dateKey, i) => (res.data[i] ? { dateKey, suggestion: res.data[i] } : null))
+    .filter((d): d is WeekPlanDay => d !== null)
+  expandedPreview.value = null
   mode.value = 'preview'
 }
 
 function removeDay(dateKey: string) {
   previewDays.value = previewDays.value.filter((d) => d.dateKey !== dateKey)
+  if (expandedPreview.value === dateKey) expandedPreview.value = null
+}
+
+function togglePreview(dateKey: string) {
+  expandedPreview.value = expandedPreview.value === dateKey ? null : dateKey
+}
+
+// Einen einzelnen Tag neu denken lassen, statt die ganze Woche zu verwerfen.
+// Geht bewusst über suggest() und nicht über plan(): ein Gericht ist ein
+// Rezeptvorschlag (Kontingent recipeAi), kein neuer Wochenplan — sonst kostete
+// jedes Austauschen eine der acht Autopilot-Einheiten im Monat.
+async function rerollDay(day: WeekPlanDay) {
+  if (rerollingKey.value) return
+  rerollingKey.value = day.dateKey
+
+  // Alles, was schon in der Vorschau steht, ist tabu — sonst kommt dasselbe
+  // Gericht unter anderem Tag zurück.
+  const avoidExtra = previewDays.value.map((d) => d.suggestion.title)
+  const query = prefs.value.trim() || 'ein abwechslungsreiches Abendessen, das zur restlichen Woche passt'
+
+  const res = await props.suggest(query, 1, { servings: servings.value, prefs: prefs.value.trim(), avoidExtra })
+  rerollingKey.value = null
+
+  if (res.kind === 'error') { showToast(res.message); return }
+  if (res.kind !== 'ok') { showPaywall('aiRecipes'); return }
+
+  const next = res.data[0]
+  if (!next) { showToast('Kein neuer Vorschlag — probier es noch einmal'); return }
+
+  previewDays.value = previewDays.value.map((d) =>
+    d.dateKey === day.dateKey ? { dateKey: d.dateKey, suggestion: next } : d
+  )
+  expandedPreview.value = day.dateKey
 }
 
 async function applyWeek() {
@@ -239,6 +333,13 @@ async function applyWeek() {
         </div>
         <p v-if="selectedDay?.recipeTitle" class="replace-hint">Ersetzt „{{ selectedDay.recipeTitle }}"</p>
 
+        <div class="field-label mt">Für wie viele Portionen?</div>
+        <div class="stepper">
+          <button type="button" class="step-btn" :disabled="servings <= 1" @click="servings--">–</button>
+          <span class="step-val">{{ servings }}</span>
+          <button type="button" class="step-btn" :disabled="servings >= 12" @click="servings++">+</button>
+        </div>
+
         <div class="field-label mt">Was stellst du dir vor?</div>
         <textarea
           v-model="description"
@@ -246,8 +347,28 @@ async function applyWeek() {
           rows="3"
           placeholder="z. B. etwas Schnelles mit Hähnchen und Reis, wenig Aufwand …"
         />
+
+        <button type="button" class="profile-row" @click="mode = 'profile'">
+          <span class="profile-row-txt">
+            <b>🍽 Euer Ess-Profil</b>
+            <i>{{ profileSummary ?? 'Noch nichts hinterlegt — Vorlieben & No-Gos einmal festlegen' }}</i>
+          </span>
+          <span class="profile-row-chev" aria-hidden="true">›</span>
+        </button>
+
         <button class="btn-ai" :disabled="!description.trim()" @click="generateRecipe">✨ Vorschläge holen</button>
         <button class="kai-back" type="button" @click="mode = 'actions'">‹ Zurück</button>
+      </div>
+
+      <!-- Ess-Profil bearbeiten (dauerhaft, gilt für alle KI-Aufrufe) -->
+      <div v-else-if="mode === 'profile'" class="kai-config">
+        <FoodProfileForm
+          :profile="foodProfile"
+          :saving="savingProfile"
+          saveLabel="Profil speichern"
+          @save="saveProfile"
+        />
+        <button class="kai-back" type="button" @click="mode = 'config'">‹ Zurück</button>
       </div>
 
       <!-- Config: Woche -->
@@ -271,32 +392,42 @@ async function applyWeek() {
           <button type="button" class="step-btn" :disabled="servings >= 12" @click="servings++">+</button>
         </div>
 
-        <div class="field-label mt">Vorlieben & No-Gos (optional)</div>
+        <div class="field-label mt">Nur für diese Woche (optional)</div>
         <textarea
           v-model="prefs"
           class="app-field kai-textarea"
           rows="2"
-          placeholder="z. B. viel Gemüse, kein Fisch, schnell an Werktagen …"
+          placeholder="z. B. Besuch am Samstag, Reste vom Wochenende verbrauchen …"
         />
+
+        <button type="button" class="profile-row" @click="mode = 'profile'">
+          <span class="profile-row-txt">
+            <b>🍽 Euer Ess-Profil</b>
+            <i>{{ profileSummary ?? 'Noch nichts hinterlegt — Vorlieben & No-Gos einmal festlegen' }}</i>
+          </span>
+          <span class="profile-row-chev" aria-hidden="true">›</span>
+        </button>
+
         <button class="btn-ai" :disabled="!selectedDays.size" @click="generateWeek">
           🪄 {{ selectedDays.size }} {{ selectedDays.size === 1 ? 'Tag' : 'Tage' }} planen
         </button>
         <button class="kai-back" type="button" @click="mode = 'actions'">‹ Zurück</button>
       </div>
 
-      <!-- Rezept: Vorschläge auswählen -->
+      <!-- Rezept: Vorschläge ansehen und auswählen -->
       <div v-else-if="mode === 'suggestions'" class="kai-suggestions">
-        <p class="suggest-intro">Für {{ selectedDay ? weekdayLabel(selectedDay.date) : 'den Tag' }} — tippe einen Vorschlag zum Einplanen.</p>
+        <p class="suggest-intro">Für {{ selectedDay ? weekdayLabel(selectedDay.date) : 'den Tag' }} — tippe einen Vorschlag, um reinzuschauen.</p>
         <div v-if="!suggestions.length" class="empty-hint">Keine Vorschläge — geh zurück und beschreib es anders.</div>
         <div v-else class="suggestion-list">
-          <button v-for="(s, i) in suggestions" :key="i" type="button" class="suggestion-card" @click="pickSuggestion(s)">
-            <div class="suggestion-title">{{ s.title }}</div>
-            <div v-if="s.minutes || s.tags?.length" class="suggestion-meta">
-              <span v-if="s.minutes">{{ s.minutes }} Min</span>
-              <span v-if="s.tags?.length">{{ s.tags.join(', ') }}</span>
-            </div>
-            <div v-if="s.description" class="suggestion-desc">{{ s.description }}</div>
-          </button>
+          <SuggestionCard
+            v-for="(s, i) in suggestions"
+            :key="i"
+            :suggestion="s"
+            :expanded="expandedIndex === i"
+            :actionLabel="`Für ${selectedDay ? weekdayLabel(selectedDay.date) : 'den Tag'} einplanen`"
+            @toggle="toggleSuggestion(i)"
+            @pick="pickSuggestion(s)"
+          />
         </div>
         <button class="kai-back" type="button" @click="mode = 'config'">‹ Ändern</button>
       </div>
@@ -305,21 +436,35 @@ async function applyWeek() {
       <div v-else class="kai-preview">
         <div class="preview-head">
           <span class="section-label">✨ KI-Vorschlag</span>
-          <span class="preview-hint">tippe ✕ zum Entfernen</span>
+          <span class="preview-hint">tippen zum Ansehen</span>
         </div>
         <div v-if="!previewDays.length" class="empty-hint">Kein Tag mehr übrig. Geh zurück und plane neu.</div>
         <div v-else class="preview-list">
-          <div v-for="d in previewDays" :key="d.dateKey" class="preview-card">
-            <div class="preview-main">
-              <span class="preview-day">{{ weekdayLabel(dayByKey.get(d.dateKey)!.date) }}, {{ dayMonthLabel(dayByKey.get(d.dateKey)!.date) }}</span>
-              <span class="preview-title">{{ d.suggestion.title }}</span>
-              <span v-if="d.suggestion.minutes || d.suggestion.tags?.length" class="preview-meta">
-                <template v-if="d.suggestion.minutes">{{ d.suggestion.minutes }} Min</template>
-                <template v-if="d.suggestion.tags?.length"> · {{ d.suggestion.tags.join(', ') }}</template>
-              </span>
-              <span v-if="dayByKey.get(d.dateKey)!.recipeTitle" class="preview-replace">Ersetzt „{{ dayByKey.get(d.dateKey)!.recipeTitle }}"</span>
+          <div v-for="d in previewDays" :key="d.dateKey" class="pday">
+            <div class="pday-head">
+              <span class="pday-day">{{ weekdayLabel(dayByKey.get(d.dateKey)!.date) }}, {{ dayMonthLabel(dayByKey.get(d.dateKey)!.date) }}</span>
+              <button
+                type="button"
+                class="pday-btn"
+                :disabled="!!rerollingKey"
+                :aria-label="`${weekdayLabel(dayByKey.get(d.dateKey)!.date)} neu vorschlagen`"
+                @click="rerollDay(d)"
+              >{{ rerollingKey === d.dateKey ? '…' : '🔄' }}</button>
+              <button
+                type="button"
+                class="pday-btn"
+                :aria-label="`${weekdayLabel(dayByKey.get(d.dateKey)!.date)} entfernen`"
+                @click="removeDay(d.dateKey)"
+              >✕</button>
             </div>
-            <button type="button" class="preview-remove" aria-label="Tag entfernen" @click="removeDay(d.dateKey)">✕</button>
+            <p v-if="dayByKey.get(d.dateKey)!.recipeTitle" class="preview-replace">
+              Ersetzt „{{ dayByKey.get(d.dateKey)!.recipeTitle }}"
+            </p>
+            <SuggestionCard
+              :suggestion="d.suggestion"
+              :expanded="expandedPreview === d.dateKey"
+              @toggle="togglePreview(d.dateKey)"
+            />
           </div>
         </div>
         <label v-if="previewDays.length" class="preview-toggle">
@@ -399,27 +544,46 @@ async function applyWeek() {
 }
 .kai-cancel:active { transform: scale(0.98); }
 
+/* Zeile zum dauerhaften Ess-Profil — steht in beiden Config-Schritten direkt
+   über dem KI-Button, weil man genau dort merkt, dass man sich wiederholt. */
+.profile-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 14px; padding: 10px 12px;
+  border: 1.5px dashed var(--border-softer); border-radius: 13px; background: none; cursor: pointer; text-align: left;
+}
+.profile-row:active { background: var(--surface-deep); }
+.profile-row-txt { flex: 1; min-width: 0; }
+.profile-row-txt b { display: block; font-size: 13px; font-weight: 700; color: var(--text); }
+.profile-row-txt i {
+  display: block; font-style: normal; font-size: 11.5px; font-weight: 600; color: var(--text-meta);
+  margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.profile-row-chev { flex: none; font-size: 20px; line-height: 1; color: var(--text-faint); }
+
 /* ── Rezept-Vorschläge ── */
 .suggest-intro { font-size: 12.5px; color: var(--text-secondary); margin: 0 0 12px; }
 .suggestion-list { display: flex; flex-direction: column; gap: 8px; }
-.suggestion-card { text-align: left; border: 1.5px solid var(--border-softer); background: var(--surface); border-radius: 12px; padding: 11px 13px; cursor: pointer; }
-.suggestion-card:active { border-color: var(--accent); background: var(--accent-tint); }
-.suggestion-title { font-size: 14px; font-weight: 700; color: var(--text); }
-.suggestion-meta { display: flex; gap: 8px; font-size: 11.5px; color: var(--text-meta); margin-top: 2px; }
-.suggestion-desc { font-size: 12px; color: var(--text-secondary); margin-top: 5px; line-height: 1.4; }
 
 /* ── Vorschau ── */
 .preview-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
 .section-label { font-size: 11px; font-weight: 800; letter-spacing: 0.7px; text-transform: uppercase; color: var(--accent); }
 .preview-hint { font-size: 12px; font-weight: 700; color: var(--text-meta); }
-.preview-list { display: flex; flex-direction: column; gap: 8px; }
-.preview-card { display: flex; align-items: flex-start; gap: 10px; border: 1.5px solid var(--border-softer); background: var(--surface); border-radius: 12px; padding: 11px 13px; }
-.preview-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.preview-day { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--accent); }
-.preview-title { font-size: 14px; font-weight: 700; color: var(--text); }
-.preview-meta { font-size: 11.5px; color: var(--text-meta); }
-.preview-replace { font-size: 11px; color: var(--danger); margin-top: 2px; }
-.preview-remove { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--surface-deep); color: var(--text-meta); font-size: 12px; cursor: pointer; }
+.preview-list { display: flex; flex-direction: column; gap: 14px; }
+
+/* Ein Tag der Vorschau: Kopfzeile mit Datum + Aktionen, darunter die
+   aufklappbare Rezeptkarte (dieselbe wie bei den Einzelvorschlägen). */
+.pday { display: flex; flex-direction: column; gap: 5px; }
+.pday-head { display: flex; align-items: center; gap: 6px; }
+.pday-day {
+  flex: 1; min-width: 0; font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px;
+  text-transform: uppercase; color: var(--accent);
+}
+.pday-btn {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; border: none;
+  background: var(--surface-deep); color: var(--text-meta); font-size: 12px; cursor: pointer;
+}
+.pday-btn:active { transform: scale(0.92); }
+.pday-btn:disabled { opacity: 0.45; pointer-events: none; }
+.preview-replace { font-size: 11px; color: var(--danger); margin: 0; }
 .preview-toggle { display: flex; align-items: center; gap: 9px; margin-top: 16px; padding: 11px 13px; border: 1.5px solid var(--border-softer); border-radius: 12px; background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
 .preview-toggle input { width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; }
 .preview-apply { margin-top: 12px; }

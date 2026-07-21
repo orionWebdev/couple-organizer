@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onScopeDispose } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useChores } from '@/composables/useChores'
@@ -171,6 +172,21 @@ function openFair() {
   }
   showFair.value = true
 }
+
+// Einstieg aus dem Wochen-Check-in (/haushalt?coach=fair). Der Coach schreibt
+// nichts selbst — er landet hier im vorhandenen Flow, Paywall-Prüfung inklusive.
+// Query danach entfernen, sonst öffnet ein Zurück-Navigieren das Sheet erneut.
+const route = useRoute()
+const router = useRouter()
+watch(
+  () => route.query.coach,
+  (value) => {
+    if (value !== 'fair') return
+    openFair()
+    router.replace({ path: route.path, query: {} })
+  },
+  { immediate: true }
+)
 
 async function applyDistribution(changes: { choreId: string; to: string }[]): Promise<number> {
   let n = 0

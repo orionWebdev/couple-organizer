@@ -71,6 +71,13 @@ const router = createRouter({
           component: () => import('@/views/QuickTasksSettingsView.vue')
         },
         {
+          // Dauerhafte Ess-Vorlieben des Paares (Couple.foodProfile) — fließen
+          // in jeden KI-Rezeptaufruf ein. Wie /settings ohne eigenen Nav-Slot.
+          path: 'settings/essprofil',
+          name: 'essprofil',
+          component: () => import('@/views/FoodProfileView.vue')
+        },
+        {
           path: 'premium',
           name: 'premium',
           component: () => import('@/views/PremiumView.vue')

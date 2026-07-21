@@ -3,6 +3,7 @@
 // Aufruf der Callables. Prompts und Response-Schemas sind nach
 // functions/src/lib/gemini.ts gewandert.
 import { httpsCallable, FunctionsError } from 'firebase/functions'
+import type { FoodProfile } from '@/types'
 import { functions } from './firebase'
 
 export interface RecipeIngredient {
@@ -29,19 +30,41 @@ export interface RecipeSuggestion {
   nutrition?: RecipeNutrition
 }
 
-export interface PlanWeekInput {
-  count: number
+// Was die KI über das Paar wissen muss, damit ein Vorschlag nicht generisch
+// wird. Gilt bewusst für BEIDE Rezept-Aufrufe: der Einzelvorschlag war lange
+// der einzige KI-Aufruf der App ganz ohne Kontext — nur der eingetippte Satz —
+// und fühlte sich deshalb wirkungslos an.
+export interface RecipeContext {
   servings?: number | null
-  prefs?: string
-  avoidTitles?: string[]
-  favorTitles?: string[]
+  prefs?: string // Freitext, gilt nur für diesen einen Lauf
+  profile?: FoodProfile | null // dauerhaftes Ess-Profil vom Couple-Doc
+  avoidTitles?: string[] // zuletzt gekocht → nicht schon wieder
+  favorTitles?: string[] // gelikte Rezepte → dürfen wiederkommen
 }
 
-export interface FinanceCategoryDelta {
-  name: string
-  currentEuros: number
-  previousEuros: number
-  deltaPct: number | null
+export type PlanWeekInput = RecipeContext & { count: number }
+
+// ── Paar-Coach ───────────────────────────────────────────────────
+// Ein Aufruf, drei Blickwinkel. `suggestion.action` ist der Punkt der ganzen
+// Übung: sie verwandelt einen Text in einen Tap, und alle Ziele existieren in
+// der App bereits (FairDistributeSheet, "Begleichen", Ideen, Budget-Sheet).
+export type CoachLens = 'week' | 'fairness' | 'money'
+export type CoachTone = 'good' | 'watch' | 'act'
+export type CoachAction = 'rebalanceChores' | 'settleUp' | 'planIdea' | 'setBudget' | 'none'
+export type CoachSectionId = 'fairness' | 'money' | 'together'
+
+export interface CoachSection {
+  id: CoachSectionId
+  title: string
+  text: string
+  tone: CoachTone
+}
+
+export interface CoachReport {
+  headline: string
+  sections: CoachSection[]
+  suggestion: { text: string; action: CoachAction }
+  talkingPoint: string
 }
 
 export interface Quota {
@@ -49,17 +72,52 @@ export interface Quota {
   limit: number
 }
 
-// Die beiden Gründe, aus denen ein KI-Aufruf abgelehnt wird, sind keine Fehler
-// im eigentlichen Sinn — sie sollen eine Paywall öffnen, keinen Toast zeigen.
-// Deshalb als Ergebnistyp statt als Exception.
+// Kein Aufruf wirft an den Client. Jeder Ausgang ist ein eigener Zweig:
+//   'quota' / 'premium' → Paywall öffnen, kein Fehler im eigentlichen Sinn
+//   'error'             → echter Fehlschlag, der auch so gesagt werden muss
+//
+// 'error' gibt es, weil ein Fehlschlag vorher als leeres Ergebnis durchgereicht
+// wurde: aus "Gemini ist ausgelastet" wurde im Wochenplan ein "Kein Tag mehr
+// übrig". Ein Fehler darf nie wie ein leeres Ergebnis aussehen.
 export type AiResult<T> =
   | { kind: 'ok'; data: T; quota: Quota }
   | { kind: 'quota'; quota: Quota }
   | { kind: 'premium' }
+  | { kind: 'error'; message: string; retryable: boolean }
 
 interface QuotaDetails {
   used?: number
   limit?: number
+}
+
+// Googles Free-Tier kennt ZWEI verschiedene 429er, und sie bedeuten das
+// Gegenteil voneinander:
+//   Minutenlimit  → gleich noch einmal probieren
+//   Tageslimit    → heute ist Schluss (20 Anfragen/Tag fürs ganze Projekt,
+//                   quotaId GenerateRequestsPerDayPerProjectPerModel-FreeTier)
+// Beides gleich zu behandeln schickt den Nutzer in eine Wartezeit, die nichts
+// ändert. Weg damit ist einzig Billing auf dem Google-Projekt.
+const DAILY_LIMIT =
+  'Das Tageskontingent der KI ist aufgebraucht (20 Anfragen/Tag im kostenlosen Google-Kontingent). Morgen geht es wieder.'
+const RATE_LIMITED = 'Die KI ist gerade ausgelastet. Probier es in einer Minute noch einmal.'
+const UNAVAILABLE = 'Die KI ist gerade nicht erreichbar. Bitte später erneut versuchen.'
+
+interface GeminiError {
+  status?: number
+  dailyQuota?: boolean
+}
+
+function rateLimitKind(err: unknown): 'daily' | 'burst' | null {
+  const e = err as GeminiError | null
+  const message = String((err as Error)?.message ?? '')
+  const code = err instanceof FunctionsError ? err.code : null
+
+  const is429 =
+    e?.status === 429 ||
+    (code === 'functions/unavailable' && /429|ausgelastet|Tageskontingent/i.test(message))
+  if (!is429) return null
+
+  return e?.dailyQuota || /Tageskontingent|PerDay/i.test(message) ? 'daily' : 'burst'
 }
 
 function toAiResult<T>(err: unknown): AiResult<T> {
@@ -72,13 +130,16 @@ function toAiResult<T>(err: unknown): AiResult<T> {
   if (code === 'functions/failed-precondition') {
     return { kind: 'premium' }
   }
-  // Alles andere (Netz, Gemini down, App Check) bleibt eine echte Exception und
-  // landet im try/catch der Aufrufer.
-  throw err
+
+  console.error('AI call failed:', err)
+  const limit = rateLimitKind(err)
+  if (limit === 'daily') return { kind: 'error', message: DAILY_LIMIT, retryable: false }
+  if (limit === 'burst') return { kind: 'error', message: RATE_LIMITED, retryable: true }
+  return { kind: 'error', message: UNAVAILABLE, retryable: false }
 }
 
 const callSuggestRecipes = httpsCallable<
-  { coupleId: string; query: string; count: number },
+  { coupleId: string; query: string; count: number } & RecipeContext,
   { recipes: RecipeSuggestion[]; quota: Quota }
 >(functions, 'suggestRecipes')
 
@@ -87,10 +148,10 @@ const callPlanWeek = httpsCallable<
   { recipes: RecipeSuggestion[]; quota: Quota }
 >(functions, 'planWeek')
 
-const callSuggestFinanceInsight = httpsCallable<
-  { coupleId: string; deltas: FinanceCategoryDelta[]; monthLabel: string },
-  { insightText: string; quota: Quota }
->(functions, 'suggestFinanceInsight')
+const callCoachInsight = httpsCallable<
+  { coupleId: string; lens: CoachLens; snapshot: unknown },
+  { report: CoachReport; quota: Quota }
+>(functions, 'coachInsight')
 
 const callSyncEntitlement = httpsCallable<
   { coupleId: string },
@@ -117,15 +178,15 @@ const NO_QUOTA: Quota = { used: 0, limit: 0 }
 export async function suggestRecipes(
   coupleId: string,
   query: string,
-  count = 3
+  count = 3,
+  ctx: RecipeContext = {}
 ): Promise<AiResult<RecipeSuggestion[]>> {
-  if (useDirect) {
-    const { directSuggestRecipes } = await import('./aiDirect')
-    return { kind: 'ok', data: await directSuggestRecipes(query, count), quota: NO_QUOTA }
-  }
-
   try {
-    const res = await callSuggestRecipes({ coupleId, query, count })
+    if (useDirect) {
+      const { directSuggestRecipes } = await import('./aiDirect')
+      return { kind: 'ok', data: await directSuggestRecipes(query, count, ctx), quota: NO_QUOTA }
+    }
+    const res = await callSuggestRecipes({ coupleId, query, count, ...ctx })
     return { kind: 'ok', data: res.data.recipes ?? [], quota: res.data.quota }
   } catch (err) {
     return toAiResult<RecipeSuggestion[]>(err)
@@ -138,12 +199,11 @@ export async function planWeek(
   coupleId: string,
   input: PlanWeekInput
 ): Promise<AiResult<RecipeSuggestion[]>> {
-  if (useDirect) {
-    const { directPlanWeek } = await import('./aiDirect')
-    return { kind: 'ok', data: await directPlanWeek(input), quota: NO_QUOTA }
-  }
-
   try {
+    if (useDirect) {
+      const { directPlanWeek } = await import('./aiDirect')
+      return { kind: 'ok', data: await directPlanWeek(input), quota: NO_QUOTA }
+    }
     const res = await callPlanWeek({ coupleId, ...input })
     return { kind: 'ok', data: res.data.recipes ?? [], quota: res.data.quota }
   } catch (err) {
@@ -151,21 +211,20 @@ export async function planWeek(
   }
 }
 
-export async function suggestFinanceInsight(
+export async function coachInsight(
   coupleId: string,
-  deltas: FinanceCategoryDelta[],
-  monthLabel: string
-): Promise<AiResult<string>> {
-  if (useDirect) {
-    const { directSuggestFinanceInsight } = await import('./aiDirect')
-    return { kind: 'ok', data: await directSuggestFinanceInsight(deltas, monthLabel), quota: NO_QUOTA }
-  }
-
+  lens: CoachLens,
+  snapshot: unknown
+): Promise<AiResult<CoachReport>> {
   try {
-    const res = await callSuggestFinanceInsight({ coupleId, deltas, monthLabel })
-    return { kind: 'ok', data: res.data.insightText, quota: res.data.quota }
+    if (useDirect) {
+      const { directCoachInsight } = await import('./aiDirect')
+      return { kind: 'ok', data: await directCoachInsight(lens, snapshot), quota: NO_QUOTA }
+    }
+    const res = await callCoachInsight({ coupleId, lens, snapshot })
+    return { kind: 'ok', data: res.data.report, quota: res.data.quota }
   } catch (err) {
-    return toAiResult<string>(err)
+    return toAiResult<CoachReport>(err)
   }
 }
 

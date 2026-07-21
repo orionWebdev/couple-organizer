@@ -4,6 +4,7 @@ import { assertCoupleMember, isPremiumActive } from '../lib/entitlements'
 import { consume } from '../lib/rateLimit'
 import { limitFor } from '../lib/limits'
 import { generateRecipes } from '../lib/gemini'
+import { sanitizeRecipeContext } from '../lib/sanitize'
 
 export const suggestRecipes = onCall(
   {
@@ -24,7 +25,7 @@ export const suggestRecipes = onCall(
     const cleanCount = Math.min(5, Math.max(1, Number(count) || 3))
 
     const quota = await consume(coupleId, 'recipeAi', limitFor('recipeAi', isPremiumActive(couple)))
-    const recipes = await generateRecipes(cleanQuery, cleanCount)
+    const recipes = await generateRecipes(cleanQuery, cleanCount, sanitizeRecipeContext(request.data))
 
     return { recipes, quota }
   }

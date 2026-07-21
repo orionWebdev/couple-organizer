@@ -1,5 +1,5 @@
 export { suggestRecipes } from './callable/suggestRecipes'
 export { planWeek } from './callable/planWeek'
-export { suggestFinanceInsight } from './callable/suggestFinanceInsight'
+export { coachInsight } from './callable/coachInsight'
 export { syncEntitlement } from './callable/syncEntitlement'
 export { revenueCatWebhook } from './http/revenueCatWebhook'

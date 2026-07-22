@@ -36,8 +36,8 @@ interface NavItem { id: string; label: string; icon: string; iconName: string; c
 // zugleich die Anzeigereihenfolge (die Nav ist index-unabhängig, jedes Item
 // trägt seine eigene Bubble).
 const NAV_ITEMS: readonly NavItem[] = [
-  // „Wir" behält bewusst id 'planung' und /planung: kein Route-Churn, und
-  // SLOT_ALIASES für /belegung funktioniert unverändert weiter.
+  // „Wir" behält bewusst id 'planung' und /planung — nur Label und Icon haben
+  // sich geändert. Das erspart Route-Churn und hält persistierte Deeplinks gültig.
   { id: 'planung', label: 'Wir', icon: '💛', iconName: 'wir', color: 'var(--planung)', href: '/planung' },
   { id: 'finanzen', label: 'Finanzen', icon: '💶', iconName: 'finanzen', color: 'var(--finanzen)', href: '/finanzen' },
   { id: 'dashboard', label: 'Start', icon: '🏠', iconName: 'start', color: 'var(--dashboard)', href: '/dashboard' },

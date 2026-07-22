@@ -357,11 +357,15 @@ defineExpose({ openNew })
   text-align: center;
 }
 
+/* Kein eigener Bodenabstand für die Bubble-Nav: den hält `.tabs-content` in
+   TabsView global frei. Seit dem Wir-Umbau folgen Reisen/Notizen direkt unter
+   dem Kalender — die frühere 90px-Reserve wäre dort ein Loch mitten auf der
+   Seite. */
 .kalender-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px var(--screen-pad) 90px;
+  padding: 14px var(--screen-pad) 0;
 }
 
 .card {

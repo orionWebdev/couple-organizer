@@ -330,6 +330,7 @@ async function saveBudget() {
     <CheckinSheet
       :isOpen="showCheckinSheet"
       :optedIn="checkinOptedIn"
+      areaClass="area-dashboard"
       @close="showCheckinSheet = false"
       @consent="onCheckinConsent"
       @submit="onCheckinSubmit"

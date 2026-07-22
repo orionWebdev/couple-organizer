@@ -280,6 +280,21 @@ function onTabClick(e: MouseEvent, id: string) {
   transition: color 0.2s var(--ease-standard);
 }
 
+/* Beschriftet wird nur der aktive Slot — fünf Labels nebeneinander machen die
+   Leiste unruhig, und wohin man gerade getippt hat, sagt ohnehin schon die
+   Bubble. Bewusst nur `opacity`: das Label bleibt im Layout stehen (die
+   Icon-Reihe springt beim Wechsel also nicht) und bleibt im
+   Accessibility-Baum, sodass Screenreader weiterhin alle fünf Ziele benennen —
+   `display:none` oder `visibility:hidden` würden beides kaputt machen. */
+.mnav__label {
+  opacity: 0;
+  transition: opacity 0.25s var(--ease-standard);
+}
+
+.mnav__item.is-active .mnav__label {
+  opacity: 1;
+}
+
 .mnav__icon {
   transition: transform 0.35s var(--ease-overshoot);
 }

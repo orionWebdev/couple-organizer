@@ -16,3 +16,7 @@ functions/lib/
 # macOS / Build-Artefakte — gehören nicht ins Repo
 .DS_Store
 tsconfig.tsbuildinfo
+
+# Lokale Firebase-Emulator-Logs
+firebase-debug.log
+firestore-debug.log

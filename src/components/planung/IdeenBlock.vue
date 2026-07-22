@@ -9,7 +9,18 @@ import InitialChip from '@/components/ui/InitialChip.vue'
 const props = defineProps<{
   items: readonly BucketListItem[]
   couple: Couple | null
+  currentUserId?: string
 }>()
+
+// Eine Idee, die vom Partner stammt, ist kein Eintrag — sie ist ein Wunsch.
+// Das Avatar-Kürzel allein liest sich als Metadatum („wer hat's getippt"); der
+// Name im Klartext macht daraus etwas, das man jemandem erfüllen kann.
+function wishFrom(item: BucketListItem): string | null {
+  const author = ideaAuthor(item)
+  if (!props.currentUserId || !author || author === props.currentUserId) return null
+  if (item.done) return null
+  return props.couple?.memberNames[author] ?? null
+}
 
 const emit = defineEmits<{
   (e: 'add'): void
@@ -70,7 +81,10 @@ const openCount = computed(() => props.items.filter((i) => !i.done).length)
         >{{ item.done ? '✓' : '' }}</button>
         <button class="idea-main" type="button" @click="emit('edit', item)">
           <span class="idea-emoji">{{ categoryDef(item.category, categories).emoji }}</span>
-          <span class="idea-title">{{ item.name }}</span>
+          <span class="idea-body">
+            <span class="idea-title">{{ item.name }}</span>
+            <span v-if="wishFrom(item)" class="idea-wish">Wunsch von {{ wishFrom(item) }}</span>
+          </span>
           <span v-if="item.date" class="idea-date">📅 {{ dateBadge(item.date) }}</span>
         </button>
         <InitialChip :uid="ideaAuthor(item)" :couple="couple" :size="20" />
@@ -195,8 +209,26 @@ const openCount = computed(() => props.items.filter((i) => !i.done).length)
   flex-shrink: 0;
 }
 
-.idea-title {
+/* Titel und Wunsch-Zeile stehen untereinander, damit der Name nicht mit dem
+   Titel um die Breite kämpft. */
+.idea-body {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.idea-wish {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idea-title {
   min-width: 0;
   font-size: 13.5px;
   font-weight: 700;

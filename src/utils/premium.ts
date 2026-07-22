@@ -13,6 +13,17 @@ export const FREE_LIMITS = {
   coachPerMonth: 1
 } as const
 
+// Fair-Use-Kontingente von TwoDo Plus — ebenfalls NUR Anzeige, durchgesetzt in
+// functions/src/lib/limits.ts (AI_LIMITS.premium; gleiche Sync-Pflicht wie bei
+// FREE_LIMITS). Sichtbar in der Paywall, damit „ohne Limit" nie als
+// „unbegrenzt für immer" gelesen wird — gerade beim Lifetime-Kauf ist diese
+// Fußnote die vertragliche Absicherung.
+export const PREMIUM_AI_LIMITS = {
+  aiRecipesPerMonth: 60,
+  coachPerMonth: 8,
+  weekPlanPerMonth: 8
+} as const
+
 export type PremiumFeature =
   | 'shoppingLists'
   | 'belegungResources'

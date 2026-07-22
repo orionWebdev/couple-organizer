@@ -67,8 +67,11 @@ const GRACE_MS = 3 * 24 * 60 * 60 * 1000
 const isPremium = computed(() => {
   if (optimisticPremium.value) return true
   if (plan.value !== 'premium') return false
-  const until = couple.value?.premiumUntil?.toMillis?.() ?? 0
-  return until > Date.now() - GRACE_MS
+  // Lifetime: premiumUntil == null heißt "läuft nie ab" (Einmalkauf) — muss zu
+  // isPremiumActive() in functions/src/lib/entitlements.ts passen.
+  const until = couple.value?.premiumUntil
+  if (until == null) return true
+  return (until.toMillis?.() ?? 0) > Date.now() - GRACE_MS
 })
 
 export function setOptimisticPremium(value: boolean) {

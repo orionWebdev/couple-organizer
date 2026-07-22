@@ -19,6 +19,7 @@ const emit = defineEmits<{
   addRecipe: [dateKey: string]
   remove: [entryId: string]
   open: [recipe: Recipe]
+  addToList: [dateKey: string]
 }>()
 
 const icon = computed(() => (props.recipe ? primaryTagMeta(props.recipe.tags, categories.value) : null))
@@ -49,6 +50,12 @@ const metaLabel = computed(() => {
         <span class="recipe-title">{{ recipe.title }}</span>
         <span v-if="metaLabel" class="recipe-meta">{{ metaLabel }}</span>
       </div>
+      <button
+        class="cart-btn"
+        type="button"
+        aria-label="Zutaten auf Einkaufsliste"
+        @click.stop="emit('addToList', dateKey)"
+      >🛒</button>
       <button class="remove-btn" type="button" @click.stop="emit('remove', entry!.id)">×</button>
     </div>
   </div>
@@ -147,6 +154,21 @@ const metaLabel = computed(() => {
 .recipe-meta {
   font-size: 11px;
   color: var(--text-meta);
+}
+
+.cart-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 5px;
+  opacity: 0.75;
+}
+
+.cart-btn:active {
+  transform: scale(0.9);
 }
 
 .remove-btn {

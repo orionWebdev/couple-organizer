@@ -205,5 +205,31 @@ service cloud.firestore {
         && isCoupleMember(request.resource.data.coupleId);
       allow delete: if isCoupleMember(resource.data.coupleId);
     }
+
+    // Check-in-Einträge — der erste bewusste Bruch mit „alles ist paar-lesbar":
+    // ein Eintrag gehört dem AUTOR, nicht dem Paar. Der Partner kann ihn über
+    // keine Regel lesen; in den Coach-Bericht fließt er ausschließlich
+    // anonymisiert (heute: Enum-Digest unten, später: Admin SDK in der
+    // coachInsight-Function, die die Rules umgeht). Kein update — ein Eintrag
+    // ist eine Momentaufnahme.
+    match /checkinEntries/{entryId} {
+      allow read, delete: if isSelf(resource.data.authorId);
+      allow create: if isSelf(request.resource.data.authorId)
+        && isCoupleMember(request.resource.data.coupleId);
+    }
+
+    // Grober Themen-Digest je Autor (Doc-Id `${coupleId}_${uid}`): nur Enums
+    // und Zähler, nie Freitext. Paar-lesbar, damit der clientseitig gebaute
+    // Coach-Snapshot beide Seiten kennt — schreiben kann ihn nur der Autor.
+    match /checkinDigests/{digestId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      // Die Doc-Id ist Teil des Vertrags (`${coupleId}_${uid}`): ohne den Check
+      // könnte ein Partner das Digest-Doc des ANDEREN mit eigener authorId
+      // überschreiben.
+      allow create, update: if isSelf(request.resource.data.authorId)
+        && isCoupleMember(request.resource.data.coupleId)
+        && digestId == request.resource.data.coupleId + '_' + request.auth.uid;
+      allow delete: if isSelf(resource.data.authorId);
+    }
   }
 }

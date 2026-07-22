@@ -51,7 +51,7 @@ export type PlanWeekInput = RecipeContext & { count: number }
 export type CoachLens = 'week' | 'fairness' | 'money'
 export type CoachTone = 'good' | 'watch' | 'act'
 export type CoachAction = 'rebalanceChores' | 'settleUp' | 'planIdea' | 'setBudget' | 'none'
-export type CoachSectionId = 'fairness' | 'money' | 'together'
+export type CoachSectionId = 'fairness' | 'money' | 'together' | 'checkin'
 
 export interface CoachSection {
   id: CoachSectionId

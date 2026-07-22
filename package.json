@@ -14,7 +14,8 @@
     "cap:android": "cap open android",
     "emulators": "npx firebase-tools emulators:start --only auth,firestore --project couple-organizer-8b245",
     "seed": "node scripts/seed.mjs",
-    "dev:emu": "VITE_USE_EMULATORS=true vite"
+    "dev:emu": "VITE_USE_EMULATORS=true vite",
+    "test:rules": "npx firebase-tools emulators:exec --only firestore --project couple-organizer-8b245 \"node tests/rules/checkin.test.mjs\""
   },
   "dependencies": {
     "@capacitor-community/safe-area": "^8.0.1",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.4.1",
+    "@firebase/rules-unit-testing": "^4.0.1",
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-vue": "^5.2.0",
     "firebase-admin": "^14.2.0",

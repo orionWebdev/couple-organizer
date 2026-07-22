@@ -55,7 +55,7 @@ export const PAYWALL_COPY: Record<PremiumFeature, PaywallCopy> = {
   // nicht mit „Finanz-Coach" abgespeist werden — das ist ein anderes Versprechen.
   coach: {
     title: 'Euer Paar-Coach',
-    body: `Einmal pro Woche ein ehrlicher Blick auf euch beide: wer gerade mehr trägt, was zwischen euch offen steht, und ein Satz, mit dem ihr es ansprechen könnt. Kostenlos ist ${FREE_LIMITS.coachPerMonth}× im Monat.`
+    body: `Einmal pro Woche ein ehrlicher Blick auf euch beide: wer gerade mehr trägt, was zwischen euch offen steht, und ein Satz, mit dem ihr es ansprechen könnt. Greift auch auf, was ihr der App im Check-in anvertraut — anonym und ohne Schuldzuweisung. Kostenlos ist ${FREE_LIMITS.coachPerMonth}× im Monat.`
   },
   aiRecipes: {
     title: 'KI-Rezeptvorschläge',

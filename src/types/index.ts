@@ -58,6 +58,10 @@ export interface Couple {
   // Zeitpunkt statt einer eigenen Collection: ein Danke soll frisch wirken, ein
   // Archiv davon wäre eine Bilanz — und Bilanzen sind hier das Gegenteil des Ziels.
   thanks?: Record<string, Timestamp>
+  // Check-in-Einwilligung je Partner (Schlüssel = uid). Explizites Opt-in, weil
+  // Gefühlsdaten in DSGVO-Art.-9-Nähe liegen; `version` erlaubt eine spätere
+  // Re-Konsens-Abfrage, wenn sich der Umfang der Verarbeitung ändert.
+  checkinOptIn?: Record<string, { at: Timestamp; version: number }>
   createdAt: Timestamp
 
   // Entitlement — ausschließlich vom Backend geschrieben (Admin SDK), für
@@ -383,5 +387,40 @@ export interface Note {
   text: string
   createdBy: string
   createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+// ── Check-in („Wie geht's dir gerade?") ─────────────────────────
+// Der erste bewusste Bruch mit „alles ist paar-lesbar": ein Eintrag gehört dem
+// Autor, NICHT dem Paar. Der Partner sieht ihn nie — weder in der UI noch über
+// die Rules. In den Coach-Bericht fließen Einträge nur anonymisiert ein.
+export type CheckinArea = 'haushalt' | 'finanzen' | 'zeit' | 'anerkennung'
+export type CheckinLevel = 1 | 2 | 3
+
+export interface CheckinEntry {
+  id: string
+  coupleId: string
+  authorId: string
+  area: CheckinArea
+  level: CheckinLevel // Intensität, keine Häufigkeit
+  // Freitext (max. 500). Wird gespeichert, geht aber erst an die KI, wenn die
+  // Cloud Functions live sind UND der Gemini-Paid-Tier bestätigt ist — Free-
+  // Tier-Daten nutzt Google fürs Training, Gefühlstexte sind dafür tabu.
+  text: string | null
+  createdAt: Timestamp
+  // createdAt + 56 Tage. Datenminimierung: kein Archiv; serverseitig räumt eine
+  // Firestore-TTL-Policy auf diesem Feld auf, der Client filtert zusätzlich.
+  expiresAt: Timestamp
+}
+
+// Paar-lesbarer Digest je Autor (Doc-Id `${coupleId}_${uid}`): NUR Enums und
+// Zähler, NIE Freitext. Existiert ausschließlich, damit der clientseitig
+// gebaute Coach-Snapshot die Themen BEIDER Partner kennen kann, ohne dass einer
+// die Einträge des anderen lesen können muss. Wird in keiner UI angezeigt.
+export interface CheckinDigest {
+  coupleId: string
+  authorId: string
+  areas: Partial<Record<CheckinArea, { count: number; maxLevel: CheckinLevel }>>
+  lastEntryAt: Timestamp | null
   updatedAt: Timestamp
 }

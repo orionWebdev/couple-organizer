@@ -77,7 +77,7 @@ const RECIPE_RESPONSE_SCHEMA = {
 
 // ── Paar-Coach ───────────────────────────────────────────────────
 // Schema und Prompt müssen identisch zu functions/src/lib/gemini.ts bleiben.
-const SECTION_IDS = ['fairness', 'money', 'together']
+const SECTION_IDS = ['fairness', 'money', 'together', 'checkin']
 const TONES = ['good', 'watch', 'act']
 const ACTIONS = ['rebalanceChores', 'settleUp', 'planIdea', 'setBudget', 'none']
 
@@ -243,7 +243,7 @@ ${FORMAT_RULES}
 }
 
 const LENS_TASK: Record<CoachLens, string> = {
-  week: `Schreibe das Wochen-Check-in des Paares. Nimm jeden Abschnitt auf, zu dem die Daten etwas hergeben (fairness, money, together) — höchstens drei.`,
+  week: `Schreibe das Wochen-Check-in des Paares. Nimm jeden Abschnitt auf, zu dem die Daten etwas hergeben (fairness, money, together, checkin) — höchstens drei.`,
   fairness: `Schau NUR auf die Aufgabenverteilung im Haushalt. Gib genau einen Abschnitt mit der id "fairness" zurück.`,
   money: `Schau NUR auf die Finanzen. Gib genau einen Abschnitt mit der id "money" zurück.`
 }
@@ -261,6 +261,7 @@ Das Unsichtbare wiegt schwerer als das Sichtbare, und was zwischen den beiden st
 5. Dass lange nichts Gemeinsames anstand (together).
 6. Erst danach: Budget, einzelne Kategorien, Ausgabenhöhe.
 Ist unter 1.–5. nichts auffällig, ist Punkt 6 völlig in Ordnung — dann aber ohne Alarmton.
+Steht im checkin ein Thema mit level 3, wiegt es wie Punkt 1 — behandle es dann strikt nach den CHECK-IN-REGELN unten.
 
 WERTSCHÄTZUNG IST TEIL DER AUFGABE:
 Wenn einer deutlich mehr mitdenkt, benenne KONKRET, was er oder sie getragen hat (die Zahlen in mentalLoad) — und zwar so, dass der andere es als Leistung erkennt. Nicht "Sarah macht mehr", sondern was genau sie im Kopf behalten hat. Unsichtbare Arbeit sichtbar zu machen ist wertvoller als jeder Verbesserungsvorschlag.`
@@ -274,7 +275,8 @@ const GLOSSARY = `WAS DIE FELDER BEDEUTEN:
 - mentalLoad.shoppingNoticed ist die Zahl der Artikel; jemand hat also bemerkt, dass sie ausgehen, bevor sie fehlten.
 - fairness.load[].points sind GEWICHTETE Aufwandspunkte, nicht die Anzahl erledigter Aufgaben. Sprich also von "der Aufgabenlast" oder "der Punkte" — niemals von "78 % der Aufgaben".
 - money.paidBy sagt, wer ausgelegt hat. Das ist unabhängig davon, ob die beiden sich untereinander schon ausgeglichen haben.
-- money.openBalanceEuros ist das, was noch ZWISCHEN den beiden offen steht — kein Schuldenstand gegenüber Dritten und kein Maß dafür, wie viel ausgegeben wurde.`
+- money.openBalanceEuros ist das, was noch ZWISCHEN den beiden offen steht — kein Schuldenstand gegenüber Dritten und kein Maß dafür, wie viel ausgegeben wurde.
+- checkin.topics (falls vorhanden) sind private Mitteilungen an die App: Bereiche, die einen der beiden gerade beschäftigen. "mentions" ist, wie oft der Bereich genannt wurde, "level" die Intensität (1–3) — keine Häufigkeit. Die Themen sind BEWUSST nicht zugeordnet: du weißt nicht, von wem sie stammen, und darfst es nicht erraten.`
 
 // Diese Regeln sind der eigentliche Wert des Features. Ein Coach, der in einer
 // Beziehungs-App jemandem die Schuld zuweist, richtet Schaden an — deshalb steht
@@ -295,6 +297,16 @@ const COACH_RULES = `REGELN — halte dich strikt daran:
 8. Deutsch, warm, erwachsen. Keine Emojis, keine Ausrufezeichen, kein Coaching-Jargon.
 9. Beträge im deutschen Format mit Euro-Zeichen: 1.042,37 €. Prozent ohne Nachkommastellen: 72 %. Zeitspannen in Wochen, wenn es über 14 Tage sind.`
 
+// Eigene Gewichtsklasse wie COACH_RULES Regel 2: Das Check-in lebt davon, dass
+// keiner der beiden je erfährt, wer was eingetragen hat. Ein einziger
+// zugeordneter Satz würde das Vertrauen in das Feature dauerhaft zerstören.
+const CHECKIN_RULES = `CHECK-IN-REGELN (nur relevant, wenn checkin im JSON steht — sonst ignorieren):
+1. Zitiere NIE wörtlich und paraphrasiere nicht so eng, dass ein Wortlaut erkennbar würde.
+2. Ordne ein Thema NIE einer Person zu — immer "einer von euch" oder "bei euch", nie ein Name im Check-in-Kontext. Rate auch nicht indirekt (etwa über andere Zahlen im Snapshot), von wem es stammen könnte.
+3. Kein Diagnose- oder Therapie-Vokabular (nichts wie "Depression", "toxisch", "Trauma", "Muster durchbrechen").
+4. Greife höchstens EIN Check-in-Thema pro Bericht auf, formuliert als Einladung, nie als Befund.
+5. Wirkt ein Thema wie eine akute Krise, kommentiere es NICHT und therapiere nicht — lass es aus. (Die App zeigt Krisen-Hinweise selbst an.)`
+
 export async function directCoachInsight(lens: CoachLens, snapshot: unknown): Promise<CoachReport> {
   const prompt = `Du bist ein ruhiger, neutraler Begleiter für ein Paar, das seinen gemeinsamen Alltag in einer App organisiert. Du hilfst den beiden, fair und entspannt miteinander zu haushalten — nicht, mehr zu leisten.
 
@@ -308,7 +320,9 @@ ${LENS_TASK[lens]}
 
 ${PRIORITY_RULE}
 
-${COACH_RULES}`
+${COACH_RULES}
+
+${CHECKIN_RULES}`
 
   const text = await callGemini(prompt, COACH_RESPONSE_SCHEMA, COACH_MODEL)
   const parsed = JSON.parse(text) as CoachReport

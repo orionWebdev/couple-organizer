@@ -145,6 +145,8 @@ async function runInsight(): Promise<{ monthKey: string; state: CoachState } | n
   if (!month || !props.couple) return null
 
   try {
+    // mentalLoad fehlt hier absichtlich — die Money-Lens bekommt nur Finanzdaten,
+    // Coach-Regel 1 deckt den Rest ab (siehe FairnessCard).
     const snapshot = buildMoneySnapshot({
       couple: props.couple,
       monthKey: month.monthKey,

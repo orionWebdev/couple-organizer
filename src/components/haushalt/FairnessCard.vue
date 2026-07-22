@@ -34,6 +34,9 @@ const { runTask, playBloom } = useAiThinking()
 
 const thinking = ref(false)
 
+// mentalLoad fehlt hier absichtlich: die Fairness-Lens bewertet nur die
+// Ausführung; Coach-Regel 1 („was nicht im Snapshot steht, nicht behaupten")
+// verhindert, dass die KI trotzdem darüber spricht.
 const snapshot = computed(() =>
   buildFairnessSnapshot({ couple: props.couple, chores: props.chores, history: props.history })
 )

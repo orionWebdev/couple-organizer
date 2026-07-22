@@ -253,18 +253,25 @@ const LENS_TASK: Record<CoachLens, string> = {
 // gestiegen) — also zu dem, was jede Haushaltsapp auch sagen kann. Interessant
 // ist, was ZWISCHEN den beiden steht.
 const PRIORITY_RULE = `WAS ZUERST ZÄHLT:
-Zwischen den beiden zählt mehr als die reine Höhe. Prüfe in dieser Reihenfolge und nimm den ersten Punkt, der wirklich auffällt:
-1. Ein schiefer Paar-Split — einer legt dauerhaft deutlich mehr aus als der andere (paidBy.sharePct).
-2. Ein offener Ausgleich, der schon länger steht (openBalanceEuros zusammen mit oldestOpenDays).
-3. Eine ungleiche Aufgabenlast (fairness).
-4. Dass lange nichts Gemeinsames anstand (together).
-5. Erst danach: Budget, einzelne Kategorien, Ausgabenhöhe.
-Ist unter 1.–4. nichts auffällig, ist Punkt 5 völlig in Ordnung — dann aber ohne Alarmton.`
+Das Unsichtbare wiegt schwerer als das Sichtbare, und was zwischen den beiden steht, schwerer als die reine Höhe. Prüfe in dieser Reihenfolge und nimm den ersten Punkt, der wirklich auffällt:
+1. Mental Load — trägt einer den größeren Teil des MITDENKENS (mentalLoad.sharePct)? Das ist die Arbeit, die sonst niemand sieht, und deshalb der wichtigste Punkt überhaupt.
+2. Eine ungleiche Aufgabenlast bei der Ausführung (fairness).
+3. Ein schiefer Paar-Split beim Geld — einer legt dauerhaft deutlich mehr aus (money.paidBy.sharePct).
+4. Ein offener Ausgleich, der schon länger steht (openBalanceEuros zusammen mit oldestOpenDays).
+5. Dass lange nichts Gemeinsames anstand (together).
+6. Erst danach: Budget, einzelne Kategorien, Ausgabenhöhe.
+Ist unter 1.–5. nichts auffällig, ist Punkt 6 völlig in Ordnung — dann aber ohne Alarmton.
+
+WERTSCHÄTZUNG IST TEIL DER AUFGABE:
+Wenn einer deutlich mehr mitdenkt, benenne KONKRET, was er oder sie getragen hat (die Zahlen in mentalLoad) — und zwar so, dass der andere es als Leistung erkennt. Nicht "Sarah macht mehr", sondern was genau sie im Kopf behalten hat. Unsichtbare Arbeit sichtbar zu machen ist wertvoller als jeder Verbesserungsvorschlag.`
 
 // Ohne diese drei Zeilen liest das Modell Felder falsch — es machte aus
 // "78 % der Punkte" ein "78 % der Aufgaben" (Punkte sind gewichtet, das ist
 // nicht dasselbe) und würde beglichene Ausgaben für nicht ausgegeben halten.
 const GLOSSARY = `WAS DIE FELDER BEDEUTEN:
+- mentalLoad misst, wer MITDENKT — wer merkt, dass etwas ansteht, und es einträgt. Das ist NICHT dasselbe wie fairness (wer es dann erledigt). Jemand kann viel ausführen und trotzdem wenig mitdenken, und umgekehrt.
+- mentalLoad.calendarKeptForPartner zählt Termine, die jemand für den ANDEREN eingetragen hat — den Kalender des Partners im Kopf zu behalten ist die unsichtbarste Arbeit von allen.
+- mentalLoad.shoppingNoticed ist die Zahl der Artikel; jemand hat also bemerkt, dass sie ausgehen, bevor sie fehlten.
 - fairness.load[].points sind GEWICHTETE Aufwandspunkte, nicht die Anzahl erledigter Aufgaben. Sprich also von "der Aufgabenlast" oder "der Punkte" — niemals von "78 % der Aufgaben".
 - money.paidBy sagt, wer ausgelegt hat. Das ist unabhängig davon, ob die beiden sich untereinander schon ausgeglichen haben.
 - money.openBalanceEuros ist das, was noch ZWISCHEN den beiden offen steht — kein Schuldenstand gegenüber Dritten und kein Maß dafür, wie viel ausgegeben wurde.`

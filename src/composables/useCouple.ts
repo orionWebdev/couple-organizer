@@ -208,6 +208,22 @@ export function useCouple() {
     }
   }
 
+  // Ein Danke an den Partner. Überschreibt das eigene vorherige — es zählt der
+  // letzte, nicht die Summe.
+  async function sayThanks(): Promise<boolean> {
+    if (!couple.value || !user.value) return false
+    try {
+      await updateDoc(doc(db, 'couples', couple.value.id), {
+        [`thanks.${user.value.uid}`]: serverTimestamp()
+      })
+      error.value = null
+      return true
+    } catch (e: any) {
+      error.value = e.message
+      return false
+    }
+  }
+
   async function regenerateInviteCode(): Promise<string | null> {
     if (!couple.value) return null
     try {
@@ -417,6 +433,7 @@ export function useCouple() {
     watchCouple,
     updateBudget,
     updateFoodProfile,
+    sayThanks,
     regenerateInviteCode,
     updateMyIcon,
     addExpenseCategory,

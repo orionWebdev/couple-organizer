@@ -10,6 +10,7 @@ import { useExpenses } from '@/composables/useExpenses'
 import { useBelegung } from '@/composables/useBelegung'
 import { useBucketList } from '@/composables/useBucketList'
 import { usePlanung } from '@/composables/usePlanung'
+import { useShopping } from '@/composables/useShopping'
 import { showToast } from '@/composables/useToast'
 import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import { useCoach } from '@/composables/useCoach'
@@ -19,12 +20,17 @@ import { dateKey, weekRangeLabel, currentWeekDates } from '@/utils/mealplan'
 import { resolveExpenseCategories } from '@/utils/expenseCategories'
 import { resolveIdeaCategories } from '@/utils/ideen'
 import { buildCoachSnapshot } from '@/utils/coachSnapshot'
+import { buildMentalLoad } from '@/utils/mentalLoad'
+import { buildTogetherStats } from '@/utils/togetherStats'
 import type { Chore, ExpenseCategory } from '@/types'
 import type { CoachAction } from '@/services/ai'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import MealHero from '@/components/dashboard/MealHero.vue'
 import CoachCard from '@/components/dashboard/CoachCard.vue'
+import MentalLoadCard from '@/components/dashboard/MentalLoadCard.vue'
+import TogetherStatsCard from '@/components/dashboard/TogetherStatsCard.vue'
+import OpenChoresCard from '@/components/dashboard/OpenChoresCard.vue'
 import QuickTasksCard from '@/components/dashboard/QuickTasksCard.vue'
 import BelegungTodayCard from '@/components/dashboard/BelegungTodayCard.vue'
 import FinanceCard from '@/components/dashboard/FinanceCard.vue'
@@ -38,9 +44,9 @@ const { couple, updateBudget } = useCouple()
 const coupleId = computed(() => user.value?.coupleId ?? null)
 const currentUserId = computed(() => user.value?.uid ?? '')
 
-const { chores, history, completeChore, loading: choresLoading } = useChores(coupleId)
+const { chores, history, completeChore, reassignChore, loading: choresLoading } = useChores(coupleId)
 const { myFavoriteChoreIds, loading: favLoading } = useFavoriteChores(coupleId)
-const { week, loading: mealPlanLoading, setCookAssignee } = useMealPlan(coupleId)
+const { week, mealEntries, loading: mealPlanLoading, setCookAssignee } = useMealPlan(coupleId)
 
 // Meine favorisierten Chores, aufgelöst gegen den Pool (verwaiste Links, deren
 // Chore gelöscht wurde, fallen dabei automatisch weg).
@@ -54,6 +60,9 @@ const {
 } = useExpenses(coupleId)
 const { bookings, resources, resourceById, loading: belegungLoading } = useBelegung(coupleId)
 const { items: ideas, loading: ideasLoading } = useBucketList(coupleId)
+// Nur für den Mental-Load-Index: `addedBy` sagt, wer bemerkt hat, dass etwas
+// ausgeht — einer der stärksten Marker für unsichtbare Arbeit.
+const { items: shoppingItems } = useShopping(coupleId)
 const { trips, loading: tripsLoading } = usePlanung(coupleId)
 
 const loading = computed(() =>
@@ -91,6 +100,12 @@ async function tapQuickTask(chore: Chore) {
 
 function goToQuickTaskSettings() {
   router.push('/settings/schnellaufgaben')
+}
+
+// Sich eine offene Aufgabe nehmen, statt sie zugewiesen zu bekommen.
+async function claimChore(chore: Chore) {
+  const ok = await reassignChore(chore.id, currentUserId.value)
+  showToast(ok ? `„${chore.name}" gehört jetzt dir` : 'Fehler beim Speichern')
 }
 
 // ── Finanzen ───────────────────────────────────────────────────
@@ -141,6 +156,36 @@ async function onSubmitEvent(payload: { title: string; dateLabel: string }) {
   showToast(`„${payload.title}" angelegt ✓`)
 }
 
+// ── Mental Load: wer denkt mit? ────────────────────────────────
+// Rein gerechnet aus `createdBy`/`addedBy`/`suggestedBy` — keine KI, keine
+// neue Erfassung. Misst bewusst etwas anderes als der Punktestand im Haushalt:
+// nicht wer etwas GEMACHT hat, sondern wer gemerkt hat, dass es ansteht.
+const mentalLoad = computed(() =>
+  buildMentalLoad({
+    couple: couple.value,
+    viewerUid: currentUserId.value,
+    chores: chores.value,
+    shoppingItems: shoppingItems.value,
+    bookings: bookings.value,
+    ideas: ideas.value,
+    mealEntries: mealEntries.value,
+    expenses: expenses.value,
+  })
+)
+
+// Kumulativer Rückblick — die einzige Zahl der App, die nicht zwischen den
+// beiden unterscheidet.
+const togetherStats = computed(() =>
+  buildTogetherStats({
+    couple: couple.value,
+    history: history.value,
+    mealEntries: mealEntries.value,
+    ideas: ideas.value,
+    trips: trips.value,
+    bookings: bookings.value,
+  })
+)
+
 // ── Wochen-Check-in (Paar-Coach) ───────────────────────────────
 // Der Snapshot entsteht aus den Composables, die auf dieser Seite ohnehin schon
 // laufen — es kommt kein einziger zusätzlicher Listener dazu.
@@ -172,6 +217,7 @@ async function startCoach() {
     const snapshot = buildCoachSnapshot({
       weekLabel: weekRangeLabel(currentWeekDates()),
       couple: couple.value,
+      mentalLoad: mentalLoad.value,
       fairness: { couple: couple.value, chores: chores.value, history: history.value },
       money: {
         couple: couple.value,
@@ -295,6 +341,14 @@ async function saveBudget() {
           @open="goToEssen"
         />
 
+        <!-- Wer denkt mit: die unsichtbare Hälfte, direkt vor dem Check-in.
+             Zeigt zuerst, was der Partner getragen hat — erst danach die Waage. -->
+        <MentalLoadCard
+          :summary="mentalLoad"
+          :couple="couple"
+          :currentUserId="currentUserId"
+        />
+
         <!-- Wochen-Check-in: das Ritual gehört in die Fokus-Zone, direkt unter
              das Heute — nicht ans Seitenende zwischen die Regale. -->
         <CoachCard
@@ -305,6 +359,16 @@ async function saveBudget() {
           @generate="startCoach"
           @cancel="cancelCoach"
           @action="onCoachAction"
+        />
+
+        <!-- Offene Aufgaben zum Übernehmen. Erscheint nur bei der Person, die
+             gerade weniger trägt — der anderen wäre es zusätzlicher Druck. -->
+        <OpenChoresCard
+          :chores="chores"
+          :history="history"
+          :couple="couple"
+          :currentUserId="currentUserId"
+          @claim="claimChore"
         />
 
         <!-- Meine Schnell-Aufgaben -->
@@ -356,6 +420,10 @@ async function saveBudget() {
             @open="goToPlanung"
           />
         </template>
+
+        <!-- Ganz unten: man scrollt an allem Heutigen vorbei und landet bei
+             dem, was zu zweit entstanden ist. -->
+        <TogetherStatsCard :stats="togetherStats" />
       </template>
     </div>
 

@@ -54,6 +54,23 @@ defineProps<{ name: string }>()
     <path class="fo" d="M6.5 3.8a1 1 0 0 0-1 1V5a3 3 0 0 0-2 2.8V9.5h17V7.8a3 3 0 0 0-2-2.8v-.2a1 1 0 1 0-2 0V5H8.5v-.2a1 1 0 0 0-1-1Zm14 7.2h-17V18a3 3 0 0 0 3 3h11a3 3 0 0 0 3-3v-7Z" />
   </svg>
 
+  <!-- „Wir": die zwei überlappenden Kreise der TwoDo-Marke (Overlap-Mark) -->
+  <svg
+    v-else-if="name === 'wir'"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.9"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <circle class="lo" cx="9.2" cy="12" r="5.6" />
+    <circle class="lo" cx="14.8" cy="12" r="5.6" />
+    <circle class="fo" cx="9.2" cy="12" r="6" />
+    <circle class="fo" cx="14.8" cy="12" r="6" />
+  </svg>
+
   <svg
     v-else-if="name === 'finanzen'"
     viewBox="0 0 24 24"

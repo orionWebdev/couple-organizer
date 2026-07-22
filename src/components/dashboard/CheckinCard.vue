@@ -12,13 +12,18 @@ import { checkinAreaDef, CHECKIN_LEVEL_LABELS } from '@/utils/checkin'
 const props = defineProps<{
   entries: readonly CheckinEntry[]
   optedIn: boolean
+  /**
+   * Kompaktform fürs Dashboard: nur der Einstieg (ein Tap → Sheet), keine
+   * Eintragsliste. Die volle Karte wohnt im Wir-Tab.
+   */
+  compact?: boolean
 }>()
 
 defineEmits<{ open: []; remove: [id: string] }>()
 
 const MAX_SHOWN = 3
 
-const recent = computed(() => props.entries.slice(0, MAX_SHOWN))
+const recent = computed(() => (props.compact ? [] : props.entries.slice(0, MAX_SHOWN)))
 
 function whenLabel(entry: CheckinEntry): string {
   const ms = entry.createdAt?.toMillis?.() ?? 0

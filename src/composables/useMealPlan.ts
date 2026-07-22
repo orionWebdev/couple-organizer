@@ -505,6 +505,9 @@ export function useMealPlan(coupleId: Ref<string | null>) {
     shiftWeek,
     resetWeek,
     recipes: readonly(recipes),
+    // Alle Einträge, nicht nur die der angezeigten Woche — der Mental-Load-Index
+    // und die Zusammen-Bilanz rechnen über längere Zeiträume als `week`.
+    mealEntries: readonly(entries),
     loading,
     error: readonly(error),
     canCreateRecipe,

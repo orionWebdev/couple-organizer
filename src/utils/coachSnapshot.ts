@@ -24,6 +24,7 @@ import type {
   MonthlyExpenseSummary,
   Trip
 } from '@/types'
+import type { MentalLoadSummary } from '@/utils/mentalLoad'
 import { categoryMeta } from '@/utils/expenseCategories'
 import { recentPoints } from '@/utils/choreBalance'
 import { roomLabel, roomOf } from '@/utils/rooms'
@@ -86,12 +87,47 @@ export interface CoachTogether {
   upcomingTrips: { title: string; when: string }[]
 }
 
+// Die unsichtbare Hälfte: wer merkt, dass etwas ansteht. Kommt aus
+// mentalLoad.ts und wird hier nur flachgeklopft, damit der Prompt kurz bleibt.
+export interface CoachMentalLoad {
+  windowDays: number
+  people: {
+    name: string
+    sharePct: number
+    choresCreated: number
+    shoppingNoticed: number
+    calendarKeptForPartner: number
+    ideasSuggested: number
+    mealsPlanned: number
+    expensesLogged: number
+  }[]
+}
+
 export interface CoachSnapshot {
   weekLabel: string
   partners: string[]
+  mentalLoad: CoachMentalLoad
   fairness: CoachFairness
   money: CoachMoney
   together: CoachTogether
+}
+
+export function toCoachMentalLoad(summary: MentalLoadSummary): CoachMentalLoad {
+  const at = (p: MentalLoadSummary['people'][number], key: string) =>
+    p.contributions.find((c) => c.key === key)?.count ?? 0
+  return {
+    windowDays: summary.windowDays,
+    people: summary.people.map((p) => ({
+      name: p.name,
+      sharePct: p.sharePct,
+      choresCreated: at(p, 'chores'),
+      shoppingNoticed: at(p, 'shopping'),
+      calendarKeptForPartner: at(p, 'calendar'),
+      ideasSuggested: at(p, 'ideas'),
+      mealsPlanned: at(p, 'meals'),
+      expensesLogged: at(p, 'money')
+    }))
+  }
 }
 
 function toEuros(cents: number): number {
@@ -334,6 +370,7 @@ function dateKeyOf(date: Date): string {
 export function buildCoachSnapshot(input: {
   weekLabel: string
   couple: Couple | null
+  mentalLoad: MentalLoadSummary
   fairness: FairnessSnapshotInput
   money: MoneySnapshotInput
   together: TogetherSnapshotInput
@@ -341,6 +378,7 @@ export function buildCoachSnapshot(input: {
   return {
     weekLabel: input.weekLabel,
     partners: partnersOf(input.couple).map((p) => p.name),
+    mentalLoad: toCoachMentalLoad(input.mentalLoad),
     fairness: buildFairnessSnapshot(input.fairness),
     money: buildMoneySnapshot(input.money),
     together: buildTogetherSnapshot(input.together)

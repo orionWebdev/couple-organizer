@@ -46,6 +46,10 @@ service cloud.firestore {
         // Kein Paar startet als Premium.
         && !request.resource.data.keys().hasAny(entitlementFields());
 
+      // Bewusste Lücke: `thanks.<uid>` kann jedes Mitglied für jeden Key
+      // schreiben (nicht nur den eigenen). Im Zwei-Personen-Scope ist das
+      // akzeptabel — härten würde ein diff()-Konstrukt kosten, das mehr
+      // Komplexität bringt, als die Geste wert ist.
       allow update: if signedIn()
         && entitlementUntouched()
         && (

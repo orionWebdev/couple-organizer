@@ -54,6 +54,10 @@ export interface Couple {
   ideaCategories?: IdeaCategoryDef[] // optional — absent = DEFAULT_IDEA_CATEGORIES (src/utils/ideen.ts)
   recipeCategories?: RecipeCategoryDef[] // optional — absent = DEFAULT_RECIPE_CATEGORIES (src/utils/recipeTags.ts)
   foodProfile?: FoodProfile // optional — absent = DEFAULT_FOOD_PROFILE (src/utils/foodProfile.ts)
+  // „Danke" je Partner, Schlüssel = wer es gegeben hat. Bewusst nur der letzte
+  // Zeitpunkt statt einer eigenen Collection: ein Danke soll frisch wirken, ein
+  // Archiv davon wäre eine Bilanz — und Bilanzen sind hier das Gegenteil des Ziels.
+  thanks?: Record<string, Timestamp>
   createdAt: Timestamp
 
   // Entitlement — ausschließlich vom Backend geschrieben (Admin SDK), für

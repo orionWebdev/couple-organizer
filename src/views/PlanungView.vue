@@ -380,6 +380,7 @@ async function onDeleteNote(note: Note) {
     <CheckinSheet
       :isOpen="showCheckinSheet"
       :optedIn="checkinOptedIn"
+      areaClass="area-planung"
       @close="showCheckinSheet = false"
       @consent="onCheckinConsent"
       @submit="onCheckinSubmit"

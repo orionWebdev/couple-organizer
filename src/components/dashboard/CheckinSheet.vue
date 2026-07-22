@@ -10,11 +10,23 @@ import BottomSheet from '@/components/ui/BottomSheet.vue'
 // (Gefühlsdaten, Art.-9-Nähe): er benennt konkret, was mit einem Eintrag
 // passiert, BEVOR der erste geschrieben werden kann. Das Sheet schreibt selbst
 // nichts — es meldet consent/submit nach oben (Hausmuster wie AddIdeaSheet).
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   isOpen: boolean
   /** Einwilligung liegt vor → Formular statt Consent-Schritt. */
   optedIn: boolean
-}>()
+  /**
+   * Bereichsklasse des Aufrufers. Bottom-Sheets teleportieren nach `<body>` und
+   * landen damit außerhalb der `.area-*`-Klasse ihrer View — ohne diese Klasse
+   * fiele `--accent` auf die Default-Terrakotta zurück. Der Sheet wird aus zwei
+   * Bereichen geöffnet (Start = indigo, Wir = blau), deshalb als Prop.
+   *
+   * Heißt bewusst NICHT `area`: so hieße es wie das lokale Ref für den
+   * gewählten Check-in-Bereich, das den Prop im Template verdecken würde.
+   */
+  areaClass?: string
+}>(), {
+  areaClass: 'area-dashboard'
+})
 
 const emit = defineEmits<{
   close: []
@@ -51,7 +63,7 @@ function submit() {
 
 <template>
   <BottomSheet :isOpen="isOpen" :title="optedIn ? 'Wie geht’s dir gerade?' : 'Dein Check-in'" @close="emit('close')">
-    <div class="area-dashboard">
+    <div :class="areaClass">
       <!-- Schritt 1: Einwilligung -->
       <div v-if="!optedIn" class="ci-consent">
         <p class="ci-intro">

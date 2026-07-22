@@ -10,7 +10,7 @@ import {
 } from 'firebase/auth'
 import {
   doc, setDoc, getDoc, deleteDoc, updateDoc, serverTimestamp,
-  arrayRemove, deleteField
+  arrayRemove, deleteField, collection, query, where, getDocs, writeBatch
 } from 'firebase/firestore'
 import { auth, db } from '@/services/firebase'
 import type { User } from '@/types'
@@ -180,6 +180,33 @@ export function useAuth() {
 
     try {
       const coupleId = user.value.coupleId
+
+      // Check-in-Einträge sind PRIVATE Daten des Verfassers — sie dürfen die
+      // Kontolöschung nicht überleben (niemand könnte sie danach noch löschen:
+      // nicht mal der Partner darf sie lesen). Vor dem Couple-Austritt, weil
+      // die create-/Digest-Rules Couple-Mitgliedschaft voraussetzen.
+      const myCheckins = await getDocs(
+        query(collection(db, 'checkinEntries'), where('authorId', '==', firebaseUser.uid))
+      )
+      const digestRef = coupleId
+        ? doc(db, 'checkinDigests', `${coupleId}_${firebaseUser.uid}`)
+        : null
+      // Existenz vorher prüfen: ein Batch-Delete auf ein fehlendes Doc lässt
+      // die Rules-Auswertung (isSelf auf resource) scheitern und risse die
+      // ganze Kontolöschung mit sich.
+      const digestExists = digestRef ? (await getDoc(digestRef)).exists() : false
+      if (!myCheckins.empty || digestExists) {
+        const batch = writeBatch(db)
+        myCheckins.forEach((d) => batch.delete(d.ref))
+        if (digestRef && digestExists) batch.delete(digestRef)
+        await batch.commit()
+      }
+      if (coupleId) {
+        await updateDoc(doc(db, 'couples', coupleId), {
+          [`checkinOptIn.${firebaseUser.uid}`]: deleteField()
+        })
+      }
+
       if (coupleId) {
         await updateDoc(doc(db, 'couples', coupleId), {
           memberIds: arrayRemove(firebaseUser.uid),

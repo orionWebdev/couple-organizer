@@ -6,6 +6,7 @@ import { useCouple } from '@/composables/useCouple'
 import { useTheme, type ThemePreference } from '@/composables/useTheme'
 import { useBelegung } from '@/composables/useBelegung'
 import { useExpenses } from '@/composables/useExpenses'
+import { useCheckin } from '@/composables/useCheckin'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
 import { buildExpensesCsv, buildBookingsIcs, saveOrShare } from '@/services/export'
@@ -20,6 +21,7 @@ const router = useRouter()
 const { user, logout, updatePrefs, deleteAccount } = useAuth()
 const {
   couple, isPremium, updateBudget, regenerateInviteCode, updateMyIcon, resetCoupleData,
+  setCheckinConsent,
 } = useCouple()
 
 // Die vier bearbeitbaren Listen liegen jeweils auf einer eigenen Unterseite
@@ -174,13 +176,51 @@ function handleExportBookings() {
   )
 }
 
+// ── Check-in: Datenhoheit ─────────────────────────────────────
+// Export/Löschung der EIGENEN Einträge — bewusst OHNE Premium-Gate: das ist
+// DSGVO-Auskunft und -Löschung, die gehört nie hinter eine Paywall (anders als
+// der CSV/ICS-Export oben).
+const {
+  entries: checkinEntries,
+  optedIn: checkinOptedIn,
+  deleteAllMine: deleteAllCheckins,
+} = useCheckin(coupleId)
+
+async function handleCheckinExport() {
+  if (checkinEntries.value.length === 0) {
+    showToast('Keine Einträge vorhanden')
+    return
+  }
+  const payload = checkinEntries.value.map((e) => ({
+    area: e.area,
+    level: e.level,
+    text: e.text,
+    createdAt: e.createdAt?.toDate?.().toISOString() ?? null,
+  }))
+  try {
+    await saveOrShare('twodo-checkin.json', JSON.stringify(payload, null, 2), 'application/json')
+  } catch (err) {
+    console.error('Export fehlgeschlagen:', err)
+    showToast('Export fehlgeschlagen')
+  }
+}
+
 // ── Konto / Gefahrenzone ──────────────────────────────────────
 async function handleLogout() {
   await logout()
   router.push('/login')
 }
 
-const pendingDanger = ref<'delete-account' | 'reset' | null>(null)
+const pendingDanger = ref<'delete-account' | 'reset' | 'checkin-delete' | 'checkin-optout' | null>(null)
+
+const DANGER_TEXT: Record<NonNullable<typeof pendingDanger.value>, string> = {
+  'delete-account': 'Willst du wirklich dein Konto löschen? Das kann nicht rückgängig gemacht werden.',
+  reset: 'Willst du wirklich die App zurücksetzen? Alle Aufgaben, Einkäufe, Ausgaben und Rezepte werden dauerhaft gelöscht.',
+  'checkin-delete': 'Willst du wirklich alle deine Check-in-Einträge löschen? Das kann nicht rückgängig gemacht werden.',
+  'checkin-optout': 'Check-in deaktivieren? Deine Einträge werden dabei dauerhaft gelöscht.',
+}
+
+const dangerText = computed(() => (pendingDanger.value ? DANGER_TEXT[pendingDanger.value] : ''))
 
 function askDeleteAccount() {
   pendingDanger.value = 'delete-account'
@@ -201,6 +241,15 @@ async function confirmDanger() {
   } else if (pendingDanger.value === 'reset') {
     const ok = await resetCoupleData()
     showToast(ok ? 'App zurückgesetzt' : 'Fehler beim Zurücksetzen')
+  } else if (pendingDanger.value === 'checkin-delete') {
+    const ok = await deleteAllCheckins()
+    showToast(ok ? 'Einträge gelöscht' : 'Fehler beim Löschen')
+  } else if (pendingDanger.value === 'checkin-optout') {
+    // Erst die Daten weg, dann die Einwilligung — schlägt das Löschen fehl,
+    // bleibt der Zustand ehrlich (aktiviert, Daten noch da).
+    const deleted = await deleteAllCheckins()
+    const ok = deleted && (await setCheckinConsent(false))
+    showToast(ok ? 'Check-in deaktiviert' : 'Fehler beim Deaktivieren')
   }
   pendingDanger.value = null
 }
@@ -263,6 +312,26 @@ async function confirmDanger() {
           <span class="toggle-label">Push-Benachrichtigungen</span>
           <ToggleSwitch :modelValue="notifyPush" @update:modelValue="togglePush" />
         </div>
+      </div>
+
+      <!-- Check-in: private Einträge — Datenhoheit komplett beim Verfasser.
+           Export & Löschung sind bewusst nicht Premium-gated (DSGVO). -->
+      <div class="section-label section-gap">Check-in</div>
+      <div class="card">
+        <template v-if="checkinOptedIn">
+          <button class="row-action" type="button" @click="handleCheckinExport">
+            <span>Meine Einträge exportieren (JSON)</span>
+          </button>
+          <button class="row-action" type="button" @click="pendingDanger = 'checkin-delete'">
+            <span>Alle meine Einträge löschen</span>
+          </button>
+          <button class="account-btn account-btn--danger" type="button" @click="pendingDanger = 'checkin-optout'">
+            Check-in deaktivieren
+          </button>
+        </template>
+        <p v-else class="field-hint">
+          Nicht aktiviert. Du findest dein Check-in auf dem Start-Tab — privat, dein Partner liest es nie.
+        </p>
       </div>
 
       <!-- Schnell-Aufgaben: persönliche Favoriten-Routinen fürs Dashboard -->
@@ -375,11 +444,7 @@ async function confirmDanger() {
     </BottomSheet>
 
     <BottomSheet :isOpen="!!pendingDanger" title="Bist du sicher?" @close="pendingDanger = null">
-      <p class="confirm-text">
-        {{ pendingDanger === 'delete-account'
-          ? 'Willst du wirklich dein Konto löschen? Das kann nicht rückgängig gemacht werden.'
-          : 'Willst du wirklich die App zurücksetzen? Alle Aufgaben, Einkäufe, Ausgaben und Rezepte werden dauerhaft gelöscht.' }}
-      </p>
+      <p class="confirm-text">{{ dangerText }}</p>
       <div class="confirm-actions">
         <button class="text-btn confirm-cancel" type="button" @click="pendingDanger = null">Abbrechen</button>
         <button class="btn-primary confirm-yes" type="button" @click="confirmDanger">Ja, wirklich</button>

@@ -25,6 +25,7 @@ import type {
   Trip
 } from '@/types'
 import type { MentalLoadSummary } from '@/utils/mentalLoad'
+import type { CheckinTopic } from '@/utils/checkin'
 import { categoryMeta } from '@/utils/expenseCategories'
 import { recentPoints } from '@/utils/choreBalance'
 import { roomLabel, roomOf } from '@/utils/rooms'
@@ -103,6 +104,15 @@ export interface CoachMentalLoad {
   }[]
 }
 
+// Die anonymisierten Check-in-Themen — bewusst OHNE Namen und ohne Pro-Kopf-
+// Zahlen (beide Partner gemischt, siehe mergeDigestsToTopics in checkin.ts).
+// Die Anti-Attribution beginnt im Snapshot: was hier keinen Namen trägt, KANN
+// die KI keinem der beiden zuordnen.
+export interface CoachCheckin {
+  windowDays: number
+  topics: CheckinTopic[]
+}
+
 export interface CoachSnapshot {
   weekLabel: string
   partners: string[]
@@ -110,6 +120,8 @@ export interface CoachSnapshot {
   fairness: CoachFairness
   money: CoachMoney
   together: CoachTogether
+  /** Nur gesetzt, wenn mindestens ein Partner Check-in nutzt und Themen hat. */
+  checkin?: CoachCheckin
 }
 
 export function toCoachMentalLoad(summary: MentalLoadSummary): CoachMentalLoad {
@@ -374,8 +386,10 @@ export function buildCoachSnapshot(input: {
   fairness: FairnessSnapshotInput
   money: MoneySnapshotInput
   together: TogetherSnapshotInput
+  /** Anonymisierte Check-in-Themen (mergeDigestsToTopics) — optional. */
+  checkin?: CoachCheckin | null
 }): CoachSnapshot {
-  return {
+  const base: CoachSnapshot = {
     weekLabel: input.weekLabel,
     partners: partnersOf(input.couple).map((p) => p.name),
     mentalLoad: toCoachMentalLoad(input.mentalLoad),
@@ -383,4 +397,8 @@ export function buildCoachSnapshot(input: {
     money: buildMoneySnapshot(input.money),
     together: buildTogetherSnapshot(input.together)
   }
+  // Leere Themenliste gar nicht erst mitschicken — Coach-Regel 1 ("was nicht
+  // dasteht, nicht erwähnen") soll greifen, nicht ein leeres Array erklären.
+  if (input.checkin && input.checkin.topics.length > 0) base.checkin = input.checkin
+  return base
 }

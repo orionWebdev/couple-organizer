@@ -14,12 +14,14 @@ import { useShopping } from '@/composables/useShopping'
 import { showToast } from '@/composables/useToast'
 import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import { useCoach } from '@/composables/useCoach'
+import { useCheckin, CHECKIN_RETENTION_DAYS } from '@/composables/useCheckin'
 import { useAiThinking } from '@/composables/useAiThinking'
 import { showPaywall } from '@/composables/usePaywall'
 import { dateKey, weekRangeLabel, currentWeekDates } from '@/utils/mealplan'
 import { resolveExpenseCategories } from '@/utils/expenseCategories'
 import { resolveIdeaCategories } from '@/utils/ideen'
 import { buildCoachSnapshot } from '@/utils/coachSnapshot'
+import { mergeDigestsToTopics } from '@/utils/checkin'
 import { buildMentalLoad } from '@/utils/mentalLoad'
 import { buildTogetherStats } from '@/utils/togetherStats'
 import type { Chore, ExpenseCategory } from '@/types'
@@ -28,6 +30,8 @@ import ProfileButton from '@/components/ui/ProfileButton.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import MealHero from '@/components/dashboard/MealHero.vue'
 import CoachCard from '@/components/dashboard/CoachCard.vue'
+import CheckinCard from '@/components/dashboard/CheckinCard.vue'
+import CheckinSheet from '@/components/dashboard/CheckinSheet.vue'
 import MentalLoadCard from '@/components/dashboard/MentalLoadCard.vue'
 import TogetherStatsCard from '@/components/dashboard/TogetherStatsCard.vue'
 import OpenChoresCard from '@/components/dashboard/OpenChoresCard.vue'
@@ -40,7 +44,7 @@ import AddExpenseSheet from '@/components/finance/AddExpenseSheet.vue'
 
 const router = useRouter()
 const { user } = useAuth()
-const { couple, updateBudget } = useCouple()
+const { couple, updateBudget, setCheckinConsent } = useCouple()
 const coupleId = computed(() => user.value?.coupleId ?? null)
 const currentUserId = computed(() => user.value?.uid ?? '')
 
@@ -186,6 +190,39 @@ const togetherStats = computed(() =>
   })
 )
 
+// ── Check-in („Wie geht's dir gerade?") ────────────────────────
+// Privat: der Listener sieht nur die EIGENEN Einträge; in den Coach-Bericht
+// fließen die Themen beider Partner nur als anonymer Enum-Digest ein.
+const {
+  entries: checkinEntries,
+  optedIn: checkinOptedIn,
+  addEntry: addCheckinEntry,
+  removeEntry: removeCheckinEntry,
+  readCoupleDigests,
+} = useCheckin(coupleId)
+
+const showCheckinSheet = usePersistedRef('dashboard.showCheckin', false, { ttlMs: DRAFT_TTL_MS })
+
+async function onCheckinConsent() {
+  const ok = await setCheckinConsent(true)
+  if (!ok) showToast('Konnte nicht gespeichert werden')
+}
+
+async function onCheckinSubmit(payload: Parameters<typeof addCheckinEntry>[0]) {
+  const ok = await addCheckinEntry(payload)
+  if (!ok) {
+    showToast('Konnte nicht gespeichert werden')
+    return
+  }
+  showCheckinSheet.value = false
+  showToast('Gespeichert — nur für dich 🔒')
+}
+
+async function onCheckinRemove(id: string) {
+  const ok = await removeCheckinEntry(id)
+  if (!ok) showToast('Konnte nicht gelöscht werden')
+}
+
 // ── Wochen-Check-in (Paar-Coach) ───────────────────────────────
 // Der Snapshot entsteht aus den Composables, die auf dieser Seite ohnehin schon
 // laufen — es kommt kein einziger zusätzlicher Listener dazu.
@@ -214,6 +251,10 @@ async function startCoach() {
   coachThinking.value = true
 
   const outcome = await runTask(async () => {
+    // Check-in-Themen beider Partner — einmalige Digest-Reads, anonym gemischt
+    // (mergeDigestsToTopics), KEINE Namen. Der Freitext bleibt komplett außen
+    // vor, bis die Cloud Functions ihn serverseitig einbeziehen (Phase 2b).
+    const digests = await readCoupleDigests()
     const snapshot = buildCoachSnapshot({
       weekLabel: weekRangeLabel(currentWeekDates()),
       couple: couple.value,
@@ -237,6 +278,7 @@ async function startCoach() {
         trips: trips.value,
         mealEntries: week.value.map((d) => d.entry),
       },
+      checkin: { windowDays: CHECKIN_RETENTION_DAYS, topics: mergeDigestsToTopics(digests) },
     })
     return generateReport('week', snapshot)
   })
@@ -361,6 +403,15 @@ async function saveBudget() {
           @action="onCoachAction"
         />
 
+        <!-- Der private Gegenpol zum geteilten Wochen-Check-in direkt darüber:
+             was hier steht, sieht nur der Verfasser. -->
+        <CheckinCard
+          :entries="checkinEntries"
+          :optedIn="checkinOptedIn"
+          @open="showCheckinSheet = true"
+          @remove="onCheckinRemove"
+        />
+
         <!-- Offene Aufgaben zum Übernehmen. Erscheint nur bei der Person, die
              gerade weniger trägt — der anderen wäre es zusätzlicher Druck. -->
         <OpenChoresCard
@@ -437,6 +488,15 @@ async function saveBudget() {
       @close="showAddExpense = false"
       @submit="onSubmitExpense"
       @submitEvent="onSubmitEvent"
+    />
+
+    <!-- Check-in erfassen (Consent beim ersten Mal) -->
+    <CheckinSheet
+      :isOpen="showCheckinSheet"
+      :optedIn="checkinOptedIn"
+      @close="showCheckinSheet = false"
+      @consent="onCheckinConsent"
+      @submit="onCheckinSubmit"
     />
 
     <!-- Budget festlegen (Onboarding) -->

@@ -20,6 +20,10 @@ const RESETTABLE_COLLECTIONS = [
 
 const BATCH_LIMIT = 450 // unter dem Firestore-Limit von 500 Operationen/Batch
 
+// Hochzählen, wenn sich ändert, WAS mit Check-in-Daten passiert — dann fragt
+// die UI die Einwilligung neu ab (z. B. Stufe 2: Freitext an die KI).
+export const CHECKIN_CONSENT_VERSION = 1
+
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no ambiguous chars (0/O, 1/I)
   let code = ''
@@ -215,6 +219,25 @@ export function useCouple() {
     try {
       await updateDoc(doc(db, 'couples', couple.value.id), {
         [`thanks.${user.value.uid}`]: serverTimestamp()
+      })
+      error.value = null
+      return true
+    } catch (e: any) {
+      error.value = e.message
+      return false
+    }
+  }
+
+  // Check-in-Einwilligung des ANGEMELDETEN Nutzers (nie die des Partners).
+  // Explizites Opt-in/-out; die Version erlaubt eine Re-Konsens-Abfrage, falls
+  // sich der Verarbeitungsumfang ändert (z. B. wenn Freitext an die KI geht).
+  async function setCheckinConsent(optIn: boolean): Promise<boolean> {
+    if (!couple.value || !user.value) return false
+    try {
+      await updateDoc(doc(db, 'couples', couple.value.id), {
+        [`checkinOptIn.${user.value.uid}`]: optIn
+          ? { at: serverTimestamp(), version: CHECKIN_CONSENT_VERSION }
+          : deleteField()
       })
       error.value = null
       return true
@@ -434,6 +457,7 @@ export function useCouple() {
     updateBudget,
     updateFoodProfile,
     sayThanks,
+    setCheckinConsent,
     regenerateInviteCode,
     updateMyIcon,
     addExpenseCategory,

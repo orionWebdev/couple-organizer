@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, watch, onScopeDispose } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useBucketList } from '@/composables/useBucketList'
 import { usePlanung } from '@/composables/usePlanung'
+import { useCoachRun } from '@/composables/useCoachRun'
+import { useCheckin } from '@/composables/useCheckin'
 import { useTabSwipe } from '@/composables/useTabSwipe'
 import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import { setFabAction } from '@/composables/useFab'
 import { showToast } from '@/composables/useToast'
 import type { BucketListItem, IdeaCategory, Note, Trip } from '@/types'
+import type { CoachAction } from '@/services/ai'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import BelegungKalender from '@/components/planung/BelegungKalender.vue'
@@ -21,12 +24,19 @@ import AddIdeaSheet from '@/components/planung/AddIdeaSheet.vue'
 import TripSheet from '@/components/planung/TripSheet.vue'
 import TripDetailSheet from '@/components/planung/TripDetailSheet.vue'
 import QuickAddSheet from '@/components/planung/QuickAddSheet.vue'
+import CoachCard from '@/components/dashboard/CoachCard.vue'
+import CheckinCard from '@/components/dashboard/CheckinCard.vue'
+import CheckinSheet from '@/components/dashboard/CheckinSheet.vue'
+import MentalLoadCard from '@/components/dashboard/MentalLoadCard.vue'
+import TogetherStatsCard from '@/components/dashboard/TogetherStatsCard.vue'
 import type { TripChecklistItem } from '@/types'
 
 const route = useRoute()
+const router = useRouter()
 const { user } = useAuth()
-const { couple } = useCouple()
+const { couple, setCheckinConsent } = useCouple()
 const coupleId = computed(() => user.value?.coupleId ?? null)
+const currentUserId = computed(() => user.value?.uid ?? '')
 
 const { items: ideen, loading: ideenLoading, addItem, updateItem, toggleDone, deleteItem } = useBucketList(coupleId)
 const {
@@ -36,22 +46,80 @@ const {
 
 const listsLoading = computed(() => ideenLoading.value || planungLoading.value)
 
-// ── Tabs: Kalender · Listen ───────────────────────────────────
-type Tab = 'kalender' | 'listen'
+// ── Tabs: Wir · Planung ───────────────────────────────────────
+// Der frühere Planung-Tab ist seit dem Wir-Umbau zweigeteilt: „Wir" (Landing —
+// Wochenbericht, Check-in, Mental Load, Ideen, Zusammen-Bilanz) und „Planung"
+// (Belegungs-Kalender, Reisen, Notizen).
+type Tab = 'wir' | 'planung'
 const tabOptions = [
-  { label: 'Kalender', value: 'kalender' },
-  { label: 'Listen', value: 'listen' },
+  { label: 'Wir', value: 'wir' },
+  { label: 'Planung', value: 'planung' },
 ]
 // Persistiert (überlebt den Android-Kaltstart); ein expliziter ?tab=-Deeplink
-// gewinnt aber weiterhin über den gemerkten Stand.
-const tab = usePersistedRef<Tab>('planung.tab', 'kalender')
-if (route.query.tab === 'listen') tab.value = 'listen'
-else if (route.query.tab === 'kalender') tab.value = 'kalender'
+// gewinnt aber weiterhin über den gemerkten Stand. Die alten Werte
+// kalender/listen (vor dem Wir-Umbau gespeichert bzw. als Deeplink verlinkt)
+// werden weiter verstanden.
+const tab = usePersistedRef<Tab>('planung.tab', 'wir')
+// Migration des gemerkten Stands: kalender → planung, alles andere Alte → wir.
+if ((tab.value as string) === 'kalender') tab.value = 'planung'
+else if (!tabOptions.some((o) => o.value === tab.value)) tab.value = 'wir'
+const tabQuery = route.query.tab
+if (tabQuery === 'planung' || tabQuery === 'kalender') tab.value = 'planung'
+else if (tabQuery === 'wir' || tabQuery === 'listen') tab.value = 'wir'
 
-const tabOrder: Tab[] = ['kalender', 'listen']
+const tabOrder: Tab[] = ['wir', 'planung']
 const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
 
 const kalenderRef = ref<InstanceType<typeof BelegungKalender> | null>(null)
+
+// ── Wir: Wochen-Check-in, privates Check-in, Mental Load ──────
+// useCoachRun bringt Berichtserzeugung + mentalLoad + togetherStats mit
+// eigenen Composable-Instanzen mit (Hausmuster).
+const {
+  mentalLoad, togetherStats,
+  coachReport, coachLoading, coachThinking, coachCreatedByName,
+  startCoach, cancelCoach,
+} = useCoachRun(coupleId)
+
+const {
+  entries: checkinEntries,
+  optedIn: checkinOptedIn,
+  addEntry: addCheckinEntry,
+  removeEntry: removeCheckinEntry,
+} = useCheckin(coupleId)
+
+const showCheckinSheet = usePersistedRef('planung.showCheckin', false, { ttlMs: DRAFT_TTL_MS })
+
+async function onCheckinConsent() {
+  const ok = await setCheckinConsent(true)
+  if (!ok) showToast('Konnte nicht gespeichert werden')
+}
+
+async function onCheckinSubmit(payload: Parameters<typeof addCheckinEntry>[0]) {
+  const ok = await addCheckinEntry(payload)
+  if (!ok) {
+    showToast('Konnte nicht gespeichert werden')
+    return
+  }
+  showCheckinSheet.value = false
+  showToast('Gespeichert — nur für dich 🔒')
+}
+
+async function onCheckinRemove(id: string) {
+  const ok = await removeCheckinEntry(id)
+  if (!ok) showToast('Konnte nicht gelöscht werden')
+}
+
+// Der Coach schlägt vor, die App führt aus — jede Aktion landet in einem Flow,
+// den es schon gibt. planIdea öffnet hier direkt das Ideen-Sheet (wir SIND die
+// Zielview); setBudget reist zum Budget-Sheet des Dashboards per Query, die
+// Zielview räumt die Query danach weg (Muster wie ?coach=fair).
+function onCoachAction(action: CoachAction) {
+  if (action === 'rebalanceChores') router.push('/haushalt?coach=fair')
+  else if (action === 'settleUp') router.push('/finanzen?coach=settle')
+  else if (action === 'planIdea') openIdeaSheet()
+  else if (action === 'setBudget') router.push('/dashboard?coach=budget')
+}
 
 // ── Sheets ────────────────────────────────────────────────────
 // Offener Sheet + Detail überleben den Kaltstart (TTL). Das jeweils bearbeitete
@@ -122,11 +190,11 @@ function closeSheet() {
   editingTripId.value = null
 }
 
-// Globaler FAB (App-Shell): Kalender → Belegung anlegen, Listen → neue Idee
+// Globaler FAB (App-Shell): Planung → Belegung anlegen, Wir → neue Idee
 // (Reise/Notiz laufen weiter über das "+" im jeweiligen Block-Kopf).
 watch(tab, (t) => {
   setFabAction(
-    t === 'kalender'
+    t === 'planung'
       ? { label: 'Belegung anlegen', handler: () => kalenderRef.value?.openNew() }
       : { label: 'Idee hinzufügen', handler: openIdeaSheet }
   )
@@ -185,17 +253,12 @@ async function onDeleteNote(note: Note) {
   showToast(ok ? 'Notiz gelöscht' : 'Fehler beim Löschen')
 }
 
-// Leerzustand: noch gar keine Liste — dann nur eine Einladung statt drei
-// leerer Karten.
-const listsEmpty = computed(() =>
-  !ideen.value.length && !trips.value.length && !notes.value.length
-)
 </script>
 
 <template>
   <div class="planung-page area-planung">
     <div class="page-header">
-      <h1 class="page-title">Planung</h1>
+      <h1 class="page-title">Wir</h1>
       <ProfileButton :size="34" />
     </div>
 
@@ -212,8 +275,48 @@ const listsEmpty = computed(() =>
     >
       <div class="tab-content">
         <Transition name="tab-fade" mode="out-in">
-          <!-- Kalender -->
-          <div v-if="tab === 'kalender'" key="kalender" class="tab-scroll rise-stagger">
+          <!-- Wir: Wochenbericht · Check-in · Mental Load · Ideen · Bilanz -->
+          <div v-if="tab === 'wir'" key="wir" class="tab-scroll">
+            <div class="wir-body rise-stagger">
+              <CoachCard
+                :report="coachReport"
+                :thinking="coachThinking"
+                :loading="coachLoading"
+                :createdByName="coachCreatedByName"
+                @generate="startCoach"
+                @cancel="cancelCoach"
+                @action="onCoachAction"
+              />
+
+              <CheckinCard
+                :entries="checkinEntries"
+                :optedIn="checkinOptedIn"
+                @open="showCheckinSheet = true"
+                @remove="onCheckinRemove"
+              />
+
+              <MentalLoadCard
+                :summary="mentalLoad"
+                :couple="couple"
+                :currentUserId="currentUserId"
+              />
+
+              <IdeenBlock
+                :items="ideen"
+                :couple="couple"
+                :currentUserId="currentUserId"
+                @add="openIdeaSheet"
+                @edit="openEditIdea"
+                @toggle="onToggleIdea"
+                @delete="onDeleteIdea"
+              />
+
+              <TogetherStatsCard :stats="togetherStats" />
+            </div>
+          </div>
+
+          <!-- Planung: Belegungs-Kalender · Reisen · Notizen -->
+          <div v-else key="planung" class="tab-scroll rise-stagger">
             <BelegungKalender
               ref="kalenderRef"
               :ideas="ideen"
@@ -221,28 +324,13 @@ const listsEmpty = computed(() =>
               @editIdea="openEditIdea"
               @openTrip="openTripDetail"
             />
-          </div>
 
-          <!-- Listen: Ideen · Reisen · Notizen -->
-          <div v-else key="listen" class="tab-scroll">
             <div v-if="listsLoading" class="loading-msg">Laden…</div>
-
-            <div v-else class="listen-body rise-stagger">
-              <SectionCard v-if="listsEmpty" title="Was habt ihr vor?">
-                <p class="empty-text">Ideen, Reisen und Notizen sammeln sich hier.</p>
-                <button class="empty-btn" type="button" @click="openIdeaSheet">＋ Erste Idee</button>
+            <div v-else class="listen-body">
+              <SectionCard v-if="!trips.length && !notes.length" title="Was habt ihr vor?">
+                <p class="empty-text">Reisen und Notizen sammeln sich hier.</p>
               </SectionCard>
-
               <template v-else>
-                <IdeenBlock
-                  :items="ideen"
-                  :couple="couple"
-                  :currentUserId="user?.uid ?? ''"
-                  @add="openIdeaSheet"
-                  @edit="openEditIdea"
-                  @toggle="onToggleIdea"
-                  @delete="onDeleteIdea"
-                />
                 <ReisenBlock :trips="trips" @add="openTripSheet" @open="openTripDetail" @delete="onDeleteTrip" />
                 <NotizenBlock :notes="notes" @add="sheet = 'note'" @delete="onDeleteNote" />
               </template>
@@ -286,6 +374,15 @@ const listsEmpty = computed(() =>
       persistKey="planung.note"
       @close="closeSheet"
       @submit="onAddNote"
+    />
+
+    <!-- Check-in erfassen (Consent beim ersten Mal) -->
+    <CheckinSheet
+      :isOpen="showCheckinSheet"
+      :optedIn="checkinOptedIn"
+      @close="showCheckinSheet = false"
+      @consent="onCheckinConsent"
+      @submit="onCheckinSubmit"
     />
   </div>
 </template>
@@ -377,11 +474,17 @@ const listsEmpty = computed(() =>
   text-align: center;
 }
 
+.wir-body,
 .listen-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 0 var(--screen-pad) 24px;
+}
+
+/* Unter dem Kalender geht es mit Reisen/Notizen weiter. */
+.listen-body {
+  margin-top: 16px;
 }
 
 .empty-text {

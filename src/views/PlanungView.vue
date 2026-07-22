@@ -237,6 +237,7 @@ const listsEmpty = computed(() =>
                 <IdeenBlock
                   :items="ideen"
                   :couple="couple"
+                  :currentUserId="user?.uid ?? ''"
                   @add="openIdeaSheet"
                   @edit="openEditIdea"
                   @toggle="onToggleIdea"

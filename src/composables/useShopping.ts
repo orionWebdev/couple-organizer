@@ -237,14 +237,17 @@ export function useShopping(coupleId: Ref<string | null>) {
 
   // Free-Limit. Die View prüft es ebenfalls (und öffnet die Paywall) — hier
   // steht es trotzdem, damit kein Aufrufer es versehentlich umgehen kann.
-  async function createList(title: string): Promise<boolean> {
-    if (!coupleId.value || !user.value) return false
+  // Gibt die ID der neuen Liste zurück (oder null bei Fehler/Limit) — Aufrufer,
+  // die direkt in die frische Liste schreiben wollen (z. B. „aus Plan"), brauchen
+  // sie; die alte `if (!ok)`-Prüfung funktioniert weiter (null ist falsy).
+  async function createList(title: string): Promise<string | null> {
+    if (!coupleId.value || !user.value) return null
     const cleanTitle = title.trim()
-    if (!cleanTitle) return false
-    if (!canCreateList.value) return false
+    if (!cleanTitle) return null
+    if (!canCreateList.value) return null
 
     try {
-      await addDoc(collection(db, 'shoppingLists'), {
+      const ref = await addDoc(collection(db, 'shoppingLists'), {
         coupleId: coupleId.value,
         title: cleanTitle,
         archived: false,
@@ -252,11 +255,11 @@ export function useShopping(coupleId: Ref<string | null>) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       })
-      return true
+      return ref.id
     } catch (err: any) {
       console.error('Failed to create shopping list:', err)
       error.value = err.message
-      return false
+      return null
     }
   }
 

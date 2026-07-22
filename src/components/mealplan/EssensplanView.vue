@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { Couple, Recipe } from '@/types'
-import { useMealPlan, type WeekPlanDay } from '@/composables/useMealPlan'
+import { useMealPlan, type WeekPlanDay, type WeekDay } from '@/composables/useMealPlan'
 import { useShopping } from '@/composables/useShopping'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
 import MealPlanDayRow from './MealPlanDayRow.vue'
 import RecipeSuggestSheet from './RecipeSuggestSheet.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
+import AddToShoppingListSheet from './AddToShoppingListSheet.vue'
 import AiButton from '@/components/ai/AiButton.vue'
 import KitchenAiSheet from './KitchenAiSheet.vue'
+import { weekdayLabel } from '@/utils/mealplan'
 
 const props = defineProps<{
   coupleId: string | null
@@ -19,7 +21,7 @@ const props = defineProps<{
 const coupleIdRef = computed(() => props.coupleId)
 
 const { week, weekLabel, isCurrentWeek, shiftWeek, resetWeek, recipes, loading, canCreateRecipe, canPlanWeek, libraryFillCapacity, fillWeekFromLibrary, suggestRecipes, planWeek, applyWeekPlan, assignRecipe, assignExistingRecipe, removeAssignment } = useMealPlan(coupleIdRef)
-const { activeListId, addItem: addShoppingItem } = useShopping(coupleIdRef)
+const { lists: shoppingLists, activeListId, canCreateList, createList, setActiveList, addItem: addShoppingItem } = useShopping(coupleIdRef)
 
 const hasAnyRecipe = computed(() => week.value.some((d) => d.recipe))
 
@@ -45,13 +47,13 @@ const showKitchenAi = ref(false)
 
 async function onWeekApplied(payload: { count: number; days: WeekPlanDay[]; createList: boolean }) {
   showKitchenAi.value = false
-  const { count, days, createList } = payload
+  const { count, days, createList: createShoppingList } = payload
   let msg = count > 0 ? `Wochenplan eingeplant (${count} ${count === 1 ? 'Tag' : 'Tage'})` : 'Es wurde nichts eingeplant'
 
   // Einkaufsliste direkt aus den geplanten Vorschlägen bauen — nicht aus dem
   // reaktiven `week`, das nach dem Schreiben erst per Snapshot nachzieht.
-  if (createList && count > 0) {
-    const res = await writeIngredientsToList(mergeIngredients(days.flatMap((d) => d.suggestion.ingredients)))
+  if (createShoppingList && count > 0) {
+    const res = await writeIngredientsToList(activeListId.value, mergeIngredients(days.flatMap((d) => d.suggestion.ingredients)))
     if (res === 'ok') msg += ' · Einkaufsliste aktualisiert'
     else if (res === 'no-list') msg += ' · keine aktive Einkaufsliste'
   }
@@ -118,23 +120,52 @@ function mergeIngredients(items: readonly { name: string; amount?: number; unit?
   return [...map.values()]
 }
 
-// Schreibt Zutaten in die aktive Liste. Kein Toast hier — der Aufrufer
+// Schreibt Zutaten in eine bestimmte Liste. Kein Toast hier — der Aufrufer
 // formuliert die Meldung (der Autopilot hängt sie an seine eigene an).
 async function writeIngredientsToList(
+  listId: string | null,
   ingredients: AggregatedIngredient[]
 ): Promise<'ok' | 'empty' | 'no-list'> {
   if (ingredients.length === 0) return 'empty'
-  if (!activeListId.value) return 'no-list'
+  if (!listId) return 'no-list'
   for (const ing of ingredients) {
-    await addShoppingItem({ listId: activeListId.value, name: ing.name, amount: ing.amount, unit: ing.unit, merge: true })
+    await addShoppingItem({ listId, name: ing.name, amount: ing.amount, unit: ing.unit, merge: true })
   }
   return 'ok'
 }
 
-async function handleCreateShoppingList() {
-  const res = await writeIngredientsToList(mergeIngredients(week.value.flatMap((d) => d.recipe?.ingredients ?? [])))
-  if (res === 'no-list') showToast('Bitte zuerst eine Einkaufsliste anlegen')
-  else if (res === 'ok') showToast('Einkaufsliste aktualisiert')
+// Ziel-Sheet: der Nutzer wählt (bzw. erstellt) die Liste, in die die gerade
+// gesammelten Zutaten wandern. Sowohl ein einzelner Tag als auch die ganze
+// Woche laufen hier zusammen — nur die Zutaten und der Untertitel wechseln.
+const showListSheet = ref(false)
+const pendingIngredients = ref<AggregatedIngredient[]>([])
+const listSheetSubtitle = ref('')
+
+function openDayToList(day: WeekDay) {
+  if (!day.recipe) return
+  pendingIngredients.value = mergeIngredients(day.recipe.ingredients ?? [])
+  listSheetSubtitle.value = `${weekdayLabel(day.date)} · ${day.recipe.title}`
+  showListSheet.value = true
+}
+
+function openWeekToList() {
+  pendingIngredients.value = mergeIngredients(week.value.flatMap((d) => d.recipe?.ingredients ?? []))
+  const dishCount = week.value.filter((d) => d.recipe).length
+  listSheetSubtitle.value = `Ganze Woche · ${dishCount} ${dishCount === 1 ? 'Gericht' : 'Gerichte'}`
+  showListSheet.value = true
+}
+
+async function onListChosen(listId: string) {
+  showListSheet.value = false
+  const res = await writeIngredientsToList(listId, pendingIngredients.value)
+  if (res === 'ok') {
+    // Die gewählte Liste aktiv setzen, damit der „Küche → Einkaufsliste"-Tab
+    // gleich die richtige zeigt.
+    setActiveList(listId)
+    showToast('Einkaufsliste aktualisiert')
+  } else if (res === 'empty') {
+    showToast('Keine Zutaten zum Übernehmen')
+  }
 }
 </script>
 
@@ -175,12 +206,13 @@ async function handleCreateShoppingList() {
           @addRecipe="openDaySuggest"
           @remove="handleRemove"
           @open="openDetail"
+          @addToList="openDayToList(day)"
         />
       </div>
     </div>
 
     <div class="cta-wrap">
-      <button class="btn-primary" :disabled="!hasAnyRecipe" @click="handleCreateShoppingList">
+      <button class="btn-primary" :disabled="!hasAnyRecipe" @click="openWeekToList">
         🛒 Einkaufsliste aus Plan erstellen
       </button>
     </div>
@@ -216,6 +248,17 @@ async function handleCreateShoppingList() {
       :isOpen="showDetail"
       :recipe="detailRecipe"
       @close="showDetail = false"
+    />
+
+    <AddToShoppingListSheet
+      :isOpen="showListSheet"
+      :subtitle="listSheetSubtitle"
+      :lists="shoppingLists"
+      :activeListId="activeListId"
+      :canCreateList="canCreateList"
+      :createList="createList"
+      @close="showListSheet = false"
+      @confirm="onListChosen"
     />
   </div>
 </template>

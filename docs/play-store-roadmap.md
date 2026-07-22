@@ -15,7 +15,7 @@ Wenn du mit Claude Code an diesem Thema weiterarbeitest: **diese Datei zuerst le
 | Abo-Modell | **Ein Abo pro Paar.** Kauft einer, haben beide Premium. |
 | Play-Account | **Organisation** (Gewerbe + D-U-N-S) — umgeht die 12-Tester-Regel. |
 | Plattform | **Erst Android.** iOS bewusst vertagt (Capacitor + RevenueCat machen den Nachzug klein). |
-| Preis (Vorschlag) | 3,99 €/Monat oder 29,99 €/Jahr, 7 Tage Testphase. Google behält 15 %. |
+| Preis (beschlossen 2026-07-22) | **2,99 €/Monat · 24,99 €/Jahr · Lifetime 34,99 €** (verwaltetes Produkt `twodo_lifetime`, non-consumable; Fair-Use-KI-Limits = `PREMIUM_AI_LIMITS`). Lifetime nicht billiger — 29,99 € läge zu nah am Jahrespreis und würde das Abo kannibalisieren; alternativ ~29 € als kommunizierter Einführungspreis. Google behält 15 %. |
 
 ---
 

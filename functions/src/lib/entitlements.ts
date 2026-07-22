@@ -18,8 +18,11 @@ const GRACE_MS = 3 * 24 * 60 * 60 * 1000
 
 export function isPremiumActive(couple: CoupleDoc): boolean {
   if (couple.plan !== 'premium') return false
-  const until = couple.premiumUntil?.toMillis() ?? 0
-  return until > Date.now() - GRACE_MS
+  // Lifetime: syncEntitlement/Webhook schreiben bei Einmalkauf premiumUntil
+  // als null ("läuft nie ab"). Muss zu isPremium in src/composables/useCouple.ts
+  // passen.
+  if (couple.premiumUntil == null) return true
+  return couple.premiumUntil.toMillis() > Date.now() - GRACE_MS
 }
 
 // Einziger Ort, an dem eine coupleId aus dem Client verifiziert wird. Ohne das

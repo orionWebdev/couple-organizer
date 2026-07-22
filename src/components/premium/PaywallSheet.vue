@@ -5,7 +5,7 @@ import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { usePaywallState, hidePaywall } from '@/composables/usePaywall'
 import { usePremium } from '@/composables/usePremium'
 import { showToast } from '@/composables/useToast'
-import { PAYWALL_COPY } from '@/utils/premium'
+import { PAYWALL_COPY, PREMIUM_AI_LIMITS } from '@/utils/premium'
 
 const { paywallFeature } = usePaywallState()
 const { packages, purchasing, restoring, error, canPurchase, purchase, restore } = usePremium()
@@ -24,20 +24,36 @@ const BENEFITS = [
 
 const selected = ref<PurchasesPackage | null>(null)
 
-// Jahres-Paket vorauswählen, sobald die Angebote da sind — es ist das bessere
-// Geschäft für beide Seiten und soll nicht erst gesucht werden müssen.
+// Aufsteigender Preis als Lese-Anker: Monatlich → Jährlich → Lifetime.
+const PACKAGE_ORDER: Record<string, number> = { MONTHLY: 0, ANNUAL: 1, LIFETIME: 2 }
+
 const sortedPackages = computed(() => {
   const list = [...packages.value] as PurchasesPackage[]
-  return list.sort((a, b) => (a.packageType === 'ANNUAL' ? -1 : b.packageType === 'ANNUAL' ? 1 : 0))
+  return list.sort(
+    (a, b) => (PACKAGE_ORDER[a.packageType] ?? 9) - (PACKAGE_ORDER[b.packageType] ?? 9)
+  )
 })
 
-const activePackage = computed(() => selected.value ?? sortedPackages.value[0] ?? null)
+// Jahres-Paket bleibt vorausgewählt — es ist das bessere Geschäft für beide
+// Seiten und soll nicht erst gesucht werden müssen.
+const activePackage = computed(
+  () =>
+    selected.value ??
+    sortedPackages.value.find((p) => p.packageType === 'ANNUAL') ??
+    sortedPackages.value[0] ??
+    null
+)
+
+const isLifetimeActive = computed(() => activePackage.value?.packageType === 'LIFETIME')
 
 function labelFor(pkg: PurchasesPackage): string {
   if (pkg.packageType === 'ANNUAL') return 'Jährlich'
   if (pkg.packageType === 'MONTHLY') return 'Monatlich'
+  if (pkg.packageType === 'LIFETIME') return 'Einmal zahlen'
   return pkg.product.title
 }
+
+const FAIR_USE_NOTE = `KI-Funktionen mit fairem Monatskontingent für euch beide: ${PREMIUM_AI_LIMITS.aiRecipesPerMonth} Rezeptvorschläge, ${PREMIUM_AI_LIMITS.coachPerMonth} Coach-Berichte, ${PREMIUM_AI_LIMITS.weekPlanPerMonth} Wochenpläne.`
 
 async function handlePurchase() {
   const pkg = activePackage.value
@@ -78,10 +94,11 @@ async function handleRestore() {
           <span class="benefit-icon">{{ b.icon }}</span>
           <span>{{ b.text }}</span>
         </li>
+        <li class="benefit-note">{{ FAIR_USE_NOTE }}</li>
       </ul>
 
       <template v-if="canPurchase && sortedPackages.length > 0">
-        <div class="plans">
+        <div class="plans" :class="{ 'plans--stacked': sortedPackages.length > 2 }">
           <button
             v-for="pkg in sortedPackages"
             :key="pkg.identifier"
@@ -90,12 +107,16 @@ async function handleRestore() {
             :class="{ 'plan--active': activePackage?.identifier === pkg.identifier }"
             @click="selected = pkg"
           >
-            <span class="plan-label">{{ labelFor(pkg) }}</span>
+            <span class="plan-label">
+              {{ labelFor(pkg) }}
+              <i v-if="pkg.packageType === 'ANNUAL'" class="plan-badge">Beliebt</i>
+            </span>
             <span class="plan-price">{{ pkg.product.priceString }}</span>
           </button>
         </div>
 
-        <p class="paywall-note">Ein Abo für euch beide: sobald einer bucht, ist auch bei deinem Partner alles freigeschaltet. Jederzeit im Play Store kündbar.</p>
+        <p v-if="isLifetimeActive" class="paywall-note">Einmal zahlen, für immer TwoDo Plus — für euch beide.</p>
+        <p v-else class="paywall-note">Ein Abo für euch beide: sobald einer bucht, ist auch bei deinem Partner alles freigeschaltet. Jederzeit im Play Store kündbar.</p>
 
         <button class="cta" :disabled="purchasing || !activePackage" @click="handlePurchase">
           {{ purchasing ? 'Wird gebucht …' : 'TwoDo Plus holen' }}
@@ -178,6 +199,39 @@ async function handleRestore() {
   display: flex;
   gap: 10px;
   margin-bottom: 14px;
+}
+
+/* Ab drei Optionen (Monat/Jahr/Lifetime) gestapelte Zeilen statt Spalten —
+   drei Spalten quetschen die Preise auf schmalen Screens. */
+.plans--stacked {
+  flex-direction: column;
+}
+
+.plans--stacked .plan {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 13px 16px;
+}
+
+.plan-badge {
+  font-style: normal;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--haushalt);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
+.benefit-note {
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-meta);
+  padding-top: 4px;
+  border-top: 1px solid var(--border-softer);
 }
 
 .plan {

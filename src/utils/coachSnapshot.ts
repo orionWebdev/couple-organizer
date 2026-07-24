@@ -26,6 +26,8 @@ import type {
 } from '@/types'
 import type { MentalLoadSummary } from '@/utils/mentalLoad'
 import type { CheckinTopic } from '@/utils/checkin'
+import { checkinAreaDef } from '@/utils/checkin'
+import type { CoachLens, CoachMetric, CoachTone } from '@/services/ai'
 import { categoryMeta } from '@/utils/expenseCategories'
 import { recentPoints } from '@/utils/choreBalance'
 import { roomLabel, roomOf } from '@/utils/rooms'
@@ -401,4 +403,101 @@ export function buildCoachSnapshot(input: {
   // dasteht, nicht erwähnen") soll greifen, nicht ein leeres Array erklären.
   if (input.checkin && input.checkin.topics.length > 0) base.checkin = input.checkin
   return base
+}
+
+// ── Kennzahlen für die Coach-Slider ──────────────────────────────
+// Die Zahlen, die im Bericht als Slider stehen — rein aus dem Snapshot, NICHT
+// von der KI. Werden bei der Erzeugung berechnet und mit dem Bericht gespeichert
+// (useCoach), damit die Anzeige den Stand zum Berichtszeitpunkt zeigt und nicht
+// bei jedem Öffnen neu rechnen muss.
+function fmtEuros(euros: number): string {
+  return euros.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €'
+}
+function fmtEurosCt(euros: number): string {
+  return euros.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
+}
+
+function loadMetric(fairness: CoachFairness): CoachMetric | null {
+  const load = fairness.load
+  if (load.length < 2) return null
+  const total = load.reduce((s, r) => s + r.points, 0)
+  if (total === 0) return null
+  const [a, b] = load
+  const skew = Math.max(a.sharePct, b.sharePct)
+  const tone: CoachTone = skew >= 75 ? 'act' : skew >= 65 ? 'watch' : 'good'
+  return {
+    key: 'load',
+    label: 'Last',
+    value: `${a.points} zu ${b.points}`,
+    leftEnd: a.name,
+    rightEnd: b.name,
+    pct: Math.round(a.sharePct),
+    tone,
+  }
+}
+
+function moneyMetric(money: CoachMoney): CoachMetric {
+  const openTail = money.openBalanceEuros > 0 ? ` · ${fmtEurosCt(money.openBalanceEuros)} offen` : ''
+  if (money.budgetEuros != null) {
+    const pct = money.budgetUsedPct ?? 0
+    const tone: CoachTone = pct > 100 ? 'act' : pct >= 85 || money.openBalanceEuros > 0 ? 'watch' : 'good'
+    return {
+      key: 'money',
+      label: 'Geld',
+      value: `${fmtEuros(money.spentEuros)} von ${fmtEuros(money.budgetEuros)}${openTail}`,
+      leftEnd: '0 €',
+      rightEnd: fmtEuros(money.budgetEuros),
+      pct: Math.min(100, pct),
+      tone,
+    }
+  }
+  // Ohne Budget kein sinnvoller Füllstand — der Balken folgt dem Monatsverlauf.
+  return {
+    key: 'money',
+    label: 'Geld',
+    value: `${fmtEuros(money.spentEuros)} ausgegeben${openTail}`,
+    leftEnd: 'Monatsanfang',
+    rightEnd: 'Monatsende',
+    pct: Math.min(100, money.monthElapsedPct ?? 0),
+    tone: money.openBalanceEuros > 0 ? 'watch' : 'good',
+  }
+}
+
+function checkinMetric(checkin: CoachCheckin): CoachMetric | null {
+  if (!checkin.topics.length) return null
+  // Höchstens EIN Thema (CHECKIN_RULES) — das stärkste nach Intensität, dann Nennungen.
+  const top = [...checkin.topics].sort((x, y) => y.level - x.level || y.mentions - x.mentions)[0]
+  const tone: CoachTone = top.level >= 3 ? 'act' : top.level === 2 ? 'watch' : 'good'
+  return {
+    key: 'checkin',
+    label: 'Zwischen euch',
+    value: `Thema ${checkinAreaDef(top.area).label}`,
+    leftEnd: 'ruhig',
+    rightEnd: 'angespannt',
+    pct: Math.round((top.level / 3) * 100),
+    tone,
+  }
+}
+
+// Die Slider je Linse. week nimmt bis zu drei (Zwischen euch · Last · Geld),
+// fairness/money genau ihre eine. Reihenfolge folgt der PRIORITY_RULE: das
+// Zwischenmenschliche zuerst.
+export function buildCoachMetrics(lens: CoachLens, snapshot: unknown): CoachMetric[] {
+  if (lens === 'fairness') {
+    const m = loadMetric(snapshot as CoachFairness)
+    return m ? [m] : []
+  }
+  if (lens === 'money') {
+    return [moneyMetric(snapshot as CoachMoney)]
+  }
+  const snap = snapshot as CoachSnapshot
+  const metrics: CoachMetric[] = []
+  if (snap.checkin) {
+    const m = checkinMetric(snap.checkin)
+    if (m) metrics.push(m)
+  }
+  const load = loadMetric(snap.fairness)
+  if (load) metrics.push(load)
+  metrics.push(moneyMetric(snap.money))
+  return metrics
 }

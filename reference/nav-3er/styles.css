@@ -1,0 +1,33 @@
+/* ════════════════════════════════════════════════════════════════
+   Lokaler Einstiegspunkt für die Entwürfe in diesem Ordner.
+
+   Im Claude-Design-Projekt zeigen dieselben Dateien auf dessen
+   `../../styles.css`. Hier ziehen wir stattdessen `src/app.css` des Repos
+   direkt herein — dann laufen die Entwürfe immer auf den ECHTEN, aktuellen
+   Tokens und können nicht von der App wegdriften. Das ist der einzige
+   Unterschied zwischen den beiden Kopien (eine Zeile pro HTML-Datei).
+
+   Das `@import "tailwindcss"` in app.css läuft dabei ins Leere (404 relativ zu
+   src/) und wird vom Browser still übergangen — der Rest der Datei greift ganz
+   normal. Kein Build, kein Dev-Server nötig: HTML doppelklicken genügt.
+
+   Die Schriften liegen im Repo nur als Variable Fonts unter public/fonts/ und
+   werden dort per @font-face in index.html deklariert, nicht in app.css —
+   deshalb hier noch einmal.
+   ════════════════════════════════════════════════════════════════ */
+
+@import url('../../src/app.css');
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('../../public/fonts/nunito-var.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fredoka';
+  src: url('../../public/fonts/fredoka-var.woff2') format('woff2');
+  font-weight: 300 700;
+  font-display: swap;
+}

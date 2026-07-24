@@ -51,20 +51,28 @@ export type PlanWeekInput = RecipeContext & { count: number }
 export type CoachLens = 'week' | 'fairness' | 'money'
 export type CoachTone = 'good' | 'watch' | 'act'
 export type CoachAction = 'rebalanceChores' | 'settleUp' | 'planIdea' | 'setBudget' | 'none'
-export type CoachSectionId = 'fairness' | 'money' | 'together' | 'checkin'
 
-export interface CoachSection {
-  id: CoachSectionId
-  title: string
-  text: string
-  tone: CoachTone
-}
-
+// Was die KI liefert — nur noch WORTE. Die frühere `sections[]` (Prosa je
+// Bereich) ist seit dem 3er-Umbau raus: die Zahlen kommen als `CoachMetric`
+// aus dem Snapshot (siehe buildCoachMetrics), gerendert als Slider. Das trennt
+// „Zahlen aus dem Code, Worte aus der KI" sauber — die KI kann keine Zahl mehr
+// halluzinieren, und der Text schrumpft auf headline + Vorschlag + Gesprächssatz.
 export interface CoachReport {
   headline: string
-  sections: CoachSection[]
   suggestion: { text: string; action: CoachAction }
   talkingPoint: string
+}
+
+// Eine gemessene Kennzahl als Slider. Wird NICHT von der KI erzeugt, sondern
+// clientseitig aus dem Snapshot gerechnet und mit dem Bericht gespeichert.
+export interface CoachMetric {
+  key: string
+  label: string      // "Last", "Geld", "Zwischen euch"
+  value: string      // "58 zu 42", "640 € von 800 €"
+  leftEnd: string    // Slider-Ende links
+  rightEnd: string   // Slider-Ende rechts
+  pct: number        // 0..100 — Position des Thumbs
+  tone: CoachTone
 }
 
 export interface Quota {

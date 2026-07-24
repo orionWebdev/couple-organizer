@@ -31,24 +31,33 @@ const router = createRouter({
           component: () => import('@/views/DashboardView.vue')
         },
         {
-          path: 'finanzen',
-          name: 'finanzen',
-          component: () => import('@/views/FinanzenView.vue')
-        },
-        {
-          path: 'haushalt',
-          name: 'haushalt',
-          component: () => import('@/views/HaushaltView.vue')
-        },
-        {
           path: 'planung',
           name: 'planung',
           component: () => import('@/views/PlanungView.vue')
         },
         {
+          // Der neue dritte Tab. Segmente Aufgaben · Küche · Geld · Kalender
+          // über ?tab=…; die alten Bereichsrouten unten leiten hierher.
+          path: 'alltag',
+          name: 'alltag',
+          component: () => import('@/views/AlltagView.vue')
+        },
+        // Die drei früheren Bereichs-Tabs sind seit dem 3er-Umbau Segmente von
+        // /alltag. Ihre Routen bleiben als Redirects bestehen, damit
+        // persistierte Deeplinks, der Android-Kaltstart-Zustand und die
+        // Coach-Routings (?coach=fair/settle) weiter funktionieren — die Query
+        // wird durchgereicht, nur das Zielsegment ergänzt.
+        {
+          path: 'haushalt',
+          redirect: (to) => ({ path: '/alltag', query: { ...to.query, tab: 'aufgaben' } })
+        },
+        {
+          path: 'finanzen',
+          redirect: (to) => ({ path: '/alltag', query: { ...to.query, tab: 'geld' } })
+        },
+        {
           path: 'einkaufen',
-          name: 'einkaufen',
-          component: () => import('@/views/EinkaufenView.vue')
+          redirect: (to) => ({ path: '/alltag', query: { ...to.query, tab: 'kueche' } })
         },
         {
           path: 'settings',

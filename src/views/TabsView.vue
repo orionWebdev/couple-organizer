@@ -10,6 +10,8 @@ import BottomSheet from '@/components/ui/BottomSheet.vue'
 import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
 import PaywallSheet from '@/components/premium/PaywallSheet.vue'
 import AiThinkingHost from '@/components/ai/AiThinkingHost.vue'
+import AiHubButton from '@/components/ai/AiHubButton.vue'
+import AiHubModal from '@/components/ai/AiHubModal.vue'
 
 // useCouple ist ein Modul-Singleton und startet seinen Listener selbst, sobald
 // user.coupleId gesetzt ist — hier ist nichts mehr anzustoßen.
@@ -36,20 +38,26 @@ interface NavItem { id: string; label: string; icon: string; iconName: string; c
 // zugleich die Anzeigereihenfolge (die Nav ist index-unabhängig, jedes Item
 // trägt seine eigene Bubble).
 const NAV_ITEMS: readonly NavItem[] = [
-  // „Wir" behält bewusst id 'planung' und /planung — nur Label und Icon haben
-  // sich geändert. Das erspart Route-Churn und hält persistierte Deeplinks gültig.
+  // Drei Slots: Heute (was jetzt ansteht) · Wir (wie es uns geht) · Alltag (die
+  // Maschinerie). „Heute" behält id/Route 'dashboard', „Wir" behält 'planung' —
+  // nur Label/Icon änderten sich, das erspart Route-Churn und hält persistierte
+  // Deeplinks gültig.
+  { id: 'dashboard', label: 'Heute', icon: '🏠', iconName: 'start', color: 'var(--dashboard)', href: '/dashboard' },
   { id: 'planung', label: 'Wir', icon: '💛', iconName: 'wir', color: 'var(--planung)', href: '/planung' },
-  { id: 'finanzen', label: 'Finanzen', icon: '💶', iconName: 'finanzen', color: 'var(--finanzen)', href: '/finanzen' },
-  { id: 'dashboard', label: 'Start', icon: '🏠', iconName: 'start', color: 'var(--dashboard)', href: '/dashboard' },
-  { id: 'haushalt', label: 'Haushalt', icon: '🧽', iconName: 'haushalt', color: 'var(--haushalt)', href: '/haushalt' },
-  { id: 'einkaufen', label: 'Küche', icon: '🍽️', iconName: 'essen', color: 'var(--food)', href: '/einkaufen' },
+  { id: 'alltag', label: 'Alltag', icon: '🗂️', iconName: 'alltag', color: 'var(--haushalt)', href: '/alltag' },
 ]
 
-// Routen ohne eigenen Nav-Slot leihen sich den Slot ihres Bereichs. Aktuell
-// gibt es keine — der Belegungs-Kalender ist ein Tab innerhalb der Planung. Die
-// Einstellungen (Profil-Avatare im Header) haben keinen Bereich — dort bleibt
-// die Bubble auf "Start".
-const SLOT_ALIASES: Record<string, string> = {}
+// Routen ohne eigenen Nav-Slot leihen sich den Slot ihres Bereichs. Die drei
+// alten Bereichsrouten (haushalt/finanzen/einkaufen) leben nur noch als
+// Redirects auf /alltag?tab=… — landet man doch einmal direkt auf ihnen (alter
+// Deeplink, bevor der Redirect greift), soll die Bubble schon auf „Alltag"
+// stehen. Die Einstellungen (Profil-Avatare im Header) haben keinen Bereich —
+// dort bleibt die Bubble auf „Heute".
+const SLOT_ALIASES: Record<string, string> = {
+  haushalt: 'alltag',
+  finanzen: 'alltag',
+  einkaufen: 'alltag',
+}
 
 const activeId = computed(() => {
   const seg = route.path.split('/')[1] || 'dashboard'
@@ -130,6 +138,11 @@ function onTabClick(e: MouseEvent, id: string) {
     <!-- Einmal für die ganze App: der Vollbild-Bloom als „Fertig"-Flourish.
          Der Denk-Zustand selbst lebt in-context (Sheet-Glow / Ziel-Karte). -->
     <AiThinkingHost />
+
+    <!-- Der EINE KI-Einstieg der App: dauerhafter Button rechts, zentraler Hub.
+         Der frühere verstreute AiButton/AiTriggerBadge ist eingesammelt. -->
+    <AiHubButton />
+    <AiHubModal />
 
     <nav class="mnav">
       <button
@@ -250,15 +263,21 @@ function onTabClick(e: MouseEvent, id: string) {
    die globale Base-Regel in app.css (Transition-Dauer → 0.01ms). */
 .mnav {
   position: fixed;
+  /* Mit dem KI-Hub sitzt die 3er-Leiste schmal LINKS; rechts daneben der
+     dauerhafte KI-Button (AiHubButton) auf gleicher Höhe. Das nutzt den durch
+     nur drei Tabs frei gewordenen Platz und löst zugleich die alte
+     FAB/Bubble-Kollision — Nav und KI teilen sich die Fußzeile nebeneinander.
+     295px lässt rechts Platz für KI-Button (66) + Rand. Auf sehr schmalen
+     Screens schrumpft sie mit. */
   left: 14px;
-  right: 14px;
+  width: min(295px, calc(100% - 14px - 66px - 24px));
   bottom: calc(20px + var(--safe-bottom));
   height: 66px;
   background: var(--surface);
   border: 1px solid var(--border-softer);
   border-radius: 26px;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   box-shadow: var(--shadow-float);
   z-index: 100;
 }
@@ -385,9 +404,10 @@ function onTabClick(e: MouseEvent, id: string) {
 .fab {
   position: fixed;
   right: 20px;
-  /* fab.css nennt 102px; höher gelegt, damit der FAB die überstehende Nav-Bubble
-     frei räumt — bei aktivem Essen-Tab läge er sonst fast auf ihr. */
-  bottom: calc(120px + var(--safe-bottom));
+  /* Seit dem KI-Hub sitzt rechts unten der dauerhafte KI-Button (66px hoch,
+     bottom 20). Der kontextbezogene ＋-FAB rückt darüber, mit klarer Lücke —
+     beide stapeln sich am rechten Rand, nichts überlappt. */
+  bottom: calc(100px + var(--safe-bottom));
   width: 64px;
   height: 64px;
   border-radius: 22px;

@@ -4,6 +4,7 @@ import type { ShoppingItem, ShoppingList, Couple } from '@/types'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import NumericKeypad from '@/components/finance/NumericKeypad.vue'
 import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
+import { sectionOfItem, sectionOrder } from '@/utils/shoppingSections'
 
 const props = defineProps<{
   list: ShoppingList
@@ -27,8 +28,15 @@ const rawAmount = usePersistedRef('shopping.mode.rawAmount', '', { ttlMs: DRAFT_
 const paidBy = usePersistedRef('shopping.mode.paidBy', props.currentUserId, { ttlMs: DRAFT_TTL_MS })
 const createExpense = usePersistedRef('shopping.mode.createExpense', true, { ttlMs: DRAFT_TTL_MS })
 
+// Gleiche Reihenfolge wie in der Listenansicht: nach Laden-Bereich sortiert
+// (sectionOrder), offene zuerst INNERHALB des Bereichs — nicht global alle
+// offenen vor allen erledigten. Der Einkaufsmodus ist eine flache Liste, aber
+// die Lesereihenfolge entspricht so 1:1 der gruppierten Liste.
 const sortedItems = computed(() =>
   [...props.items].sort((a, b) => {
+    const sa = sectionOrder(sectionOfItem(a))
+    const sb = sectionOrder(sectionOfItem(b))
+    if (sa !== sb) return sa - sb
     if (a.checked !== b.checked) return a.checked ? 1 : -1
     return 0
   })

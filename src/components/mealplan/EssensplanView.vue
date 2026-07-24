@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import type { Couple, Recipe } from '@/types'
 import { useMealPlan, type WeekPlanDay, type WeekDay } from '@/composables/useMealPlan'
 import { useShopping } from '@/composables/useShopping'
@@ -9,7 +10,6 @@ import MealPlanDayRow from './MealPlanDayRow.vue'
 import RecipeSuggestSheet from './RecipeSuggestSheet.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
 import AddToShoppingListSheet from './AddToShoppingListSheet.vue'
-import AiButton from '@/components/ai/AiButton.vue'
 import KitchenAiSheet from './KitchenAiSheet.vue'
 import { weekdayLabel } from '@/utils/mealplan'
 
@@ -41,9 +41,32 @@ async function assignWithPaywall(dateKey: string, input: Parameters<typeof assig
 const showSheet = ref(false)
 const suggestDateKey = ref<string | null>(null)
 
-// Der eine KI-Einstieg: ein Sheet, das die beiden KI-Aktionen zeigt und beim
-// Tap selbst zum glühenden Denk-Zustand wird (KitchenAiSheet).
+// KI-Einstiege leben seit dem KI-Hub NICHT mehr auf diesem Screen — der Hub
+// (globaler KI-Button) öffnet den Küchen-Flow per Weiche über /alltag?tab=kueche
+// &ai=week|recipe|list. Dieses Sheet ist das Flow-Ziel; initialAction springt
+// direkt in die vom Hub gewählte Aktion.
 const showKitchenAi = ref(false)
+const kitchenInitialAction = ref<'week' | 'recipe' | 'library' | null>(null)
+
+const route = useRoute()
+const router = useRouter()
+// ?ai= vom Hub aufgreifen — erst wenn die Woche geladen ist, sonst öffnete das
+// Sheet über leeren Tagen. Query danach entfernen (tab erhalten).
+watch(
+  () => [route.query.ai, loading.value] as const,
+  ([ai, busy]) => {
+    if (!ai || busy) return
+    if (ai === 'week' || ai === 'recipe') {
+      kitchenInitialAction.value = ai
+      showKitchenAi.value = true
+    } else if (ai === 'list') {
+      openWeekToList()
+    }
+    const { ai: _drop, ...rest } = route.query
+    router.replace({ path: route.path, query: rest })
+  },
+  { immediate: true }
+)
 
 async function onWeekApplied(payload: { count: number; days: WeekPlanDay[]; createList: boolean }) {
   showKitchenAi.value = false
@@ -188,12 +211,6 @@ async function onListChosen(listId: string) {
         <button class="week-arrow" type="button" aria-label="Nächste Woche" @click="shiftWeek(1)">›</button>
       </div>
 
-      <AiButton
-        title="Wochenplan füllen"
-        subtitle="Aus euren Rezepten oder mit KI"
-        @click="showKitchenAi = true"
-      />
-
       <div v-if="loading" class="loading-msg">Laden…</div>
       <div v-else class="day-list">
         <MealPlanDayRow
@@ -227,6 +244,7 @@ async function onListChosen(listId: string) {
       :assign="assignWithPaywall"
       :libraryCapacity="libraryFillCapacity"
       :fillFromLibrary="fillWeekFromLibrary"
+      :initialAction="kitchenInitialAction"
       @close="showKitchenAi = false"
       @applied="onWeekApplied"
       @assigned="onAssigned"
@@ -331,7 +349,6 @@ async function onListChosen(listId: string) {
   color: var(--text-meta);
 }
 
-/* Ein KI-Einstieg (AiButton) statt der früheren zwei Gradient-Karten. */
 .essensplan-scroll > .ai-btn {
   margin-bottom: 16px;
 }

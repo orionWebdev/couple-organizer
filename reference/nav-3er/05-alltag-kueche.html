@@ -1,0 +1,196 @@
+<!-- @dsCard group="3er-Navigation" viewport="900x1140" name="05 · Alltag › Küche" subtitle="Wochenplan und Einkaufsliste in einem Segment, Rezepte als Unteransicht" -->
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Alltag › Küche</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  .ai-card { margin: 0 var(--screen-pad) 14px; border-radius: var(--radius-card); padding: 14px 16px; background: var(--ai-gradient); background-size: var(--ai-gradient-size); color: #fff; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-card); }
+  .ai-card .t { flex: 1; }
+  .ai-card .t b { display: block; font-family: var(--font-headline); font-size: 16px; font-weight: 600; text-shadow: var(--ai-textshadow); }
+  .ai-card .t span { display: block; font-size: 12px; font-weight: 700; opacity: .92; margin-top: 2px; text-shadow: var(--ai-textshadow); }
+  .ai-card .go { font-size: 22px; opacity: .9; }
+
+  .day { display: flex; align-items: center; gap: 11px; }
+  .day + .day { margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border-softer); }
+  .day .d { flex: none; width: 34px; text-align: center; }
+  .day .d b { display: block; font-family: var(--font-headline); font-size: 15px; font-weight: 600; color: var(--text); }
+  .day .d span { display: block; font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-meta); }
+  .day .m { flex: 1; font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .day .m span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .day .m.empty { color: var(--text-faint); font-weight: 700; }
+  .day.today { background: var(--accent-tint); border-radius: 14px; margin-left: -6px; margin-right: -6px; padding: 9px 6px; }
+  .day.today + .day { border-top: none; }
+  .cookdot { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 800; color: #fff; }
+
+  .item { display: flex; align-items: center; gap: 11px; }
+  .item + .item { margin-top: 11px; }
+  .item .box { width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--border); flex: none; }
+  .item .box.on { background: var(--success); border-color: transparent; color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+  .item .n { flex: 1; font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .item.done .n { color: var(--text-faint); text-decoration: line-through; }
+  .item .q { font-size: 12px; font-weight: 800; color: var(--text-meta); }
+
+  .link-row { display: flex; align-items: center; gap: 11px; margin: 0 var(--screen-pad) 12px; padding: 14px 16px; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .link-row .n { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
+  .link-row .n span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .link-row .go { font-size: 20px; color: var(--text-faint); }
+
+  /* Unteransicht Rezept-Wiki */
+  .sub-head { display: flex; align-items: center; gap: 11px; padding: 26px var(--screen-pad) 14px; }
+  .sub-head .back { font-size: 22px; color: var(--text-secondary); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 var(--screen-pad) 12px; }
+  .rez { background: var(--surface); border-radius: var(--radius-card-lg); box-shadow: var(--shadow-card); overflow: hidden; }
+  .rez .im { height: 68px; display: grid; place-items: center; font-size: 26px; }
+  .rez .b { padding: 10px 11px 12px; }
+  .rez .b b { display: block; font-family: var(--font-headline); font-size: 13.5px; font-weight: 600; color: var(--text); line-height: 1.25; }
+  .rez .b span { display: block; font-size: 11px; font-weight: 700; color: var(--text-meta); margin-top: 3px; }
+</style></head>
+<body>
+
+<div class="row">
+
+  <!-- Küche-Segment -->
+  <div>
+    <div class="phone area-food">
+      <div class="phone__body">
+        <div class="ph-head">
+          <h1 class="ph-title">Alltag</h1>
+          <div class="avatars"><span class="av av--c">C</span><span class="av av--s">S</span></div>
+        </div>
+
+        <div class="seg">
+          <span>Aufgaben</span><span class="on">Küche</span><span>Geld</span><span>Kalender</span>
+        </div>
+
+        <div class="ai-card">
+          <span style="font-size:22px">✨</span>
+          <span class="t"><b>Woche planen lassen</b><span>Nach euren Vorlieben, ohne Wiederholungen</span></span>
+          <span class="go">›</span>
+        </div>
+
+        <div class="sec"><span class="sl">Wochenplan · 20.–26. Juli</span><span class="meta">5 von 7</span></div>
+        <div class="c">
+          <div class="day">
+            <span class="d"><b>20</b><span>Mo</span></span>
+            <span class="m">Linsencurry<span>40 Min</span></span>
+            <span class="cookdot" style="background:var(--sarah)">S</span>
+          </div>
+          <div class="day">
+            <span class="d"><b>21</b><span>Di</span></span>
+            <span class="m">Reste vom Vortag<span>—</span></span>
+          </div>
+          <div class="day">
+            <span class="d"><b>22</b><span>Mi</span></span>
+            <span class="m empty">Noch nichts geplant</span>
+          </div>
+          <div class="day today">
+            <span class="d"><b>23</b><span>Do</span></span>
+            <span class="m">Ofengemüse mit Feta<span>35 Min · 4 Zutaten fehlen</span></span>
+            <span class="cookdot" style="background:var(--chris)">C</span>
+          </div>
+          <div class="day">
+            <span class="d"><b>24</b><span>Fr</span></span>
+            <span class="m">Pizza selbst gemacht<span>90 Min</span></span>
+          </div>
+          <div class="day">
+            <span class="d"><b>25</b><span>Sa</span></span>
+            <span class="m empty">Noch nichts geplant</span>
+          </div>
+          <div class="day">
+            <span class="d"><b>26</b><span>So</span></span>
+            <span class="m">Ramen-Laden Südstadt<span>Idee von Sarah</span></span>
+          </div>
+        </div>
+
+        <div style="margin:0 var(--screen-pad) 18px"><span class="btn btn--ghost">Einkaufsliste aus Plan erstellen</span></div>
+
+        <div class="sec"><span class="sl">Einkaufsliste · Wocheneinkauf</span><a href="#">Alle Listen</a></div>
+        <div class="c">
+          <div class="item"><span class="box"></span><span class="n">Feta</span><span class="q">200 g</span></div>
+          <div class="item"><span class="box"></span><span class="n">Zucchini</span><span class="q">3 St.</span></div>
+          <div class="item"><span class="box"></span><span class="n">Rote Zwiebeln</span><span class="q">4 St.</span></div>
+          <div class="item done"><span class="box on">✓</span><span class="n">Olivenöl</span><span class="q">1 Fl.</span></div>
+          <div style="margin-top:15px"><span class="btn">Einkaufsmodus starten · 7 offen</span></div>
+        </div>
+
+        <div class="link-row">
+          <span class="ico">📖</span>
+          <span class="n">Rezepte<span>34 im Wiki · 12 mit Kategorie</span></span>
+          <span class="go">›</span>
+        </div>
+      </div>
+
+      <div class="fab">＋</div>
+
+      <div class="nav3">
+        <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+        <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+        <div class="it on" style="--nav-accent: var(--food)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+      </div>
+    </div>
+    <div class="caption">Küche · Wochenplan über Einkaufsliste</div>
+  </div>
+
+  <!-- Unteransicht Rezept-Wiki -->
+  <div>
+    <div class="phone area-food">
+      <div class="phone__body">
+        <div class="sub-head">
+          <span class="back">‹</span>
+          <div style="flex:1">
+            <h1 class="ph-title" style="font-size:22px">Rezepte</h1>
+            <span class="ph-sub">34 gesammelt</span>
+          </div>
+        </div>
+
+        <div class="chips">
+          <span class="chip on">Alle</span>
+          <span class="chip">🥦 Vegetarisch</span>
+          <span class="chip">⚡ Schnell</span>
+          <span class="chip">🍲 Soulfood</span>
+        </div>
+
+        <div class="grid2">
+          <div class="rez"><div class="im" style="background:var(--food-tint)">🥘</div><div class="b"><b>Ofengemüse mit Feta</b><span>35 Min · Vegetarisch</span></div></div>
+          <div class="rez"><div class="im" style="background:var(--success-tint)">🍜</div><div class="b"><b>Linsencurry</b><span>40 Min · Soulfood</span></div></div>
+          <div class="rez"><div class="im" style="background:var(--einkauf-tint)">🍕</div><div class="b"><b>Pizza selbst gemacht</b><span>90 Min</span></div></div>
+          <div class="rez"><div class="im" style="background:var(--bucket-tint)">🥗</div><div class="b"><b>Bunter Sommersalat</b><span>15 Min · Schnell</span></div></div>
+          <div class="rez"><div class="im" style="background:var(--planung-tint)">🍝</div><div class="b"><b>Pasta al limone</b><span>20 Min · Schnell</span></div></div>
+          <div class="rez"><div class="im" style="background:var(--haushalt-tint)">🌯</div><div class="b"><b>Wraps mit Kichererbsen</b><span>25 Min · Vegetarisch</span></div></div>
+        </div>
+      </div>
+
+      <div class="fab">＋</div>
+
+      <div class="nav3">
+        <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+        <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+        <div class="it on" style="--nav-accent: var(--food)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+      </div>
+    </div>
+    <div class="caption">Unteransicht Rezepte · Zurück-Pfeil, Leiste bleibt</div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>Wochenplan und Einkaufsliste gehören ohnehin zusammen.</b> Sie standen bisher als zwei
+  Segmente nebeneinander, obwohl der Weg zwischen ihnen einbahnstraßenartig immer derselbe ist:
+  Woche planen → „Einkaufsliste aus Plan erstellen" → einkaufen. Untereinander gestellt ist genau
+  dieser Weg die Leserichtung, und der Knopf sitzt an der Naht.
+</div>
+
+<div class="note">
+  <b>Das Rezept-Wiki wird eine Unteransicht ohne eigene Route</b> — dasselbe Muster wie heute schon
+  die Listen-Detailansicht und der Einkaufsmodus. Wichtig dabei: die Ansicht muss sich beim
+  Android-Zurück selbst schließen (<code>useBackDismiss</code>), sonst verlässt der Zurück-Wisch die
+  App. Gleiches gilt für den Verlauf bei den Aufgaben und die Analyse bei Geld.
+</div>
+
+<div class="note">
+  <b>Offene Frage zum FAB:</b> in diesem Segment gibt es zwei sinnvolle Add-Aktionen — Artikel auf
+  die Liste, oder neue Liste. Vorschlag: das „＋" legt einen <b>Artikel</b> an (die mit Abstand
+  häufigste Handlung), „Neue Liste" bleibt in der Kopfzeile hinter „Alle Listen".
+</div>
+
+</body></html>

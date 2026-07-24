@@ -1,0 +1,151 @@
+<!-- @dsCard group="3er-Navigation" viewport="460x1080" name="06 · Alltag › Geld" subtitle="Saldo, Events, Ausgaben — Coach raus, Analyse als Unteransicht" -->
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Alltag › Geld</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  .bal { text-align: center; }
+  .bal .who { font-size: 12.5px; font-weight: 700; color: var(--text-secondary); }
+  .bal .amt { font-family: var(--font-headline); font-size: 32px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; margin: 4px 0 2px; }
+  .bal .src { font-size: 11.5px; font-weight: 700; color: var(--text-meta); }
+  .bal .btn { margin-top: 15px; }
+
+  .split { display: flex; gap: 8px; margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--border-softer); }
+  .split div { flex: 1; text-align: center; }
+  .split b { display: block; font-family: var(--font-headline); font-size: 16px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .split span { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px; color: var(--text-meta); }
+
+  .rail { display: flex; gap: 10px; padding: 0 var(--screen-pad) 14px; overflow: hidden; }
+  .ev { flex: none; width: 140px; background: var(--surface); border-radius: var(--radius-card-lg); box-shadow: var(--shadow-card); padding: 13px 14px; }
+  .ev .e { font-size: 19px; }
+  .ev b { display: block; font-family: var(--font-headline); font-size: 14px; font-weight: 600; color: var(--text); margin-top: 6px; }
+  .ev .n { font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .ev .bar { margin-top: 10px; }
+  .ev .amt { font-size: 11.5px; font-weight: 800; color: var(--text-secondary); margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .ev--new { display: grid; place-items: center; border: 1.5px dashed var(--border); background: transparent; box-shadow: none; color: var(--accent); font-size: 12.5px; font-weight: 800; }
+
+  .exp { display: flex; align-items: center; gap: 11px; }
+  .exp + .exp { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-softer); }
+  .exp .n { flex: 1; font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .exp .n span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .exp .a { font-family: var(--font-headline); font-size: 15px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .exp.paid { opacity: .5; }
+  .paidtag { font-size: 10px; font-weight: 800; color: var(--success); background: var(--success-tint); padding: 2px 7px; border-radius: 999px; }
+
+  .link-row { display: flex; align-items: center; gap: 11px; margin: 0 var(--screen-pad) 12px; padding: 14px 16px; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .link-row .n { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
+  .link-row .n span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .link-row .go { font-size: 20px; color: var(--text-faint); }
+</style></head>
+<body>
+
+<div class="phone area-finanzen">
+  <div class="phone__body">
+    <div class="ph-head">
+      <h1 class="ph-title">Alltag</h1>
+      <div class="avatars"><span class="av av--c">C</span><span class="av av--s">S</span></div>
+    </div>
+
+    <div class="seg">
+      <span>Aufgaben</span><span>Küche</span><span class="on">Geld</span><span>Kalender</span>
+    </div>
+
+    <!-- Offener Saldo -->
+    <div class="c bal">
+      <div class="who">Sarah schuldet dir</div>
+      <div class="amt">41,50 €</div>
+      <div class="src">aus 3 offenen Ausgaben</div>
+      <span class="btn">Begleichen</span>
+
+      <div class="split">
+        <div><b>398,70 €</b><span>Chris bezahlt</span></div>
+        <div><b>241,50 €</b><span>Sarah bezahlt</span></div>
+      </div>
+    </div>
+
+    <!-- Events -->
+    <div class="sec"><span class="sl">Events</span><span class="meta">2 aktiv</span></div>
+    <div class="rail">
+      <div class="ev">
+        <div class="e">🧳</div>
+        <b>Lissabon</b>
+        <div class="n">4 Ausgaben</div>
+        <div class="bar"><i style="width:62%"></i></div>
+        <div class="amt">310 € von 500 €</div>
+      </div>
+      <div class="ev">
+        <div class="e">📦</div>
+        <b>Umzug Keller</b>
+        <div class="n">6 Ausgaben</div>
+        <div class="bar"><i style="width:88%;background:var(--haushalt)"></i></div>
+        <div class="amt">176 € von 200 €</div>
+      </div>
+      <div class="ev ev--new">＋ Neues Event</div>
+    </div>
+
+    <!-- Ausgaben -->
+    <div class="sec"><span class="sl">Juli</span><span class="meta">640,20 € ausgegeben</span></div>
+    <div class="c">
+      <div class="exp">
+        <span class="ico">🛒</span>
+        <span class="n">Wocheneinkauf<span>Chris · gestern · hälftig</span></span>
+        <span class="a">83,40 €</span>
+      </div>
+      <div class="exp">
+        <span class="ico" style="background:var(--food-tint)">🍽️</span>
+        <span class="n">Ramen zu zweit<span>Sarah · 20. Juli · hälftig</span></span>
+        <span class="a">38,00 €</span>
+      </div>
+      <div class="exp">
+        <span class="ico" style="background:var(--haushalt-tint)">🧴</span>
+        <span class="n">Drogerie<span>Chris · 19. Juli · hälftig</span></span>
+        <span class="a">22,60 €</span>
+      </div>
+      <div class="exp paid">
+        <span class="ico">⚡</span>
+        <span class="n">Strom Juli<span>Sarah · 5. Juli</span></span>
+        <span class="paidtag">✓ ausgeglichen</span>
+        <span class="a">94,00 €</span>
+      </div>
+    </div>
+
+    <div class="link-row">
+      <span class="ico">📊</span>
+      <span class="n">Analyse<span>Monatsvergleich & Kategorien</span></span>
+      <span class="go">›</span>
+    </div>
+  </div>
+
+  <div class="fab">＋</div>
+
+  <div class="nav3">
+    <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+    <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+    <div class="it on" style="--nav-accent: var(--finanzen)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+  </div>
+</div>
+<div class="caption">Geld · ein Segment statt zwei</div>
+
+<div class="note">
+  <b>Der zweite Segment-Tab „Finanz-Coach" fällt weg.</b> Sein Berichtsteil zieht als Linse „Geld"
+  in den Coach im Wir-Tab — und heilt dabei einen echten Fehler: die Fläche ruft heute
+  <code>coachInsight()</code> direkt auf statt über <code>useCoach</code>, der Bericht landet nie in
+  <code>coachReports</code> und der Partner bekommt ihn nie zu sehen, während Woche und Fairness
+  geteilt werden.
+</div>
+
+<div class="note">
+  <b>Monatsvergleich und Kategorien bleiben hier</b>, aber als Unteransicht „Analyse" — das sind
+  Zahlen über den eigenen Haushalt, kein Gespräch über die Beziehung. Sie hinter einem Tap zu
+  parken kostet nichts: niemand ruft die Kategorienverteilung mehrmals am Tag auf.
+</div>
+
+<div class="note">
+  <b>Die zwei Achsen bleiben strikt getrennt</b> — und der Umbau ändert daran nichts:
+  „640,20 € ausgegeben" zählt <i>alle</i> Ausgaben des Monats, „41,50 € offen" nur die
+  unausgeglichenen, über alle Monate und ohne Event-Ausgaben. Ausgeglichene Einträge werden
+  gedämpft weiter angezeigt, nie ausgeblendet. Events rechnen intern ab und fassen den
+  gemeinsamen Saldo nicht an.
+</div>
+
+</body></html>

@@ -38,6 +38,9 @@ const props = defineProps<{
     opts?: { servings?: number | null; prefs?: string; avoidExtra?: string[] }
   ) => Promise<AiResult<RecipeSuggestion[]>>
   assign: (dateKey: string, input: AssignRecipeInput) => Promise<boolean>
+  /** Beim Öffnen direkt in diese Aktion springen (KI-Hub-Weiche) statt in die
+   *  Aktionsauswahl. null/undefined = normale Auswahl. */
+  initialAction?: 'week' | 'recipe' | 'library' | null
 }>()
 
 const emit = defineEmits<{
@@ -105,6 +108,8 @@ watch(() => props.isOpen, (open) => {
   createList.value = true
   applying.value = false
   savingProfile.value = false
+  // KI-Hub-Weiche: direkt in die gewünschte Aktion springen.
+  if (props.initialAction) selectAction(props.initialAction)
 })
 
 const thinkingCopy = computed(() =>

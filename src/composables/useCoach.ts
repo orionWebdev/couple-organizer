@@ -4,7 +4,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import { coachInsight, type CoachLens, type CoachReport } from '@/services/ai'
+import { coachInsight, type CoachLens, type CoachMetric, type CoachReport } from '@/services/ai'
 import { isoWeek, mondayOf } from '@/utils/belegung'
 
 // Der Wochenbericht des Paar-Coachs.
@@ -19,6 +19,10 @@ export interface CoachReportDoc {
   weekKey: string // "2026-W30" — ISO-Jahr + Kalenderwoche
   lens: CoachLens
   report: CoachReport
+  // Die Slider-Kennzahlen zum Berichtszeitpunkt — clientseitig aus dem Snapshot
+  // gerechnet (buildCoachMetrics), NICHT von der KI. Optional, weil ältere
+  // Berichte vor dem 3er-Umbau sie noch nicht tragen.
+  metrics?: CoachMetric[]
   createdBy: string
   createdAt: unknown
 }
@@ -93,13 +97,15 @@ export function useCoach(coupleId: Ref<string | null>) {
   // Die Berichte der laufenden Woche, je Blickwinkel.
   const currentReport = computed(() => reportFor('week'))
   const currentFairnessReport = computed(() => reportFor('fairness'))
+  const currentMoneyReport = computed(() => reportFor('money'))
 
   // Erzeugt einen Bericht für die laufende Woche und legt ihn für BEIDE ab.
   // Nie werfen (Haus-Konvention); Quota/Premium kommen als AiResult-Zweig zurück
   // und werden hier als 'paywall' signalisiert, damit der View sie öffnen kann.
   async function generateReport(
     lens: CoachLens,
-    snapshot: unknown
+    snapshot: unknown,
+    metrics: CoachMetric[] = []
   ): Promise<
     { kind: 'ok'; report: CoachReport } | { kind: 'paywall' } | { kind: 'error'; message: string }
   > {
@@ -125,6 +131,7 @@ export function useCoach(coupleId: Ref<string | null>) {
         weekKey: currentWeekKey.value,
         lens,
         report: result.data,
+        metrics,
         createdBy: user.value.uid,
         createdAt: serverTimestamp()
       })
@@ -152,6 +159,7 @@ export function useCoach(coupleId: Ref<string | null>) {
     error: readonly(error),
     currentReport,
     currentFairnessReport,
+    currentMoneyReport,
     generateReport
   }
 }

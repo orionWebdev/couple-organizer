@@ -1,0 +1,166 @@
+<!-- @dsCard group="3er-Navigation" viewport="460x1000" name="02 · Heute" subtitle="Start entdoppelt — nur noch was heute ansteht" -->
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Heute</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  /* Essens-Held */
+  .hero { margin: 0 var(--screen-pad) 12px; border-radius: var(--radius-card); background: var(--food-tint); padding: 16px; }
+  .hero .kick { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--food); }
+  .hero .dish { font-family: var(--font-headline); font-size: 21px; font-weight: 600; color: var(--text); margin: 5px 0 0; }
+  .hero .sub { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-top: 3px; }
+  .cook { display: flex; align-items: center; gap: 7px; margin-top: 13px; }
+  .cook .q { font-size: 11.5px; font-weight: 800; color: var(--text-meta); margin-right: 2px; }
+  .pill { padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border-soft); }
+  .pill.on { background: var(--chris); color: #fff; border-color: transparent; }
+
+  /* Check-in-Kurzzeile */
+  .checkin { display: flex; align-items: center; gap: 11px; }
+  .checkin .t { flex: 1; }
+  .checkin .go { font-size: 20px; color: var(--text-faint); }
+  .lock { font-size: 10.5px; font-weight: 800; color: var(--dashboard); background: var(--dashboard-tint); padding: 3px 8px; border-radius: 999px; }
+
+  /* Aufgaben zum Übernehmen */
+  .claim { display: flex; align-items: center; gap: 10px; }
+  .claim + .claim { margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border-softer); }
+  .claim .n { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
+  .claim .take { padding: 6px 13px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; }
+
+  /* Schnell-Aufgaben */
+  .quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin: 0 var(--screen-pad) 12px; }
+  .quick div { background: var(--surface); border-radius: var(--radius-tile); box-shadow: var(--shadow-card); padding: 13px 8px; text-align: center; }
+  .quick .e { font-size: 21px; }
+  .quick .l { font-size: 11px; font-weight: 800; color: var(--text-secondary); margin-top: 5px; line-height: 1.25; }
+  .quick .done { background: var(--success-tint); box-shadow: none; }
+
+  /* Budgetzeile */
+  .budget .top { display: flex; align-items: baseline; justify-content: space-between; }
+  .budget .amt { font-family: var(--font-headline); font-size: 22px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .budget .of { font-size: 12.5px; font-weight: 700; color: var(--text-meta); }
+  .budget .bar { margin-top: 11px; }
+  .budget .bar i { width: 80%; background: var(--finanzen); }
+  .budget .left { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-top: 8px; }
+</style></head>
+<body>
+
+<div class="phone area-dashboard">
+  <div class="phone__body">
+    <div class="ph-head">
+      <div>
+        <h1 class="ph-title">Hallo Chris 👋</h1>
+        <span class="ph-sub">Donnerstag, 23. Juli</span>
+      </div>
+      <div class="avatars"><span class="av av--c">C</span><span class="av av--s">S</span></div>
+    </div>
+
+    <!-- Essen heute -->
+    <div class="hero">
+      <div class="kick">Heute Abend</div>
+      <p class="dish">Ofengemüse mit Feta</p>
+      <div class="sub">35 Min · 4 Zutaten fehlen noch</div>
+      <div class="cook">
+        <span class="q">Wer kocht?</span>
+        <span class="pill on">Chris</span>
+        <span class="pill">Sarah</span>
+        <span class="pill">Zusammen</span>
+      </div>
+    </div>
+
+    <!-- Check-in -->
+    <div class="c checkin">
+      <span class="ico" style="background:var(--dashboard-tint)">💭</span>
+      <div class="t">
+        <p class="h" style="font-size:15px">Wie geht's dir gerade?</p>
+        <div class="meta" style="margin-top:3px">Zuletzt vor 4 Tagen</div>
+      </div>
+      <span class="lock">🔒 privat</span>
+      <span class="go">›</span>
+    </div>
+
+    <!-- Offene Aufgaben zum Übernehmen -->
+    <div class="c" style="--accent: var(--haushalt); --accent-tint: var(--haushalt-tint)">
+      <span class="sl">Offen im Pool</span>
+      <p class="p" style="margin:5px 0 13px">Sarah hat diese Woche mehr getragen — magst du eine davon übernehmen?</p>
+      <div class="claim">
+        <span class="ico">🛁</span>
+        <span class="n">Bad putzen</span>
+        <span class="take">Übernehmen</span>
+      </div>
+      <div class="claim">
+        <span class="ico">🗑️</span>
+        <span class="n">Müll rausbringen</span>
+        <span class="take">Übernehmen</span>
+      </div>
+    </div>
+
+    <!-- Schnell-Aufgaben -->
+    <div class="sec"><span class="sl">Meine Schnell-Aufgaben</span><a href="#">Bearbeiten</a></div>
+    <div class="quick">
+      <div><div class="e">🌱</div><div class="l">Pflanzen<br>gießen</div></div>
+      <div class="done"><div class="e">✓</div><div class="l">Spülmaschine<br>ausräumen</div></div>
+      <div><div class="e">🧺</div><div class="l">Wäsche<br>aufhängen</div></div>
+    </div>
+
+    <!-- Belegung heute -->
+    <div class="sec"><span class="sl">Belegung heute</span><a href="#">Kalender</a></div>
+    <div class="c">
+      <div class="row-i">
+        <span class="ico" style="background:var(--sarah-tint)">🚗</span>
+        <div style="flex:1">
+          <p class="h" style="font-size:15px">Auto</p>
+          <div class="meta" style="margin-top:2px">Sarah · 14:00–18:00</div>
+        </div>
+      </div>
+      <div class="row-i">
+        <span class="ico" style="background:var(--chris-tint)">🧺</span>
+        <div style="flex:1">
+          <p class="h" style="font-size:15px">Waschmaschine</p>
+          <div class="meta" style="margin-top:2px">Chris · ganztägig</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Budget -->
+    <div class="c budget">
+      <div class="top">
+        <span class="sl">Budget Juli</span>
+        <span class="of">noch 8 Tage</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-top:6px">
+        <span class="amt">640,20 €</span>
+        <span class="of">von 800 €</span>
+      </div>
+      <div class="bar"><i></i></div>
+      <div class="left">Noch <b style="color:var(--text)">159,80 €</b> — das sind rund 20 € am Tag.</div>
+    </div>
+  </div>
+
+  <div class="nav3">
+    <div class="it on" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+    <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+    <div class="it" style="--nav-accent: var(--haushalt)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+  </div>
+</div>
+<div class="caption">Heute · kein Segment, kein FAB</div>
+
+<div class="note">
+  <b>Die eine Regel, die Start rettet: alles hier hat ein Datum von heute.</b> Das Essen von heute,
+  die Belegungen von heute, die Aufgaben, die gerade offen liegen. Damit beantwortet Start
+  „was jetzt" und Alltag „wie steht es" — und die beiden hören auf, sich zu spiegeln.
+</div>
+
+<div class="note">
+  <b>Die Budgetzeile bleibt, der Paar-Saldo nicht.</b> Das Budget beantwortet eine Heute-Frage
+  („kann ich heute noch was ausgeben?") und wird deshalb auf verbleibende Tage heruntergerechnet
+  statt als Monatsring gezeigt. Der offene Saldo und der „Begleichen"-Knopf bleiben weiterhin
+  ausschließlich im Geld-Bereich — die Trennung von <i>ausgegeben</i> und <i>ausgeglichen</i>
+  ist die fehleranfälligste Stelle der App und darf nicht auf zwei Flächen verteilt werden.
+</div>
+
+<div class="note">
+  <b>Was von Start verschwindet:</b> die Kurzzusammenfassungen der Bereiche (Wochenplan-Vorschau,
+  Ausgabenliste, Ideen-Kachel). Wer wissen will, wie ein Bereich als Ganzes steht, geht in den
+  Bereich — das ist ab jetzt genau ein Tap.
+</div>
+
+</body></html>

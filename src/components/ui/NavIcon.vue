@@ -87,6 +87,25 @@ defineProps<{ name: string }>()
     <path class="fo" d="M5.5 6A3 3 0 0 0 2.5 9H21A2.99 2.99 0 0 0 18.5 6h-13Zm16 4.5h-19V16a3 3 0 0 0 3 3h13a3 3 0 0 0 3-3v-5.5ZM17 13.3a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4Z" />
   </svg>
 
+  <!-- „Alltag": 2×2-Raster (die operative Maschinerie — Aufgaben/Küche/Geld/
+       Kalender). Outline = vier Kontur-Kacheln, gefüllt = vier volle Kacheln. -->
+  <svg
+    v-else-if="name === 'alltag'"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.9"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <rect class="lo" x="4" y="4" width="7" height="7" rx="2" />
+    <rect class="lo" x="13" y="4" width="7" height="7" rx="2" />
+    <rect class="lo" x="4" y="13" width="7" height="7" rx="2" />
+    <rect class="lo" x="13" y="13" width="7" height="7" rx="2" />
+    <path class="fo" d="M6 3.5h3A2.5 2.5 0 0 1 11.5 6v3A2.5 2.5 0 0 1 9 11.5H6A2.5 2.5 0 0 1 3.5 9V6A2.5 2.5 0 0 1 6 3.5Zm9 0h3A2.5 2.5 0 0 1 20.5 6v3a2.5 2.5 0 0 1-2.5 2.5h-3A2.5 2.5 0 0 1 12.5 9V6A2.5 2.5 0 0 1 15 3.5Zm-9 9h3A2.5 2.5 0 0 1 11.5 15v3A2.5 2.5 0 0 1 9 20.5H6A2.5 2.5 0 0 1 3.5 18v-3A2.5 2.5 0 0 1 6 12.5Zm9 0h3a2.5 2.5 0 0 1 2.5 2.5v3a2.5 2.5 0 0 1-2.5 2.5h-3a2.5 2.5 0 0 1-2.5-2.5v-3a2.5 2.5 0 0 1 2.5-2.5Z" />
+  </svg>
+
   <svg
     v-else-if="name === 'essen'"
     viewBox="0 0 24 24"

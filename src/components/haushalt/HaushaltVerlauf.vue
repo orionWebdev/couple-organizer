@@ -47,7 +47,7 @@ const allMonths = computed(() => {
 })
 
 // Free-Tier sieht nur die jüngsten Monate. Bewusst NUR hier gefiltert und nicht
-// im choreHistory-Listener: HaushaltView rechnet aus derselben History den
+// im choreHistory-Listener: ScoreCard rechnet aus derselben History den
 // Punktestand, und ein gekürztes Fenster würde die Wertung verfälschen.
 const visibleMonths = computed(() =>
   isPremium.value ? allMonths.value : allMonths.value.slice(0, FREE_LIMITS.choreHistoryMonths)

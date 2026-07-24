@@ -271,10 +271,16 @@ body,
 
 /* ── Bereichsfarben: Override pro Tab-View ───────────────── */
 
+/* --shadow-accent MUSS in jedem Bereichsblock neu deklariert werden. Das Token
+   wird sonst nur einmal auf :root berechnet — dort ist --accent noch der
+   Default (Terrakotta) — und der fertige Wert vererbt sich nach unten, ohne je
+   das lokale --accent zu sehen. Ein .area-finanzen-Button glühte damit
+   terrakotta statt türkis. Hier neu deklariert, greift das lokale --accent. */
 .area-haushalt {
   --accent:       var(--haushalt);
   --accent-hover: var(--haushalt-hover);
   --accent-tint:  var(--haushalt-tint);
+  --shadow-accent: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 /* "Essen" (Wochenplan · Einkaufsliste · Rezepte) — die Bereichsfarbe ist das
@@ -285,30 +291,48 @@ body,
   --accent:       var(--food);
   --accent-hover: var(--food-hover);
   --accent-tint:  var(--food-tint);
+  --shadow-accent: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .area-finanzen {
   --accent:       var(--finanzen);
   --accent-hover: var(--finanzen-hover);
   --accent-tint:  var(--finanzen-tint);
+  --shadow-accent: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .area-dashboard {
   --accent:       var(--dashboard);
   --accent-hover: var(--dashboard-hover);
   --accent-tint:  var(--dashboard-tint);
+  --shadow-accent: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .area-planung {
   --accent:       var(--planung);
   --accent-hover: var(--planung-hover);
   --accent-tint:  var(--planung-tint);
+  --shadow-accent: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .area-bucket {
   --accent:       var(--bucket);
   --accent-hover: var(--bucket-hover);
   --accent-tint:  var(--bucket-tint);
+  --shadow-accent: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* "Alltag" (Aufgaben · Küche · Geld · Kalender) — Variante A: der Tab-Rahmen
+   (Kopf, Segmentumschalter) trägt EINEN festen Ton, das Terrakotta des
+   Haushalts. Die einzelnen Segment-Panes setzen darüber ihre eigene
+   .area-*-Klasse (food/finanzen/…), sodass Budget-Balken türkis, Wochenplan
+   rot-orange usw. bleiben — die Bereichsfarben leben in den Karten weiter, nur
+   die Navigation wird ruhig. */
+.area-alltag {
+  --accent:       var(--haushalt);
+  --accent-hover: var(--haushalt-hover);
+  --accent-tint:  var(--haushalt-tint);
+  --shadow-accent: 0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 /* ── Utility classes ─────────────────────────────────────── */

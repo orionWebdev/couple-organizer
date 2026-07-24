@@ -1,0 +1,220 @@
+<!-- @dsCard group="3er-Navigation" viewport="460x1180" name="03 · Wir" subtitle="Ein Coach mit drei Linsen statt drei Coach-Flächen" -->
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Wir</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  /* Coach-Karte */
+  .coach { padding: 0; overflow: hidden; }
+  .coach__head { display: flex; align-items: center; gap: 9px; padding: 15px 16px 0; }
+  .coach__head .sl { flex: 1; }
+  .ai-dot { width: 17px; height: 17px; border-radius: 50%; background: var(--ai-gradient); background-size: var(--ai-gradient-size); }
+
+  .lenses { display: flex; gap: 6px; padding: 12px 16px 0; }
+  .lens { flex: 1; text-align: center; padding: 7px 0; border-radius: 999px; font-size: 11.5px; font-weight: 800; color: var(--text-secondary); background: var(--surface-deep); }
+  .lens.on { background: var(--accent); color: var(--on-accent); }
+  .lens .dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--ai-mark); margin-left: 4px; vertical-align: middle; }
+
+  .coach__body { padding: 14px 16px 16px; }
+  .coach__hl { font-family: var(--font-headline); font-size: 18px; font-weight: 600; line-height: 1.3; color: var(--text); margin: 0; }
+  .csec { margin-top: 14px; }
+  .csec .k { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--accent); }
+  .csec .v { font-size: 13px; font-weight: 600; line-height: 1.55; color: var(--text-secondary); margin-top: 3px; }
+
+  .sugg { margin-top: 16px; background: var(--accent-tint); border-radius: 16px; padding: 13px 14px; }
+  .sugg p { margin: 0 0 11px; font-size: 13px; font-weight: 700; line-height: 1.5; color: var(--text); }
+
+  .tp { margin-top: 13px; border-left: 3px solid var(--border); padding-left: 11px; }
+  .tp .k { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-meta); }
+  .tp .v { font-family: var(--font-headline); font-size: 14.5px; font-weight: 500; line-height: 1.45; color: var(--text); margin-top: 4px; font-style: italic; }
+
+  .stale { font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 13px; }
+
+  /* Check-in */
+  .ci-entry { display: flex; align-items: center; gap: 9px; }
+  .ci-entry + .ci-entry { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-softer); }
+  .ci-entry .lv { display: flex; gap: 2px; }
+  .ci-entry .lv i { width: 6px; height: 15px; border-radius: 3px; background: var(--border-soft); }
+  .ci-entry .lv i.f { background: var(--planung); }
+  .ci-entry .tx { flex: 1; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+  .ci-entry .tx b { color: var(--text); font-weight: 800; }
+
+  /* Mental Load + Punktestand */
+  .ml-praise { background: var(--planung-tint); border-radius: 14px; padding: 12px 13px; font-size: 13px; font-weight: 600; line-height: 1.5; color: var(--text); }
+  .lead-row { display: flex; align-items: center; gap: 10px; margin-top: 13px; }
+  .lead-row .who { width: 54px; font-size: 12.5px; font-weight: 800; color: var(--text); }
+  .lead-row .bar { flex: 1; }
+  .lead-row .pts { width: 46px; text-align: right; font-family: var(--font-headline); font-weight: 700; font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+  /* Ideen & Reisen */
+  .idea { display: flex; align-items: center; gap: 10px; }
+  .idea + .idea { margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border-softer); }
+  .idea .n { flex: 1; font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .idea .n span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .idea .date { font-size: 11.5px; font-weight: 800; color: var(--accent); }
+
+  /* Zusammen-Bilanz */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
+  .stats b { display: block; font-family: var(--font-headline); font-size: 23px; font-weight: 700; color: var(--text); }
+  .stats span { font-size: 10.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; color: var(--text-meta); line-height: 1.3; display: block; margin-top: 3px; }
+</style></head>
+<body>
+
+<div class="phone area-planung">
+  <div class="phone__body">
+    <div class="ph-head">
+      <h1 class="ph-title">Wir</h1>
+      <div class="avatars"><span class="av av--c">C</span><span class="av av--s">S</span></div>
+    </div>
+
+    <!-- Coach: ein Bericht, drei Linsen -->
+    <div class="c coach">
+      <div class="coach__head">
+        <span class="ai-dot"></span>
+        <span class="sl">Check-in der Woche · KW 30</span>
+        <span class="meta">von Sarah</span>
+      </div>
+
+      <div class="lenses">
+        <span class="lens on">Woche</span>
+        <span class="lens">Fairness<span class="dot"></span></span>
+        <span class="lens">Geld</span>
+      </div>
+
+      <div class="coach__body">
+        <p class="coach__hl">Eine volle Woche — und zwei Abende, die euch beiden gutgetan haben.</p>
+
+        <div class="csec">
+          <div class="k">Zwischen euch</div>
+          <div class="v">Bei einem von euch stand diese Woche mehrfach das Thema Zeit im Vordergrund.
+            Ihr müsst nicht wissen, bei wem — es reicht, den Sonntag einmal bewusst leer zu lassen.</div>
+        </div>
+
+        <div class="csec">
+          <div class="k">Last</div>
+          <div class="v">Die Punkte liegen bei 58 zu 42. Der Unterschied kommt fast vollständig aus
+            zwei Tagen, an denen Sarah allein zu Hause war — nicht aus einer Gewohnheit.</div>
+        </div>
+
+        <div class="csec">
+          <div class="k">Geld</div>
+          <div class="v">640 € von 800 € sind weg, das liegt im Rahmen. Offen zwischen euch sind
+            noch 41,50 € aus drei Einkäufen.</div>
+        </div>
+
+        <div class="sugg">
+          <p>Sechs Ideen liegen bei euch, die älteste seit drei Monaten. Plant eine davon auf ein
+            konkretes Wochenende — das wirkt mehr als jede Umverteilung.</p>
+          <span class="btn">Idee einplanen</span>
+        </div>
+
+        <div class="tp">
+          <div class="k">Satz für euch beide</div>
+          <div class="v">„Mir war die Woche zu voll — können wir den Sonntag freihalten?"</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Check-in (volle Karte) -->
+    <div class="c">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="sl" style="flex:1">Dein Check-in</span>
+        <span style="font-size:10.5px;font-weight:800;color:var(--planung);background:var(--planung-tint);padding:3px 8px;border-radius:999px">🔒 nur für dich</span>
+      </div>
+      <p class="p" style="margin:6px 0 13px">Sarah sieht deine Einträge nie — in den Bericht fließt nur das Thema ein, ohne Namen.</p>
+
+      <div class="ci-entry">
+        <span class="lv"><i class="f"></i><i class="f"></i><i></i></span>
+        <span class="tx"><b>Zeit</b> · vor 4 Tagen — „zu viele Termine, komme nicht zur Ruhe"</span>
+      </div>
+      <div class="ci-entry">
+        <span class="lv"><i class="f"></i><i></i><i></i></span>
+        <span class="tx"><b>Anerkennung</b> · vor 9 Tagen</span>
+      </div>
+
+      <div style="margin-top:15px"><span class="btn btn--ghost">Wie geht's dir gerade?</span></div>
+    </div>
+
+    <!-- Mental Load + Punktestand -->
+    <div class="c">
+      <span class="sl">Wer denkt mit?</span>
+      <div class="ml-praise" style="margin-top:9px">
+        Sarah hat diese Woche <b>drei Dinge im Kopf behalten</b>, an die sie niemand erinnert hat —
+        Zahnarzttermin, Geschenk für Mika, Altpapier.
+      </div>
+
+      <span class="sl" style="display:block;margin-top:18px">Punktestand</span>
+      <div class="lead-row">
+        <span class="who">Sarah</span>
+        <span class="bar"><i style="width:100%;background:var(--sarah)"></i></span>
+        <span class="pts">148 P</span>
+      </div>
+      <div class="lead-row">
+        <span class="who">Chris</span>
+        <span class="bar"><i style="width:73%;background:var(--chris)"></i></span>
+        <span class="pts">108 P</span>
+      </div>
+      <p class="p" style="margin-top:12px">Eine schiefe Verteilung ist eine Frage der Last, nicht des Charakters.</p>
+    </div>
+
+    <!-- Ideen & Reisen -->
+    <div class="sec"><span class="sl">Ideen & Reisen</span><a href="#">Alle 9</a></div>
+    <div class="c">
+      <div class="idea">
+        <span class="ico">🍜</span>
+        <span class="n">Ramen-Laden in der Südstadt<span>Essen gehen · von Sarah</span></span>
+        <span class="date">So 26.7.</span>
+      </div>
+      <div class="idea">
+        <span class="ico">🥾</span>
+        <span class="n">Wanderung Feldberg<span>Draußen · von Chris</span></span>
+      </div>
+      <div class="idea">
+        <span class="ico">🧳</span>
+        <span class="n">Lissabon<span>Reise · 4 Tage im Oktober</span></span>
+        <span class="date">geplant</span>
+      </div>
+    </div>
+
+    <!-- Zusammen-Bilanz -->
+    <div class="c c--tint">
+      <span class="sl">Zusammen, seit ihr TwoDo nutzt</span>
+      <div class="stats" style="margin-top:12px">
+        <div><b>412</b><span>Aufgaben<br>erledigt</span></div>
+        <div><b>96</b><span>Abende<br>gemeinsam</span></div>
+        <div><b>18</b><span>Ideen<br>umgesetzt</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fab">＋</div>
+
+  <div class="nav3">
+    <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+    <div class="it on" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+    <div class="it" style="--nav-accent: var(--haushalt)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+  </div>
+</div>
+<div class="caption">Wir · kein Segment mehr — eine Spalte, ein Thema</div>
+
+<div class="note">
+  <b>Der Umschalter ist der Kern des Umbaus.</b> Woche · Fairness · Geld sind drei Linsen desselben
+  Berichts — <code>coachInsight</code> kennt sie längst, nur die Navigation behauptet bisher, es
+  seien drei Features an drei Orten. Der Punkt neben „Fairness" heißt: für diese Linse liegt noch
+  kein Bericht dieser Woche vor, ein Tap erzeugt ihn. Erzeugt wird pro Woche und Linse genau einer,
+  für beide — wer ihn auslöst, erzeugt ihn für das Paar.
+</div>
+
+<div class="note">
+  <b>Der Punktestand steht jetzt unter der Wertschätzung, nicht allein.</b> Das ist keine
+  Kosmetik: in der Haushalt-Übersicht stand die Waage bisher ohne Gegengewicht. Hier kommt zuerst,
+  was der andere getragen hat, und danach erst die Zahl — plus der Satz, der die Zahl einordnet.
+</div>
+
+<div class="note">
+  <b>Reisen ziehen zu den Ideen.</b> Beides ist „schöne Dinge, die wir vorhaben"; sie im
+  Logistik-Segment neben dem Belegungskalender zu parken war der eigentliche Fehler des
+  Planung-Segments. Kalender und Notizen ziehen im Gegenzug nach Alltag.
+</div>
+
+</body></html>

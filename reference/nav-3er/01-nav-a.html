@@ -1,0 +1,135 @@
+<!-- @dsCard group="3er-Navigation" viewport="460x900" name="Nav · A · Alltag mit eigenem Ton" subtitle="Drei feste Bereichsfarben, Segmente tinten nur ihre Karten" -->
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Nav · A · Alltag mit eigenem Ton</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  .stack { width: 390px; background: var(--bg); border-radius: 26px; box-shadow: 0 16px 40px rgba(60,45,30,.16); padding: 22px 18px 10px; }
+  .stack .cl { font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-meta); margin: 0 4px 16px; }
+  .stack .cl b { color: var(--text); }
+  /* Leiste hier statisch im Fluss statt am Telefonboden */
+  .demo { position: relative; margin-bottom: 30px; }
+  .demo .nav3 { position: static; left: auto; right: auto; bottom: auto; margin: 34px 0 0; }
+  .demo .tag { font-size: 11.5px; font-weight: 800; color: var(--text-meta); margin-left: 4px; }
+  .segdemo { display: flex; gap: 2px; background: var(--surface); box-shadow: var(--shadow-card); border-radius: 12px; padding: 3px; margin: 12px 0 0; }
+  .segdemo span { flex: 1; text-align: center; padding: 9px 0; border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--text-meta); }
+  .segdemo span.on { background: var(--accent); color: var(--on-accent); }
+</style></head>
+<body>
+
+<div class="stack">
+  <div class="cl"><b>A · Alltag bekommt einen eigenen Ton.</b> Drei Slots, drei feste Farben — Terrakotta steht für die Maschinerie.</div>
+
+  <div class="demo area-dashboard">
+    <span class="tag">Heute aktiv</span>
+    <div class="nav3">
+      <div class="it on" style="--nav-accent: var(--dashboard)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span>
+        <span class="lab">Heute</span>
+      </div>
+      <div class="it" style="--nav-accent: var(--planung)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span>
+        <span class="lab">Wir</span>
+      </div>
+      <div class="it" style="--nav-accent: var(--haushalt)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span>
+        <span class="lab">Alltag</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo area-planung">
+    <span class="tag">Wir aktiv</span>
+    <div class="nav3">
+      <div class="it" style="--nav-accent: var(--dashboard)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span>
+        <span class="lab">Heute</span>
+      </div>
+      <div class="it on" style="--nav-accent: var(--planung)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span>
+        <span class="lab">Wir</span>
+      </div>
+      <div class="it" style="--nav-accent: var(--haushalt)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span>
+        <span class="lab">Alltag</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo area-haushalt">
+    <span class="tag">Alltag aktiv — Segment wechselt, Bubble bleibt</span>
+    <div class="segdemo">
+      <span class="on">Aufgaben</span><span>Küche</span><span>Geld</span><span>Kalender</span>
+    </div>
+    <div class="nav3">
+      <div class="it" style="--nav-accent: var(--dashboard)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span>
+        <span class="lab">Heute</span>
+      </div>
+      <div class="it" style="--nav-accent: var(--planung)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span>
+        <span class="lab">Wir</span>
+      </div>
+      <div class="it on" style="--nav-accent: var(--haushalt)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span>
+        <span class="lab">Alltag</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo area-haushalt">
+    <span class="tag">… auch bei „Geld"</span>
+    <div class="segdemo">
+      <span>Aufgaben</span><span>Küche</span><span class="on">Geld</span><span>Kalender</span>
+    </div>
+    <div class="nav3">
+      <div class="it" style="--nav-accent: var(--dashboard)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span>
+        <span class="lab">Heute</span>
+      </div>
+      <div class="it" style="--nav-accent: var(--planung)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span>
+        <span class="lab">Wir</span>
+      </div>
+      <div class="it on" style="--nav-accent: var(--haushalt)">
+        <span class="bub"></span>
+        <span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span>
+        <span class="lab">Alltag</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <b>Richtung A — drei Slots, drei feste Farben.</b> Heute bleibt Indigo (<code>--dashboard</code>),
+  Wir bleibt Blau (<code>--planung</code>), Alltag übernimmt Terrakotta (<code>--haushalt</code>) —
+  ohnehin schon der Standardakzent der App. Innerhalb von Alltag wechselt nur der Inhalt, nicht die
+  Bereichsfarbe; die vier Segmente setzen ihren Ton höchstens auf einzelnen Karten
+  (Budget-Ring türkis, Wochenplan rot-orange).
+  <ul>
+    <li><b>Dafür:</b> Die Leiste steht still. Man lernt drei Farben statt fünf, und die Bubble
+      springt beim Segmentwechsel nicht um.</li>
+    <li><b>Dagegen:</b> Die Farbcodierung der Bereiche, die die App über ein Jahr aufgebaut hat,
+      verliert ihre Sichtbarkeit in der Navigation. Türkis heißt dann nur noch „diese Karte hier
+      handelt von Geld".</li>
+  </ul>
+</div>
+
+<div class="note">
+  Beide Richtungen ändern <b>nur die Spaltenzahl</b> am bestehenden Nav-Contract:
+  eigene Bubble pro Slot, aktives Icon steigt −24 px hinauf, beschriftet ist nur der aktive Slot.
+  Das gefüllte Marken-Overlap für „Wir" bleibt monoline wie gestern entschieden.
+</div>
+
+</body></html>

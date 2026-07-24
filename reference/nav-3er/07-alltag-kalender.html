@@ -1,0 +1,172 @@
+<!-- @dsCard group="3er-Navigation" viewport="460x1080" name="07 · Alltag › Kalender" subtitle="Monatsraster, Tagesdetail, Serien und Notizen — zieht aus dem Wir-Tab hierher" -->
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Alltag › Kalender</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  .mhead { display: flex; align-items: center; justify-content: space-between; padding: 0 6px 12px; }
+  .mhead b { font-family: var(--font-headline); font-size: 16px; font-weight: 600; color: var(--text); }
+  .mhead span { font-size: 20px; color: var(--text-secondary); padding: 0 8px; }
+
+  .wd { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+  .wd span { text-align: center; font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-meta); }
+
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cell { aspect-ratio: 1 / 1; border-radius: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 12.5px; font-weight: 700; color: var(--text); }
+  .cell.out { color: var(--text-faint); }
+  .cell.today { box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); font-weight: 800; }
+  .cell.sel { background: var(--accent); color: var(--on-accent); font-weight: 800; }
+  .dots { display: flex; gap: 2px; height: 5px; }
+  .dots i { width: 5px; height: 5px; border-radius: 50%; }
+  .cell.sel .dots i { background: rgba(255,255,255,.85) !important; }
+
+  .bk { display: flex; align-items: center; gap: 11px; }
+  .bk + .bk { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-softer); }
+  .bk .n { flex: 1; font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .bk .n span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .bk .t { font-size: 12px; font-weight: 800; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .warn { margin-top: 12px; background: var(--danger-tint); border-radius: 12px; padding: 10px 12px; font-size: 12px; font-weight: 700; color: var(--danger); }
+
+  .ser { display: flex; align-items: center; gap: 11px; }
+  .ser + .ser { margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border-softer); }
+  .ser .n { flex: 1; font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .ser .n span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .ser .next { font-size: 11.5px; font-weight: 800; color: var(--accent); }
+
+  .note-item { background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 13px 15px; margin: 0 var(--screen-pad) 10px; font-size: 13px; font-weight: 600; line-height: 1.5; color: var(--text); }
+  .note-item em { display: block; font-style: normal; font-size: 11px; font-weight: 700; color: var(--text-meta); margin-top: 5px; }
+</style></head>
+<body>
+
+<div class="phone area-planung" style="--accent: var(--einkauf); --accent-hover: var(--einkauf-hover); --accent-tint: var(--einkauf-tint)">
+  <div class="phone__body">
+    <div class="ph-head">
+      <h1 class="ph-title">Alltag</h1>
+      <div class="avatars"><span class="av av--c">C</span><span class="av av--s">S</span></div>
+    </div>
+
+    <div class="seg">
+      <span>Aufgaben</span><span>Küche</span><span>Geld</span><span class="on">Kalender</span>
+    </div>
+
+    <!-- Monatsraster -->
+    <div class="c">
+      <div class="mhead"><span>‹</span><b>Juli 2026</b><span>›</span></div>
+      <div class="wd"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+      <div class="grid">
+        <div class="cell out">29<div class="dots"></div></div>
+        <div class="cell out">30<div class="dots"></div></div>
+        <div class="cell">1<div class="dots"><i style="background:var(--sarah)"></i></div></div>
+        <div class="cell">2<div class="dots"></div></div>
+        <div class="cell">3<div class="dots"><i style="background:var(--chris)"></i></div></div>
+        <div class="cell">4<div class="dots"></div></div>
+        <div class="cell">5<div class="dots"></div></div>
+
+        <div class="cell">6<div class="dots"><i style="background:var(--sarah)"></i></div></div>
+        <div class="cell">7<div class="dots"></div></div>
+        <div class="cell">8<div class="dots"><i style="background:var(--sarah)"></i></div></div>
+        <div class="cell">9<div class="dots"></div></div>
+        <div class="cell">10<div class="dots"><i style="background:var(--chris)"></i></div></div>
+        <div class="cell">11<div class="dots"></div></div>
+        <div class="cell">12<div class="dots"></div></div>
+
+        <div class="cell">13<div class="dots"><i style="background:var(--sarah)"></i></div></div>
+        <div class="cell">14<div class="dots"></div></div>
+        <div class="cell">15<div class="dots"><i style="background:var(--sarah)"></i></div></div>
+        <div class="cell">16<div class="dots"><i style="background:var(--chris)"></i></div></div>
+        <div class="cell">17<div class="dots"><i style="background:var(--chris)"></i></div></div>
+        <div class="cell">18<div class="dots"></div></div>
+        <div class="cell">19<div class="dots"></div></div>
+
+        <div class="cell">20<div class="dots"><i style="background:var(--sarah)"></i></div></div>
+        <div class="cell">21<div class="dots"></div></div>
+        <div class="cell">22<div class="dots"><i style="background:var(--sarah)"></i></div></div>
+        <div class="cell sel">23<div class="dots"><i></i><i></i></div></div>
+        <div class="cell">24<div class="dots"><i style="background:var(--chris)"></i></div></div>
+        <div class="cell">25<div class="dots"></div></div>
+        <div class="cell">26<div class="dots"></div></div>
+
+        <div class="cell">27<div class="dots"><i style="background:var(--sarah)"></i></div></div>
+        <div class="cell">28<div class="dots"></div></div>
+        <div class="cell">29<div class="dots"><i style="background:var(--sarah)"></i></div></div>
+        <div class="cell">30<div class="dots"></div></div>
+        <div class="cell">31<div class="dots"><i style="background:var(--chris)"></i></div></div>
+        <div class="cell out">1<div class="dots"></div></div>
+        <div class="cell out">2<div class="dots"></div></div>
+      </div>
+    </div>
+
+    <!-- Tagesdetail -->
+    <div class="sec"><span class="sl">Donnerstag, 23. Juli</span><span class="meta">2 Belegungen</span></div>
+    <div class="c">
+      <div class="bk">
+        <span class="ico" style="background:var(--sarah-tint)">🚗</span>
+        <span class="n">Auto<span>für Sarah · eingetragen von Chris</span></span>
+        <span class="t">14–18 Uhr</span>
+      </div>
+      <div class="bk">
+        <span class="ico" style="background:var(--chris-tint)">🧺</span>
+        <span class="n">Waschmaschine<span>für Chris</span></span>
+        <span class="t">ganztägig</span>
+      </div>
+      <div class="warn">⚠️ Das Auto ist an diesem Tag doppelt eingetragen — eingetragen wird trotzdem, ihr klärt das untereinander.</div>
+    </div>
+
+    <!-- Serien -->
+    <div class="sec"><span class="sl">Wiederholt sich</span><span class="meta">3 Serien</span></div>
+    <div class="c">
+      <div class="ser">
+        <span class="ico" style="background:var(--sarah-tint)">🚗</span>
+        <span class="n">Auto<span>montags · für Sarah</span></span>
+        <span class="next">nächste: Mo 27.7.</span>
+      </div>
+      <div class="ser">
+        <span class="ico" style="background:var(--sarah-tint)">🧘</span>
+        <span class="n">Yogaraum<span>mittwochs · für Sarah</span></span>
+        <span class="next">nächste: Mi 29.7.</span>
+      </div>
+      <div class="ser">
+        <span class="ico" style="background:var(--chris-tint)">🎧</span>
+        <span class="n">Arbeitszimmer<span>freitags · für Chris</span></span>
+        <span class="next">nächste: Fr 24.7.</span>
+      </div>
+    </div>
+
+    <!-- Notizen -->
+    <div class="sec"><span class="sl">Notizen</span><a href="#">＋ Neu</a></div>
+    <div class="note-item">Hausmeister erreichbar Di + Do vormittags, Klingel 3<em>vor 6 Tagen</em></div>
+    <div class="note-item">WLAN-Passwort Ferienwohnung: sonne-2026<em>vor 2 Wochen</em></div>
+  </div>
+
+  <div class="fab">＋</div>
+
+  <div class="nav3">
+    <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+    <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+    <div class="it on" style="--nav-accent: var(--einkauf)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+  </div>
+</div>
+<div class="caption">Kalender · unverändert, nur umgezogen</div>
+
+<div class="note">
+  <b>Am Kalender selbst ändert sich nichts</b> — Monatsraster mit vollen Mo–So-Wochen, Tagesdetail
+  direkt unter dem Raster, jede wöchentliche Serie einmal mit ihrem nächsten konkreten Termin
+  darunter. Letzteres bleibt zwingend: eine Serie ist <i>ein</i> Dokument, und ein Monatsraster
+  kann eine Serie, die außerhalb des Monats liegt, nie zeigen. Konflikte werden angezeigt, nie
+  blockiert. Neu ist nur, dass all das in „Alltag" statt im Beziehungs-Tab wohnt — und die
+  Notizen gleich mit.
+</div>
+
+<div class="note">
+  <b>Farbe:</b> Kalender hatte als Teil von „Planung" das Blau, das jetzt „Wir" gehört. Hier steht
+  ersatzweise Amber (<code>--einkauf</code>), das seit der Küchen-Umbenennung nur noch die
+  Ausgaben-Kategorie „Einkauf" einfärbt. Das gilt nur für Nav-Variante B — in Variante A wären
+  alle vier Segmente terrakotta und die Bereichsfarbe erschiene nur noch auf einzelnen Karten.
+</div>
+
+<div class="note">
+  Ressourcen (Auto, Waschmaschine, Yogaraum) werden weiterhin in den Einstellungen unter
+  „Kategorien" gepflegt, nicht hier — <code>/settings/kategorien/belegung</code> bleibt unangetastet.
+</div>
+
+</body></html>

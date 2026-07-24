@@ -1,0 +1,428 @@
+<!-- @dsCard group="3er-Navigation" viewport="470x940" name="Nav-links + KI-Hub · Prototyp" subtitle="Schmale linksbündige 3er-Nav, rechts dauerhafter KI-Button → Modal mit allen KI-Aktionen + Stimmung" -->
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Nav-links + KI-Hub · Prototyp</title>
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  html, body { margin: 0; }
+  body { background: #e7e0d4; display: flex; justify-content: center; padding: 28px 20px 40px; box-sizing: border-box; min-height: 100vh; }
+  .wrap { width: 390px; }
+
+  .phone { position: relative; width: 390px; height: 820px; background: var(--bg); border-radius: 38px; box-shadow: 0 24px 60px rgba(60,45,30,.22); overflow: hidden; }
+  .phone__body { position: absolute; inset: 0; overflow-y: auto; padding: 22px var(--screen-pad) 150px; -webkit-overflow-scrolling: touch; }
+  .phone__body::-webkit-scrollbar { display: none; }
+
+  .ph-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .ph-title { font-family: var(--font-headline); font-weight: 600; font-size: 27px; color: var(--text); margin: 0; }
+  .ph-date { font-size: 13px; font-weight: 700; color: var(--text-secondary); margin-top: 1px; }
+  .avatars { display: flex; }
+  .av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: #fff; border: 2px solid var(--bg); }
+  .av--c { background: var(--chris); } .av--s { background: var(--sarah); margin-left: -10px; }
+
+  .sl { font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-meta); }
+  .sec { display: flex; align-items: center; justify-content: space-between; margin: 4px 4px 10px; }
+  .c { background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 14px 16px; }
+  .c + .sec { margin-top: 20px; }
+  .row-i { display: flex; align-items: center; gap: 12px; }
+  .row-i + .row-i { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-softer); }
+  .row-i .m { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
+  .row-i .m span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .cookdot { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 800; color: #fff; }
+  .empty { color: var(--text-faint) !important; }
+
+  /* Screen-Wechsel */
+  .screen { display: none; } .screen.on { display: block; }
+
+  /* ── schmale, linksbündige 3er-Nav ───────────────────────── */
+  .nav3.nav3--left { left: 14px; right: auto; width: 244px; z-index: 30; }
+
+  /* ── dauerhafter KI-Button rechts ────────────────────────── */
+  .ki-fab { position: absolute; right: 16px; bottom: 18px; height: 66px; width: 66px; border-radius: 24px; z-index: 30;
+    background: var(--ai-scrim), var(--ai-gradient); background-size: 100% 100%, var(--ai-gradient-size);
+    box-shadow: var(--ai-glow); color: #fff; border: none; cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px; animation: aiShift 6s ease-in-out infinite; }
+  .ki-fab .spark { font-size: 22px; filter: drop-shadow(0 1px 2px rgba(35,20,60,.45)); line-height: 1; }
+  .ki-fab .lab { font-size: 10px; font-weight: 800; letter-spacing: .3px; text-shadow: var(--ai-textshadow); }
+  .ki-fab:active { transform: scale(.95); }
+
+  /* ── KI-Modal ────────────────────────────────────────────── */
+  .scrim { position: absolute; inset: 0; background: rgba(40,28,16,.42); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity .28s ease; z-index: 40; }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+  .kimodal { position: absolute; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--surface);
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0; padding: 10px 20px calc(22px + var(--safe-bottom));
+    transform: translateY(102%); transition: transform .34s cubic-bezier(.22,1,.36,1); max-height: 88%; overflow-y: auto; }
+  .kimodal.show { transform: translateY(0); }
+  .kimodal::-webkit-scrollbar { display: none; }
+  .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto 14px; }
+
+  .kihead { display: flex; align-items: center; gap: 11px; margin-bottom: 4px; }
+  .kihead .badge { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; font-size: 21px; color: #fff;
+    background: var(--ai-scrim), var(--ai-gradient); background-size: 100% 100%, var(--ai-gradient-size); box-shadow: var(--ai-glow); }
+  .kihead h2 { font-family: var(--font-headline); font-weight: 600; font-size: 21px; color: var(--text); margin: 0; }
+  .kihead p { margin: 1px 0 0; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); }
+
+  .kigrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 4px; }
+  .kiaction { text-align: left; border: 1px solid var(--border-softer); background: var(--surface); border-radius: 16px; padding: 14px 14px 15px; cursor: pointer; transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
+  .kiaction:active { transform: scale(.97); }
+  .kiaction:hover { box-shadow: var(--shadow-card); border-color: var(--border-soft); }
+  .kiaction .e { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-size: 19px; margin-bottom: 10px; }
+  .kiaction b { display: block; font-size: 14px; font-weight: 800; color: var(--text); }
+  .kiaction span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; line-height: 1.35; }
+
+  .divider { display: flex; align-items: center; gap: 12px; margin: 22px 2px 14px; }
+  .divider .l { height: 1px; flex: 1; background: var(--border-softer); }
+  .divider .t { font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-meta); }
+
+  .moodcard { background: var(--surface-deep); border-radius: 16px; padding: 15px 16px; }
+  .moodcard .q { font-family: var(--font-headline); font-weight: 600; font-size: 16px; color: var(--text); margin: 0 0 3px; }
+  .moodcard .sub { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin: 0 0 14px; display: inline-flex; align-items: center; gap: 5px; }
+  .moodcard .sub svg { width: 12px; height: 12px; }
+  .moods { display: flex; gap: 8px; }
+  .mood { flex: 1; aspect-ratio: 1; border: 1.5px solid var(--border-soft); background: var(--surface); border-radius: 14px; font-size: 24px; cursor: pointer; display: grid; place-items: center; transition: transform .12s ease, border-color .12s ease, background .12s ease; }
+  .mood:active { transform: scale(.92); }
+  .mood.on { border-color: var(--planung); background: var(--planung-tint); transform: scale(1.06); }
+  .moodfoot { margin-top: 12px; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); min-height: 17px; transition: color .2s ease; }
+  .moodfoot b { color: var(--planung); }
+
+  /* ── mehrstufiger Flow: Steps ────────────────────────────── */
+  .kistep { display: none; } .kistep.on { display: block; }
+  .backrow { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+  .kiback { width: 34px; height: 34px; border-radius: 50%; background: var(--surface-deep); border: none; cursor: pointer; font-size: 19px; color: var(--text); display: grid; place-items: center; flex: none; }
+  .kiback:active { transform: scale(.92); }
+
+  .fieldlabel { font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-meta); margin: 20px 2px 10px; }
+  .days { display: flex; gap: 7px; }
+  .day { flex: 1; border: 1.5px solid var(--border-soft); background: var(--surface); border-radius: 13px; padding: 10px 0 9px; cursor: pointer; text-align: center; transition: border-color .12s, background .12s, transform .12s; }
+  .day:active { transform: scale(.94); }
+  .day b { display: block; font-family: var(--font-headline); font-size: 15px; font-weight: 600; color: var(--text); }
+  .day span { display: block; font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: var(--text-meta); margin-top: 1px; }
+  .day.on { border-color: var(--food); background: var(--food-tint); }
+  .day.on b, .day.on span { color: var(--food-hover); }
+
+  .prompt { width: 100%; box-sizing: border-box; border: 1.5px solid var(--border-soft); background: var(--surface-deep); border-radius: 15px; padding: 13px 14px; font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--text); resize: none; min-height: 70px; }
+  .prompt::placeholder { color: var(--text-faint); }
+  .prompt:focus { outline: none; border-color: var(--food); background: var(--surface); }
+  .hints { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+  .hint { border: 1px solid var(--border-softer); background: var(--surface); border-radius: 999px; padding: 6px 11px; font-size: 12px; font-weight: 700; color: var(--text-secondary); cursor: pointer; }
+  .hint:active { transform: scale(.95); }
+
+  .listpick { display: flex; flex-direction: column; gap: 9px; margin-top: 4px; }
+  .listopt { display: flex; align-items: center; gap: 12px; border: 1.5px solid var(--border-soft); background: var(--surface); border-radius: 15px; padding: 13px 14px; cursor: pointer; text-align: left; transition: border-color .12s, transform .12s; }
+  .listopt:active { transform: scale(.98); }
+  .listopt.on { border-color: var(--einkauf); background: var(--einkauf-tint); }
+  .listopt .e { width: 38px; height: 38px; border-radius: 11px; background: var(--einkauf-tint); display: grid; place-items: center; font-size: 18px; flex: none; }
+  .listopt.on .e { background: var(--surface); }
+  .listopt .m { flex: 1; font-size: 14px; font-weight: 800; color: var(--text); }
+  .listopt .m span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .listopt .chk { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); flex: none; display: grid; place-items: center; color: #fff; font-size: 12px; }
+  .listopt.on .chk { background: var(--einkauf); border-color: var(--einkauf); }
+
+  .kicta { width: 100%; margin-top: 22px; border: none; border-radius: 16px; padding: 15px; cursor: pointer; color: #fff; font-family: var(--font-headline); font-weight: 600; font-size: 16px;
+    background: var(--ai-scrim), var(--ai-gradient); background-size: 100% 100%, var(--ai-gradient-size); box-shadow: var(--ai-glow); text-shadow: var(--ai-textshadow); animation: aiShift 6s ease-in-out infinite; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .kicta:active { transform: scale(.98); }
+  .kicta[disabled] { opacity: .5; filter: grayscale(.4); }
+
+  /* ── Denk-Zustand: das Modal selbst glüht (Handoff §4) ──── */
+  @keyframes edgeBreath { 0%,100%{opacity:.5} 50%{opacity:1} }
+  @keyframes barSlide { 0%{transform:translateX(-100%)} 100%{transform:translateX(300%)} }
+  @keyframes aiSpin { to{transform:rotate(360deg)} }
+  @keyframes aiBloom { 0%{opacity:0;transform:translate(-50%,-50%) scale(.2)} 35%{opacity:.9} 100%{opacity:0;transform:translate(-50%,-50%) scale(4.2)} }
+  .kimodal__glow { display: none; position: absolute; left: -4px; right: -4px; top: -6px; bottom: 0; z-index: -1; border-radius: 34px 34px 0 0;
+    background: var(--ai-gradient); background-size: 300% 300%; filter: blur(24px); opacity: .8; animation: aiShift 4s ease-in-out infinite, edgeBreath 2.8s ease-in-out infinite; }
+  .kimodal.thinking .kimodal__glow { display: block; }
+  .kimodal.thinking { overflow: visible; }
+  .thinkview { display: none; padding: 8px 0 6px; }
+  .kimodal.thinking .thinkview { display: block; }
+  .kimodal.thinking .kistep { display: none !important; }
+  .thinkrow { display: flex; align-items: center; gap: 13px; background: var(--surface-deep); border-radius: 17px; padding: 15px 14px; }
+  .thinkrow .tile { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; flex: none;
+    background: var(--ai-gradient); background-size: 200% 200%; box-shadow: var(--ai-glow); animation: aiShift 4s ease-in-out infinite; }
+  .thinkrow .st { flex: 1; }
+  .thinkrow .st b { display: block; font-family: var(--font-headline); font-weight: 600; font-size: 15.5px; color: var(--text); }
+  .thinkrow .st span { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); margin-top: 2px; }
+  .miniload { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 3px solid color-mix(in srgb,#9b72cb 22%,transparent); border-top-color: #9b72cb; animation: aiSpin .8s linear infinite; }
+  .progress { height: 3px; border-radius: 3px; background: var(--surface-deep); margin: 16px 4px 4px; overflow: hidden; }
+  .progress i { display: block; width: 33%; height: 100%; border-radius: 3px; background: var(--ai-gradient); background-size: 200% 200%; animation: barSlide 1.4s ease-in-out infinite, aiShift 4s ease-in-out infinite; }
+  .bloom { position: absolute; left: 50%; top: 40%; width: 120px; height: 120px; border-radius: 50%; z-index: 70; pointer-events: none;
+    background: radial-gradient(circle, rgba(155,114,203,.9), rgba(66,133,244,.3) 60%, transparent 70%); opacity: 0; }
+  .bloom.go { animation: aiBloom .5s ease-out forwards; }
+
+  /* Ergebnis-Toast nach Aktionswahl */
+  .toast { position: absolute; left: 20px; right: 20px; bottom: 100px; z-index: 60; background: var(--text); color: var(--bg);
+    border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 11px; box-shadow: 0 16px 34px rgba(0,0,0,.3);
+    transform: translateY(24px); opacity: 0; pointer-events: none; transition: transform .3s ease, opacity .3s ease; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast .sp { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 15px; flex: none;
+    background: var(--ai-gradient); background-size: var(--ai-gradient-size); animation: aiShift 6s ease-in-out infinite; }
+  .toast .tt { flex: 1; font-size: 13px; font-weight: 700; line-height: 1.35; }
+  .toast .tt b { font-weight: 800; }
+
+  .caption { text-align: center; font-size: 12px; font-weight: 700; color: #8c857b; margin-top: 14px; }
+  .note { max-width: 390px; margin: 16px auto 0; }
+</style></head>
+<body>
+<div class="wrap">
+  <div class="phone area-dashboard" id="phone">
+
+    <div class="phone__body">
+      <!-- Heute -->
+      <div class="screen on" data-screen="heute">
+        <div class="ph-head">
+          <div><h1 class="ph-title">Heute</h1><div class="ph-date">Donnerstag, 24. Juli</div></div>
+          <div class="avatars"><span class="av av--c">C</span><span class="av av--s">S</span></div>
+        </div>
+        <div class="sec"><span class="sl">Auf dem Tisch</span></div>
+        <div class="c">
+          <div class="row-i"><span class="cookdot" style="background:var(--chris)">C</span><span class="m">Pasta al limone<span>Chris kocht · 19:00</span></span><span style="font-size:22px">🍝</span></div>
+        </div>
+        <div class="sec"><span class="sl">Deine Aufgaben</span></div>
+        <div class="c">
+          <div class="row-i"><span class="cookdot" style="background:var(--haushalt)">🌱</span><span class="m">Pflanzen gießen<span>Alltag · fällig heute</span></span></div>
+          <div class="row-i"><span class="cookdot" style="background:var(--haushalt)">🗑️</span><span class="m">Müll rausbringen<span>Alltag · fällig heute</span></span></div>
+        </div>
+        <div class="sec"><span class="sl">Nur für dich</span></div>
+        <div class="c">
+          <div class="row-i"><span class="cookdot" style="background:var(--planung)">🪷</span><span class="m">Wie geht's dir gerade?<span>Check-in · zuletzt vor 4 Tagen</span></span><span style="font-size:19px;color:var(--text-faint)">›</span></div>
+        </div>
+      </div>
+
+      <!-- Wir -->
+      <div class="screen" data-screen="wir">
+        <div class="ph-head"><div><h1 class="ph-title">Wir</h1><div class="ph-date">Eure Woche</div></div><div class="avatars"><span class="av av--c">C</span><span class="av av--s">S</span></div></div>
+        <div class="sec"><span class="sl">Coach</span></div>
+        <div class="c"><div class="row-i"><span class="cookdot" style="background:var(--planung)">✨</span><span class="m">Euer Wochenrückblick<span>Woche · Fairness · Geld</span></span><span style="font-size:19px;color:var(--text-faint)">›</span></div></div>
+      </div>
+
+      <!-- Alltag -->
+      <div class="screen" data-screen="alltag">
+        <div class="ph-head"><div><h1 class="ph-title">Alltag</h1><div class="ph-date">Aufgaben · Küche · Geld · Kalender</div></div><div class="avatars"><span class="av av--c">C</span><span class="av av--s">S</span></div></div>
+        <div class="sec"><span class="sl">Diese Woche</span></div>
+        <div class="c">
+          <div class="row-i"><span class="cookdot" style="background:var(--sarah)">S</span><span class="m">Bowls mit Ofengemüse<span>Montag</span></span></div>
+          <div class="row-i"><span class="cookdot" style="background:var(--chris)">C</span><span class="m">Pasta al limone<span>Dienstag</span></span></div>
+          <div class="row-i"><span class="cookdot" style="background:var(--surface-deep);color:var(--text-faint)">?</span><span class="m empty">Mittwoch — noch offen</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- linksbündige 3er-Nav -->
+    <div class="nav3 nav3--left" id="nav">
+      <div class="it on" data-go="heute" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+      <div class="it" data-go="wir" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+      <div class="it" data-go="alltag" style="--nav-accent: var(--haushalt)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+    </div>
+
+    <!-- dauerhafter KI-Button -->
+    <button class="ki-fab" id="kibtn" aria-label="KI öffnen"><span class="spark">✨</span><span class="lab">KI</span></button>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"><span class="sp">✨</span><span class="tt" id="toasttext"></span></div>
+
+    <!-- KI-Modal -->
+    <div class="scrim" id="scrim"></div>
+    <div class="kimodal" id="kimodal">
+      <div class="kimodal__glow"></div>
+      <div class="grab"></div>
+
+      <!-- Step 1: Hub -->
+      <div class="kistep on" data-step="hub">
+        <div class="kihead">
+          <div class="badge">✨</div>
+          <div><h2>Womit soll ich helfen?</h2><p>Für euch beide — Chris &amp; Sarah</p></div>
+        </div>
+        <div class="kigrid">
+          <button class="kiaction" data-act="wochenplan"><span class="e" style="background:var(--food-tint)">🍽️</span><b>Wochenplan</b><span>Ganze Woche vorschlagen</span></button>
+          <button class="kiaction" data-act="rezept"><span class="e" style="background:var(--food-tint)">📖</span><b>Rezept finden</b><span>Aus dem, was da ist</span></button>
+          <button class="kiaction" data-act="einkauf"><span class="e" style="background:var(--einkauf-tint)">🛒</span><b>Einkaufsliste</b><span>Aus dem Plan erzeugen</span></button>
+          <button class="kiaction" data-act="rueckblick"><span class="e" style="background:var(--planung-tint)">💛</span><b>Wochenrückblick</b><span>Wie lief eure Woche</span></button>
+          <button class="kiaction" data-act="aufgaben"><span class="e" style="background:var(--haushalt-tint)">⚖️</span><b>Aufgaben</b><span>Fair verteilen</span></button>
+          <button class="kiaction" data-act="budget"><span class="e" style="background:var(--finanzen-tint)">💶</span><b>Budget-Blick</b><span>Ausgaben einordnen</span></button>
+        </div>
+        <div class="divider"><span class="l"></span><span class="t">und dich selbst</span><span class="l"></span></div>
+        <div class="moodcard">
+          <p class="q">Wie geht's dir gerade?</p>
+          <p class="sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--planung)"><rect x="5" y="11" width="14" height="9" rx="2.4"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Nur für dich — die KI merkt es sich privat</p>
+          <div class="moods">
+            <button class="mood" data-mood="Schwer">😔</button>
+            <button class="mood" data-mood="Gedrückt">🙁</button>
+            <button class="mood" data-mood="Okay">😐</button>
+            <button class="mood" data-mood="Gut">🙂</button>
+            <button class="mood" data-mood="Richtig gut">😄</button>
+          </div>
+          <div class="moodfoot" id="moodfoot">Tippe an, wie dein Tag sich anfühlt.</div>
+        </div>
+      </div>
+
+      <!-- Step 2a: Wochenplan / Rezept — Tag + Prompt -->
+      <div class="kistep" data-step="compose">
+        <div class="backrow"><button class="kiback" data-back>‹</button>
+          <div class="kihead" style="margin:0"><div class="badge" id="composeIcon">🍽️</div><div><h2 id="composeTitle">Wochenplan</h2><p id="composeSub">Für welchen Tag?</p></div></div>
+        </div>
+        <div class="fieldlabel" id="dayLabel">Welcher Tag?</div>
+        <div class="days">
+          <button class="day" data-day="Mo"><b>Mo</b><span>21.</span></button>
+          <button class="day" data-day="Di"><b>Di</b><span>22.</span></button>
+          <button class="day on" data-day="Mi"><b>Mi</b><span>23.</span></button>
+          <button class="day" data-day="Do"><b>Do</b><span>24.</span></button>
+          <button class="day" data-day="Fr"><b>Fr</b><span>25.</span></button>
+          <button class="day" data-day="ganze"><b>★</b><span>Woche</span></button>
+        </div>
+        <div class="fieldlabel">Was schwebt dir vor?</div>
+        <textarea class="prompt" id="promptField" placeholder="z. B. schnell, vegetarisch, nichts mit Pilzen …"></textarea>
+        <div class="hints" id="promptHints">
+          <button class="hint">Vegetarisch</button><button class="hint">Unter 30 Min</button>
+          <button class="hint">Aus Vorräten</button><button class="hint">Wenig Abwasch</button>
+        </div>
+        <button class="kicta" data-run="compose"><span class="spark">✨</span>Vorschlag erstellen</button>
+      </div>
+
+      <!-- Step 2b: Einkaufsliste — Liste wählen -->
+      <div class="kistep" data-step="listpick">
+        <div class="backrow"><button class="kiback" data-back>‹</button>
+          <div class="kihead" style="margin:0"><div class="badge">🛒</div><div><h2>Einkaufsliste</h2><p>Auf welche Liste setzen?</p></div></div>
+        </div>
+        <div class="fieldlabel">Ziel-Liste</div>
+        <div class="listpick">
+          <button class="listopt on" data-list="Wocheneinkauf"><span class="e">🛒</span><span class="m">Wocheneinkauf<span>18 Artikel · zuletzt heute</span></span><span class="chk">✓</span></button>
+          <button class="listopt" data-list="Drogerie"><span class="e">🧴</span><span class="m">Drogerie<span>4 Artikel</span></span><span class="chk"></span></button>
+          <button class="listopt" data-list="Getränke"><span class="e">🧃</span><span class="m">Getränke<span>leer</span></span><span class="chk"></span></button>
+          <button class="listopt" data-list="Neue Liste"><span class="e">＋</span><span class="m">Neue Liste anlegen<span>Aus diesem Plan</span></span><span class="chk"></span></button>
+        </div>
+        <button class="kicta" data-run="listpick"><span class="spark">✨</span>Auf Liste setzen</button>
+      </div>
+
+      <!-- Denk-Zustand (das Modal glüht) -->
+      <div class="thinkview">
+        <div class="thinkrow">
+          <div class="tile" id="thinkIcon">✨</div>
+          <div class="st"><b id="thinkTitle">Plant eure Woche …</b><span id="thinkSub">Einen Moment</span></div>
+          <div class="miniload"></div>
+        </div>
+        <div class="progress"><i></i></div>
+      </div>
+
+      <div class="bloom" id="bloom"></div>
+    </div>
+  </div>
+
+  <div class="caption">Bedienbarer Prototyp · Tabs wechseln, KI-Button tippen</div>
+</div>
+
+<div class="note">
+  <b>Mehrstufiger Flow:</b> <b>Wochenplan</b> und <b>Rezept</b> führen einen Schritt weiter — Tag
+  wählen + Freitext-Prompt, was man sich vorstellt (mit Vorschlags-Chips). <b>Einkaufsliste</b>
+  fragt, auf welche Liste das Ganze soll. Direkt-Aktionen (Rückblick, Aufgaben, Budget) starten sofort.
+</div>
+<div class="note">
+  <b>Denk-Zustand:</b> Jeder KI-Aufruf lässt das <b>Modal selbst glühen</b> (atmender Gradient-Schein
+  hinter dem Sheet, Denk-Zeile mit Gradient-Icon + Mini-Loader, Fortschrittslinie) — wie im KI-Handoff
+  designt — gefolgt von kurzem Bloom und Ergebnis-Toast.
+</div>
+<div class="note">
+  <b>Die Idee, gebaut:</b> Weil nur noch drei Tabs bleiben, sitzt die Leiste schmal links (244 px)
+  statt mittig — rechts wird Platz frei für einen <b>dauerhaften KI-Button</b>. Er löst damit zugleich
+  die alte FAB-Kollision: Nav und KI teilen sich die Fußzeile nebeneinander, nichts überlappt mehr.
+</div>
+<div class="note">
+  <b>Ein Tap öffnet den KI-Hub</b> statt sechs verstreuter Auslöser: alle KI-Funktionen (Wochenplan,
+  Rezept, Einkaufsliste, Rückblick, Aufgaben, Budget) an einem Ort. Darunter, klar getrennt durch
+  „und dich selbst", der <b>Stimmungs-Check</b> — privat, den die KI für den Rückblick still
+  protokolliert, ohne dass der Text je beim Partner landet.
+</div>
+<div class="note">
+  <b>Offen:</b> Der KI-Button ist bereichs-neutral (Gradient), die Nav-Bubble bleibt bereichsfarbig —
+  bewusst, damit KI überall gleich aussieht. Zu prüfen: ob der Button als Icon-Quadrat reicht oder
+  eine Pille („✨ KI") bei Erstnutzung mehr einlädt.
+</div>
+
+<script>
+(function(){
+  var phone = document.getElementById('phone');
+  var areaByScreen = { heute:'area-dashboard', wir:'area-planung', alltag:'area-haushalt' };
+  document.querySelectorAll('#nav .it').forEach(function(it){
+    it.addEventListener('click', function(){
+      var go = it.getAttribute('data-go');
+      document.querySelectorAll('#nav .it').forEach(function(x){ x.classList.toggle('on', x===it); });
+      document.querySelectorAll('.screen').forEach(function(s){ s.classList.toggle('on', s.getAttribute('data-screen')===go); });
+      phone.classList.remove('area-dashboard','area-planung','area-haushalt');
+      phone.classList.add(areaByScreen[go]);
+    });
+  });
+
+  var scrim = document.getElementById('scrim'), modal = document.getElementById('kimodal');
+  var toast = document.getElementById('toast'), toastText = document.getElementById('toasttext'), toastTimer;
+  var bloom = document.getElementById('bloom');
+
+  function showStep(name){
+    modal.classList.remove('thinking');
+    modal.querySelectorAll('.kistep').forEach(function(s){ s.classList.toggle('on', s.getAttribute('data-step')===name); });
+  }
+  function open(){ showStep('hub'); scrim.classList.add('show'); modal.classList.add('show'); }
+  function close(){ scrim.classList.remove('show'); modal.classList.remove('show'); setTimeout(function(){ showStep('hub'); }, 340); }
+  document.getElementById('kibtn').addEventListener('click', open);
+  scrim.addEventListener('click', function(){ if(!modal.classList.contains('thinking')) close(); });
+
+  var pending = null, chosenList = 'Wocheneinkauf';
+  var CFG = {
+    wochenplan:  { icon:'🍽️', title:'Wochenplan',    sub:'Für welchen Tag?',    dayLabel:'Welcher Tag?',     ph:'z. B. schnell, vegetarisch, nichts mit Pilzen …', think:'Plant eure Woche …',       result:'✨ <b>Wochenplan</b> steht — 5 Gerichte vorgeschlagen.' },
+    rezept:      { icon:'📖', title:'Rezept finden', sub:'Für welchen Tag?',    dayLabel:'Für welchen Tag?',  ph:'z. B. würzig, mit Kichererbsen, für zwei …',   think:'Sucht ein Rezept …',        result:'✨ <b>Rezept</b> gefunden: Kichererbsen-Curry.' },
+    einkauf:     { step:'listpick', icon:'🛒', think:'Baut die Einkaufsliste …', result:'✨ 12 Zutaten auf „<b>%L</b>“ gesetzt.' },
+    rueckblick:  { direct:true, icon:'💛', think:'Schreibt euren Rückblick …',      result:'✨ Euer <b>Wochenrückblick</b> ist fertig.' },
+    aufgaben:    { direct:true, icon:'⚖️', think:'Schaut auf die Lastverteilung …', result:'✨ <b>Vorschlag</b>: 2 Aufgaben zu Chris verschieben.' },
+    budget:      { direct:true, icon:'💶', think:'Fasst eure Ausgaben zusammen …', result:'✨ <b>Budget</b>: 640 € von 800 € — im Rahmen.' }
+  };
+
+  document.querySelectorAll('.kiaction').forEach(function(b){
+    b.addEventListener('click', function(){
+      var cfg = CFG[b.getAttribute('data-act')]; pending = cfg;
+      if (cfg.direct) { run(cfg); return; }
+      if (cfg.step === 'listpick') { showStep('listpick'); return; }
+      document.getElementById('composeIcon').textContent = cfg.icon;
+      document.getElementById('composeTitle').textContent = cfg.title;
+      document.getElementById('composeSub').textContent = cfg.sub;
+      document.getElementById('dayLabel').textContent = cfg.dayLabel;
+      var f = document.getElementById('promptField'); f.value = ''; f.placeholder = cfg.ph;
+      showStep('compose');
+    });
+  });
+
+  modal.querySelectorAll('[data-back]').forEach(function(b){ b.addEventListener('click', function(){ showStep('hub'); }); });
+
+  document.querySelectorAll('.day').forEach(function(d){
+    d.addEventListener('click', function(){ document.querySelectorAll('.day').forEach(function(x){ x.classList.toggle('on', x===d); }); });
+  });
+  document.querySelectorAll('#promptHints .hint').forEach(function(hh){
+    hh.addEventListener('click', function(){ var f = document.getElementById('promptField'); f.value = (f.value ? f.value.replace(/\s*$/,'') + ', ' : '') + hh.textContent; f.focus(); });
+  });
+  document.querySelectorAll('.listopt').forEach(function(o){
+    o.addEventListener('click', function(){ document.querySelectorAll('.listopt').forEach(function(x){ x.classList.toggle('on', x===o); }); chosenList = o.getAttribute('data-list'); });
+  });
+
+  modal.querySelectorAll('[data-run]').forEach(function(b){ b.addEventListener('click', function(){ run(pending); }); });
+
+  function run(cfg){
+    document.getElementById('thinkIcon').textContent = cfg.icon || '✨';
+    document.getElementById('thinkTitle').textContent = cfg.think;
+    document.getElementById('thinkSub').textContent = 'Einen Moment';
+    modal.classList.add('thinking');
+    setTimeout(function(){
+      bloom.classList.remove('go'); void bloom.offsetWidth; bloom.classList.add('go');
+      setTimeout(function(){
+        close();
+        toastText.innerHTML = (cfg.result || '✨ Fertig.').replace('%L', chosenList);
+        toast.classList.add('show');
+        clearTimeout(toastTimer); toastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 3000);
+      }, 360);
+    }, 2200);
+  }
+
+  var foot = document.getElementById('moodfoot');
+  document.querySelectorAll('.mood').forEach(function(m){
+    m.addEventListener('click', function(){
+      document.querySelectorAll('.mood').forEach(function(x){ x.classList.toggle('on', x===m); });
+      foot.innerHTML = 'Gespeichert: <b>„' + m.getAttribute('data-mood') + '“</b> · fließt privat in euren Rückblick.';
+    });
+  });
+})();
+</script>
+</body></html>

@@ -4,20 +4,26 @@ import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useShopping } from '@/composables/useShopping'
 import { useExpenses } from '@/composables/useExpenses'
-import { useTabSwipe } from '@/composables/useTabSwipe'
 import { setFabAction } from '@/composables/useFab'
 import { showToast } from '@/composables/useToast'
 import { showPaywall } from '@/composables/usePaywall'
 import { useBackDismiss } from '@/composables/useBackButton'
 import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
-import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import ShoppingListCard from '@/components/shopping/ShoppingListCard.vue'
 import ShoppingListDetail from '@/components/shopping/ShoppingListDetail.vue'
 import ShoppingModeView from '@/components/shopping/ShoppingModeView.vue'
 import EssensplanView from '@/components/mealplan/EssensplanView.vue'
 import RezeptWikiView from '@/components/mealplan/RezeptWikiView.vue'
+
+// embedded: als Segment „Küche" innerhalb von AlltagView gerendert — AlltagView
+// trägt dann die Kopfzeile, der eigene Segmentumschalter wird sekundär.
+withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+
+// Meldet der Shell, dass eine Vollbild-Unteransicht (Listendetail /
+// Einkaufsmodus) offen ist. Nur im eingebetteten Zustand relevant.
+const emit = defineEmits<{ subview: [active: boolean] }>()
 
 const { user } = useAuth()
 const { couple } = useCouple()
@@ -44,26 +50,20 @@ const {
 
 const { addExpense } = useExpenses(coupleId)
 
-type Tab = 'wochenplan' | 'liste' | 'rezepte'
-// Der Nav-Slot heißt "Essen" und landet deshalb auf dem Wochenplan; die
-// Einkaufsliste ist von hier einen Tap entfernt.
-// Überlebt den Android-Kaltstart: gewähltes Segment ohne TTL (harmlos), die
-// In-Page-Unteransicht + zuletzt geöffnete Liste mit TTL (siehe Restore unten).
-const tab = usePersistedRef<Tab>('einkaufen.tab', 'wochenplan')
-const tabOptions = [
-  { label: 'Wochenplan', value: 'wochenplan' },
-  { label: 'Einkaufsliste', value: 'liste' },
-  { label: 'Rezepte', value: 'rezepte' },
-]
-
 const rezeptWikiRef = ref<InstanceType<typeof RezeptWikiView> | null>(null)
 
-// Reihenfolge muss die sichtbare Tab-Reihenfolge widerspiegeln.
-const tabOrder: Tab[] = ['wochenplan', 'liste', 'rezepte']
-const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
+// Seit dem 3er-Umbau kein Segmentumschalter mehr. 'main' ist der Hub:
+// oben zwei Karten (Einkaufsliste · Rezepte) auf eigene Seiten, darunter der
+// Wochenplan. 'shopping' ist die Listenübersicht, 'rezepte' das Rezept-Wiki;
+// 'detail'/'shopping-mode' bleiben wie bisher.
+type View = 'main' | 'shopping' | 'detail' | 'shopping-mode' | 'rezepte'
+const view = usePersistedRef<View>('einkaufen.view', 'main', { ttlMs: DRAFT_TTL_MS })
+// Migration des früheren 'lists'-Werts (war der Hub) auf 'main'.
+if ((view.value as string) === 'lists') view.value = 'main'
 
-type View = 'lists' | 'detail' | 'shopping-mode'
-const view = usePersistedRef<View>('einkaufen.view', 'lists', { ttlMs: DRAFT_TTL_MS })
+// Alle Vollbild-Unteransichten der Shell melden, damit sie eingebettet ihre
+// Chrome (Kopf + Segmentleiste) ausblendet.
+watch(view, (v) => emit('subview', v !== 'main'), { immediate: true })
 
 // Die aktive Liste lebt in useShopping und würde beim Kaltstart auf die erste
 // Liste zurückfallen. Wir merken uns die zuletzt geöffnete separat und stellen
@@ -79,7 +79,7 @@ const stopListRestore = watch(
     // Detail/Einkaufsmodus wurden restauriert, aber die Liste gibt es nicht mehr
     // (gelöscht) → sauber zurück auf die Übersicht statt einer fremden Liste.
     if (!valid && (view.value === 'detail' || view.value === 'shopping-mode')) {
-      view.value = 'lists'
+      view.value = 'shopping'
     }
     stopListRestore()
   },
@@ -99,13 +99,13 @@ function handleNewListTap() {
   showNewList.value = true
 }
 
-// Globaler FAB (App-Shell): nur in der Listenübersicht (nicht in Detail/
-// Einkaufsmodus). Liste → neue Liste, Rezepte → neues Rezept (versteckt,
-// solange das Rezept-Formular ohnehin offen ist). Wochenplan hat kein Add.
+// Globaler FAB (App-Shell): in der Listenübersicht ('shopping') legt er eine
+// neue Liste an, in der Rezept-Seite ein neues Rezept (versteckt, solange das
+// Formular ohnehin offen ist). Der Hub ('main') und die Detail-/Einkaufsmodus-
+// Ansichten bringen ihre eigenen Einstiege mit.
 const fabAction = computed(() => {
-  if (view.value !== 'lists') return null
-  if (tab.value === 'liste') return { label: 'Neue Liste', handler: handleNewListTap }
-  if (tab.value === 'rezepte' && !rezeptWikiRef.value?.showForm) {
+  if (view.value === 'shopping') return { label: 'Neue Liste', handler: handleNewListTap }
+  if (view.value === 'rezepte' && !rezeptWikiRef.value?.showForm) {
     return { label: 'Rezept hinzufügen', handler: () => rezeptWikiRef.value?.openCreateForm() }
   }
   return null
@@ -149,22 +149,28 @@ async function handleDeleteList(id: string) {
   await deleteList(id)
   showToast('Liste gelöscht')
   menuOpenId.value = null
-  if (wasActive) view.value = 'lists'
+  if (wasActive) view.value = 'shopping'
 }
 
-function goBack() {
-  view.value = 'lists'
-}
+// Navigations-Hierarchie: main (Hub) → shopping (Übersicht) → detail →
+// shopping-mode; rezepte hängt direkt am Hub.
+function backToMain() { view.value = 'main' }
+function goBack() { view.value = 'shopping' } // aus dem Detail zurück zur Übersicht
+function openShopping() { view.value = 'shopping' }
+function openRezepte() { view.value = 'rezepte' }
 
 function startShopping() {
   view.value = 'shopping-mode'
 }
 
-// Listendetail und Einkaufsmodus sind In-Page-Unteransichten ohne eigene Route.
-// Der Einkaufsmodus liegt "über" dem Detail, also muss er zuerst registriert
-// werden — sonst landet man aus dem Einkaufsmodus direkt auf der Listenübersicht.
-useBackDismiss(() => view.value === 'detail', goBack)
+// Alle Unteransichten ohne eigene Route brauchen Back-to-Dismiss, sonst
+// verlässt der Android-Zurück-Wisch die App. Tieferes zuerst registrieren,
+// damit der Zurück-Wisch Ebene für Ebene hochgeht (Einkaufsmodus → Detail →
+// Übersicht → Hub).
 useBackDismiss(() => view.value === 'shopping-mode', () => { view.value = 'detail' })
+useBackDismiss(() => view.value === 'detail', goBack)
+useBackDismiss(() => view.value === 'shopping', backToMain)
+useBackDismiss(() => view.value === 'rezepte', backToMain)
 
 async function handleToggle(id: string, checked: boolean) {
   await toggleChecked(id, checked, user.value?.uid)
@@ -213,7 +219,7 @@ async function handleFinish(payload: {
 
   await clearChecked()
   showToast('Einkauf abgeschlossen')
-  view.value = 'lists'
+  view.value = 'shopping'
 }
 
 function listItemsFor(listId: string) {
@@ -222,7 +228,7 @@ function listItemsFor(listId: string) {
 </script>
 
 <template>
-  <div class="einkaufen-page area-food">
+  <div class="einkaufen-page area-food" :class="{ 'is-embedded': embedded }">
     <!-- Shopping mode — fullscreen overlay within the tab -->
     <ShoppingModeView
       v-if="view === 'shopping-mode' && activeList"
@@ -250,64 +256,70 @@ function listItemsFor(listId: string) {
       @deleteList="handleDeleteList(activeList.id)"
     />
 
-    <!-- List overview + Wochenplan/Rezepte tabs -->
+    <!-- Rezept-Wiki als gestapelte Unterseite (Zurück-Pfeil). -->
+    <div v-else-if="view === 'rezepte'" class="rezepte-sub">
+      <div class="sub-head">
+        <button type="button" class="sub-back" @click="backToMain" aria-label="Zurück">‹</button>
+        <h1 class="sub-title">Rezepte</h1>
+      </div>
+      <RezeptWikiView
+        ref="rezeptWikiRef"
+        class="rezepte-body rise-stagger"
+        :coupleId="coupleId"
+      />
+    </div>
+
+    <!-- Einkaufslisten-Übersicht als gestapelte Unterseite. -->
+    <div v-else-if="view === 'shopping'" class="shopping-sub">
+      <div class="sub-head">
+        <button type="button" class="sub-back" @click="backToMain" aria-label="Zurück">‹</button>
+        <h1 class="sub-title">Einkaufslisten</h1>
+      </div>
+      <div v-if="loading" class="loading-msg">Laden…</div>
+      <div v-else class="lists-wrap rise-stagger">
+        <TransitionGroup tag="div" name="list-add" class="lists-grid">
+          <ShoppingListCard
+            v-for="list in lists"
+            :key="list.id"
+            :list="list"
+            :items="listItemsFor(list.id)"
+            :menuOpen="menuOpenId === list.id"
+            @select="selectList(list.id)"
+            @toggleMenu="toggleListMenu(list.id)"
+            @rename="handleRenameList(list.id, $event)"
+            @delete="handleDeleteList(list.id)"
+          />
+        </TransitionGroup>
+        <p v-if="lists.length === 0" class="empty-lists">Noch keine Liste — tippe auf ＋.</p>
+      </div>
+    </div>
+
+    <!-- Hub: zwei Karten (Einkaufsliste · Rezepte) über dem Wochenplan. -->
     <template v-else>
-      <div class="page-header">
+      <div v-if="!embedded" class="page-header">
         <h1 class="page-title">Einkaufen</h1>
         <ProfileButton />
       </div>
-      <div class="tab-bar-wrap">
-        <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
-      </div>
 
-      <!-- Touch-Handler auf .tab-area für den Tab-Swipe; touchcancel zählt wie
-           touchend (siehe useTabSwipe). Der frühere Inline-FAB ist jetzt global
-           im App-Shell (useFab). -->
-      <div
-        class="tab-area"
-        @touchstart.passive="onTouchStart"
-        @touchmove.passive="onTouchMove"
-        @touchend.passive="onTouchEnd"
-        @touchcancel.passive="onTouchEnd"
-      >
-        <div class="tab-content">
-          <Transition name="tab-fade" mode="out-in">
-            <div v-if="tab === 'liste'" key="liste" class="page-container rise-stagger">
-              <div v-if="loading" class="loading-msg">Laden…</div>
-              <div v-else class="lists-wrap">
-                <TransitionGroup tag="div" name="list-add" class="lists-grid">
-                  <ShoppingListCard
-                    v-for="list in lists"
-                    :key="list.id"
-                    :list="list"
-                    :items="listItemsFor(list.id)"
-                    :menuOpen="menuOpenId === list.id"
-                    @select="selectList(list.id)"
-                    @toggleMenu="toggleListMenu(list.id)"
-                    @rename="handleRenameList(list.id, $event)"
-                    @delete="handleDeleteList(list.id)"
-                  />
-                </TransitionGroup>
-              </div>
-            </div>
-
-            <EssensplanView
-              v-else-if="tab === 'wochenplan'"
-              key="wochenplan"
-              class="rise-stagger"
-              :coupleId="coupleId"
-              :couple="couple"
-            />
-
-            <RezeptWikiView
-              v-else
-              key="rezepte"
-              ref="rezeptWikiRef"
-              class="rise-stagger"
-              :coupleId="coupleId"
-            />
-          </Transition>
+      <div class="kueche-scroll">
+        <div class="hub-grid">
+          <button type="button" class="hub-tile" @click="openShopping">
+            <span class="hub-tile__ico" aria-hidden="true">🛒</span>
+            <span class="hub-tile__title">Einkaufsliste</span>
+            <span class="hub-tile__meta">{{ lists.length }} {{ lists.length === 1 ? 'Liste' : 'Listen' }}</span>
+          </button>
+          <button type="button" class="hub-tile" @click="openRezepte">
+            <span class="hub-tile__ico" aria-hidden="true">📖</span>
+            <span class="hub-tile__title">Rezepte</span>
+            <span class="hub-tile__meta">Sammlung &amp; KI</span>
+          </button>
         </div>
+
+        <EssensplanView
+          class="rise-stagger"
+          :coupleId="coupleId"
+          :couple="couple"
+        />
       </div>
     </template>
 
@@ -350,66 +362,53 @@ function listItemsFor(listId: string) {
   margin: 0;
 }
 
-.tab-bar-wrap {
-  padding: 0 var(--screen-pad);
-  margin-bottom: 20px;
-}
-
-.tab-bar {
-  display: flex;
-  width: 100%;
-  border-radius: 12px;
-}
-
-.tab-bar :deep(.seg-btn) {
-  padding: 13px 0;
-  font-size: 13px;
-}
-
-.tab-area {
+/* Hub: zwei Karten über dem Wochenplan. */
+.kueche-scroll {
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+}
+
+/* 2-Spalten-Kacheln (Einkaufsliste · Rezepte) → eigene Seiten. */
+.hub-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 4px var(--screen-pad) 16px;
+}
+.hub-tile {
   display: flex;
   flex-direction: column;
-  touch-action: pan-y;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  text-align: left;
 }
-
-.tab-content {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+.hub-tile__ico {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-tile);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: var(--accent-tint);
+  margin-bottom: 6px;
 }
-
-/* Sanfter Übergang beim Tab-Wechsel (gleiches Muster wie HaushaltView) */
-.tab-fade-enter-active {
-  transition: opacity 220ms var(--ease-standard), transform 220ms var(--ease-standard);
+.hub-tile__title {
+  font-family: var(--font-headline);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
 }
-
-.tab-fade-leave-active {
-  transition: opacity 140ms var(--ease-in), transform 140ms var(--ease-in);
-}
-
-.tab-fade-enter-from {
-  opacity: 0;
-  transform: translateY(6px);
-}
-
-.tab-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
-}
-
-/* Responsiver Container für die Listenübersicht, damit sie auf breiten
-   Screens nicht randlos auseinanderläuft. */
-.page-container {
-  width: 100%;
-  max-width: 880px;
-  margin: 0 auto;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+.hub-tile__meta {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-meta);
 }
 
 .loading-msg {
@@ -420,16 +419,60 @@ function listItemsFor(listId: string) {
 }
 
 .lists-wrap {
-  flex: 1;
-  overflow-y: auto;
-  /* Nur vertikal scrollen — horizontale Gesten gehören dem Tab-Swipe. */
-  touch-action: pan-y;
-  padding: 0 var(--screen-pad) 100px;
+  padding: 0 var(--screen-pad);
 }
-
 .lists-grid {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+.empty-lists {
+  padding: 30px var(--screen-pad);
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+/* Gestapelte Unterseiten (Rezepte · Einkaufslisten) — Zurück-Pfeil. */
+.rezepte-sub,
+.shopping-sub {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.rezepte-body {
+  flex: 1;
+  min-height: 0;
+}
+.sub-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--screen-pad) 10px;
+}
+.sub-back {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  border: none;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  margin-right: 4px;
+}
+.sub-title {
+  font-family: var(--font-headline);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
 }
 </style>

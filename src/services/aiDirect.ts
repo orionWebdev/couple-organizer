@@ -77,27 +77,12 @@ const RECIPE_RESPONSE_SCHEMA = {
 
 // ── Paar-Coach ───────────────────────────────────────────────────
 // Schema und Prompt müssen identisch zu functions/src/lib/gemini.ts bleiben.
-const SECTION_IDS = ['fairness', 'money', 'together', 'checkin']
-const TONES = ['good', 'watch', 'act']
 const ACTIONS = ['rebalanceChores', 'settleUp', 'planIdea', 'setBudget', 'none']
 
 const COACH_RESPONSE_SCHEMA = {
   type: 'OBJECT',
   properties: {
     headline: { type: 'STRING' },
-    sections: {
-      type: 'ARRAY',
-      items: {
-        type: 'OBJECT',
-        properties: {
-          id: { type: 'STRING', enum: SECTION_IDS },
-          title: { type: 'STRING' },
-          text: { type: 'STRING' },
-          tone: { type: 'STRING', enum: TONES }
-        },
-        required: ['id', 'title', 'text', 'tone']
-      }
-    },
     suggestion: {
       type: 'OBJECT',
       properties: {
@@ -108,7 +93,7 @@ const COACH_RESPONSE_SCHEMA = {
     },
     talkingPoint: { type: 'STRING' }
   },
-  required: ['headline', 'sections', 'suggestion', 'talkingPoint']
+  required: ['headline', 'suggestion', 'talkingPoint']
 }
 
 async function callGemini(prompt: string, schema: object, model = MODEL): Promise<string> {
@@ -243,9 +228,9 @@ ${FORMAT_RULES}
 }
 
 const LENS_TASK: Record<CoachLens, string> = {
-  week: `Schreibe das Wochen-Check-in des Paares. Nimm jeden Abschnitt auf, zu dem die Daten etwas hergeben (fairness, money, together, checkin) — höchstens drei.`,
-  fairness: `Schau NUR auf die Aufgabenverteilung im Haushalt. Gib genau einen Abschnitt mit der id "fairness" zurück.`,
-  money: `Schau NUR auf die Finanzen. Gib genau einen Abschnitt mit der id "money" zurück.`
+  week: `Schreibe das Wochen-Check-in des Paares: EINE headline zum wichtigsten Befund, dazu Vorschlag und Gesprächssatz. Die Zahlen (Last, Geld, Check-in-Thema) zeigt die App selbst als Balken daneben — wiederhole sie nicht, deute sie.`,
+  fairness: `Schau NUR auf die Aufgabenverteilung im Haushalt. EINE headline dazu, plus Vorschlag und Gesprächssatz.`,
+  money: `Schau NUR auf die Finanzen. EINE headline dazu, plus Vorschlag und Gesprächssatz.`
 }
 
 // Der Grund, warum dieses Feature überhaupt existiert. Ohne diese Priorität
@@ -284,18 +269,17 @@ const GLOSSARY = `WAS DIE FELDER BEDEUTEN:
 const COACH_RULES = `REGELN — halte dich strikt daran:
 1. Nutze AUSSCHLIESSLICH Zahlen und Fakten aus dem JSON oben. Erfinde nichts, rechne nichts hoch, was nicht dasteht. Steht ein Wert auf null, existiert er nicht — erwähne ihn dann gar nicht.
 2. Stelle NIE einen der beiden ins Unrecht. Eine ungleiche Verteilung ist eine Frage der Last, nicht des Charakters. Sprich immer beide an ("ihr"), nie einen von beiden vorwurfsvoll ("du machst zu wenig").
-3. "headline": EIN Satz, der den wichtigsten Befund BENENNT. Kein Etikett, keine Überschrift — "Eure Finanzen im Blick" oder "Wochenrückblick" ist wertlos, "Sarah hat diesen Monat drei Viertel ausgelegt" ist richtig.
-4. Jeder Abschnitt: höchstens 2 Sätze. Konkret statt allgemein — nenne die Zahl, die den Punkt trägt. "title" sind zwei bis drei Wörter und wiederholen NICHT die headline.
-5. "talkingPoint": GENAU EIN Satz in der ICH-Form, den einer der beiden dem anderen sagen kann — das ist die EINZIGE Ausnahme von Regel 2, hier also bewusst nicht "ihr". Als Einladung formuliert, nie als Vorwurf oder Forderung. Der Ton (nicht der Inhalt) soll so klingen: "Mir ist aufgefallen, dass ich gerade viel vorstrecke — wollen wir das mal zusammen anschauen?"
-6. Ist die Lage unauffällig, sag das ruhig und positiv und setze tone "good". Suche dir kein Problem, nur damit du etwas zu sagen hast.
-7. "suggestion.action" nur setzen, wenn sie zur Lage passt — sonst "none":
+3. "headline": EIN Satz, der den wichtigsten Befund BENENNT. Kein Etikett, keine Überschrift — "Eure Finanzen im Blick" oder "Wochenrückblick" ist wertlos, "Sarah hat diesen Monat drei Viertel ausgelegt" ist richtig. Nenne die Zahl, die den Punkt trägt.
+4. "talkingPoint": GENAU EIN Satz in der ICH-Form, den einer der beiden dem anderen sagen kann — das ist die EINZIGE Ausnahme von Regel 2, hier also bewusst nicht "ihr". Als Einladung formuliert, nie als Vorwurf oder Forderung. Der Ton (nicht der Inhalt) soll so klingen: "Mir ist aufgefallen, dass ich gerade viel vorstrecke — wollen wir das mal zusammen anschauen?"
+5. Ist die Lage unauffällig, sag das in der headline ruhig und positiv. Suche dir kein Problem, nur damit du etwas zu sagen hast.
+6. "suggestion.action" nur setzen, wenn sie zur Lage passt — sonst "none":
    - "settleUp": es steht ein offener Ausgleich zwischen euch (openBalanceEuros > 0), besonders wenn er schon alt ist.
    - "rebalanceChores": die Aufgabenlast liegt deutlich schief.
    - "planIdea": es stand lange nichts Gemeinsames an.
    - "setBudget": es gibt kein Monatsbudget (budgetEuros ist null) und die Ausgaben legen eins nahe.
    "suggestion.text" beschreibt in einem Satz, was der Tap bewirkt.
-8. Deutsch, warm, erwachsen. Keine Emojis, keine Ausrufezeichen, kein Coaching-Jargon.
-9. Beträge im deutschen Format mit Euro-Zeichen: 1.042,37 €. Prozent ohne Nachkommastellen: 72 %. Zeitspannen in Wochen, wenn es über 14 Tage sind.`
+7. Deutsch, warm, erwachsen. Keine Emojis, keine Ausrufezeichen, kein Coaching-Jargon.
+8. Beträge im deutschen Format mit Euro-Zeichen: 1.042,37 €. Prozent ohne Nachkommastellen: 72 %. Zeitspannen in Wochen, wenn es über 14 Tage sind.`
 
 // Eigene Gewichtsklasse wie COACH_RULES Regel 2: Das Check-in lebt davon, dass
 // keiner der beiden je erfährt, wer was eingetragen hat. Ein einziger

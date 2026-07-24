@@ -1,0 +1,89 @@
+<!-- @dsCard group="3er-Navigation" viewport="460x980" name="Nav · B · Bubble folgt dem Segment" subtitle="Alltag trägt die Farbe des offenen Bereichs — Codierung bleibt" -->
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Nav · B · Bubble folgt dem Segment</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  .stack { width: 390px; background: var(--bg); border-radius: 26px; box-shadow: 0 16px 40px rgba(60,45,30,.16); padding: 22px 18px 10px; }
+  .stack .cl { font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-meta); margin: 0 4px 16px; }
+  .stack .cl b { color: var(--text); }
+  .demo { position: relative; margin-bottom: 30px; }
+  .demo .nav3 { position: static; left: auto; right: auto; bottom: auto; margin: 34px 0 0; }
+  .demo .tag { font-size: 11.5px; font-weight: 800; color: var(--text-meta); margin-left: 4px; }
+  .segdemo { display: flex; gap: 2px; background: var(--surface); box-shadow: var(--shadow-card); border-radius: 12px; padding: 3px; margin: 12px 0 0; }
+  .segdemo span { flex: 1; text-align: center; padding: 9px 0; border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--text-meta); }
+  .segdemo span.on { background: var(--seg-accent); color: var(--on-accent); }
+</style></head>
+<body>
+
+<div class="stack">
+  <div class="cl"><b>B · Die Bubble folgt dem Segment.</b> Heute und Wir stehen fest, Alltag nimmt die Farbe des Bereichs an, der gerade offen ist.</div>
+
+  <div class="demo" style="--seg-accent: var(--haushalt)">
+    <span class="tag">Alltag · Aufgaben — Terrakotta</span>
+    <div class="segdemo"><span class="on">Aufgaben</span><span>Küche</span><span>Geld</span><span>Kalender</span></div>
+    <div class="nav3">
+      <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+      <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+      <div class="it on" style="--nav-accent: var(--haushalt)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+    </div>
+  </div>
+
+  <div class="demo" style="--seg-accent: var(--food)">
+    <span class="tag">Alltag · Küche — Rot-Orange</span>
+    <div class="segdemo"><span>Aufgaben</span><span class="on">Küche</span><span>Geld</span><span>Kalender</span></div>
+    <div class="nav3">
+      <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+      <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+      <div class="it on" style="--nav-accent: var(--food)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+    </div>
+  </div>
+
+  <div class="demo" style="--seg-accent: var(--finanzen)">
+    <span class="tag">Alltag · Geld — Türkis</span>
+    <div class="segdemo"><span>Aufgaben</span><span>Küche</span><span class="on">Geld</span><span>Kalender</span></div>
+    <div class="nav3">
+      <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+      <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+      <div class="it on" style="--nav-accent: var(--finanzen)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+    </div>
+  </div>
+
+  <div class="demo" style="--seg-accent: var(--einkauf)">
+    <span class="tag">Alltag · Kalender — Amber</span>
+    <div class="segdemo"><span>Aufgaben</span><span>Küche</span><span>Geld</span><span class="on">Kalender</span></div>
+    <div class="nav3">
+      <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+      <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+      <div class="it on" style="--nav-accent: var(--einkauf)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <b>Richtung B — die Farbcodierung überlebt den Umbau.</b> Terrakotta heißt weiterhin Haushalt,
+  Türkis Geld, Rot-Orange Küche. Man verliert keine Farbe, sie wandern nur eine Ebene tiefer und
+  werden beim Segmentwechsel sichtbar an der Bubble mitgeführt — dieselbe Bewegung, die die Leiste
+  heute beim Tabwechsel macht.
+  <ul>
+    <li><b>Dafür:</b> Kein Umlernen. Wer den türkisen Ton sucht, findet Geld — nur eben im dritten Slot.</li>
+    <li><b>Dagegen:</b> Ein Slot ohne feste Identität. Und die Bubble bewegt sich, ohne dass man
+      die Leiste angefasst hat.</li>
+  </ul>
+</div>
+
+<div class="note">
+  <b>Farbkonflikt, der entschieden werden muss:</b> „Kalender" hatte als Teil von Planung das Blau
+  (<code>--planung</code>) — das gehört jetzt „Wir". Hier steht ersatzweise Amber
+  (<code>--einkauf</code>), das seit der Küchen-Umbenennung nur noch die Ausgaben-Kategorie
+  „Einkauf" einfärbt und damit frei wäre. Alternative wäre Violett (<code>--bucket</code>),
+  das aber schon an den Ideen im Wir-Tab hängt.
+</div>
+
+<div class="note">
+  Technisch braucht B eine Kleinigkeit mehr: das aktive Segment muss seine Farbe an die App-Shell
+  melden. Dafür gibt es das Muster schon — <code>useFab.ts</code> macht genau das mit der
+  Add-Aktion.
+</div>
+
+</body></html>

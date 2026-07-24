@@ -5,11 +5,9 @@ import { useAuth } from '@/composables/useAuth'
 import { useCouple } from '@/composables/useCouple'
 import { useExpenses } from '@/composables/useExpenses'
 import { setFabAction } from '@/composables/useFab'
-import { useTabSwipe } from '@/composables/useTabSwipe'
 import { showToast } from '@/composables/useToast'
 import { useBackDismiss } from '@/composables/useBackButton'
 import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
-import SegmentToggle from '@/components/ui/SegmentToggle.vue'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
 import BalanceCard from '@/components/finance/BalanceCard.vue'
 import ExpenseRow from '@/components/finance/ExpenseRow.vue'
@@ -21,6 +19,15 @@ import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { useJustAdded } from '@/composables/useJustAdded'
 import type { Expense } from '@/types'
 import type { CoachAction } from '@/services/ai'
+
+// embedded: als Segment „Geld" innerhalb von AlltagView gerendert. Dann trägt
+// die Shell die Kopfzeile (Titel + Profil), und der eigene Segmentumschalter
+// wird zur sekundären Zeile unter dem primären Alltag-Umschalter.
+withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+
+// Meldet der Shell, dass eine Vollbild-Unteransicht (Event-Detail) offen ist —
+// sie blendet dann Kopf + Segmente aus. Nur im eingebetteten Zustand relevant.
+const emit = defineEmits<{ subview: [active: boolean] }>()
 
 const router = useRouter()
 const { user } = useAuth()
@@ -36,7 +43,6 @@ const {
   archivedEventSummaries,
   eventSummaries,
   financeMonths,
-  monthlySummaries,
   addExpense,
   updateExpense,
   deleteExpense,
@@ -46,8 +52,10 @@ const {
   updateEventBudget,
 } = useExpenses(coupleId)
 
-// Überlebt den Android-Kaltstart. Die Event-Detailansicht hat keine eigene Route.
-const finView = usePersistedRef<'dashboard' | 'event'>('finanzen.finView', 'dashboard', { ttlMs: DRAFT_TTL_MS })
+// Überlebt den Android-Kaltstart. Event-Detail und die Monatsanalyse sind
+// In-Page-Unteransichten ohne eigene Route.
+type FinView = 'dashboard' | 'event' | 'analyse'
+const finView = usePersistedRef<FinView>('finanzen.finView', 'dashboard', { ttlMs: DRAFT_TTL_MS })
 const currentEventId = usePersistedRef<string | null>('finanzen.eventId', null, { ttlMs: DRAFT_TTL_MS })
 
 const currentEventSummary = computed(() =>
@@ -72,30 +80,26 @@ const stopEventRestore = watch(
   { immediate: true }
 )
 
+// Event-Detail und Analyse sind Vollbild-Unteransichten — der Shell melden,
+// damit sie Kopf + Segmentleiste ausblendet.
+watch(finView, (v) => emit('subview', v !== 'dashboard'), { immediate: true })
+
 function openEvent(eventId: string) {
   currentEventId.value = eventId
   finView.value = 'event'
 }
+
+function openAnalyse() { finView.value = 'analyse' }
 
 function backToDashboard() {
   finView.value = 'dashboard'
   currentEventId.value = null
 }
 
-// Die Event-Detailansicht ist eine In-Page-Unteransicht ohne eigene Route —
-// ohne das hier würde Android-Zurück aus ihr heraus die App verlassen.
+// Event-Detail und Analyse sind In-Page-Unteransichten ohne eigene Route —
+// ohne das hier würde Android-Zurück aus ihnen heraus die App verlassen.
 useBackDismiss(() => finView.value === 'event', backToDashboard)
-
-type Tab = 'uebersicht' | 'coach'
-const tab = usePersistedRef<Tab>('finanzen.tab', 'uebersicht')
-const tabOptions = [
-  { label: 'Übersicht', value: 'uebersicht' },
-  { label: 'Finanz-Coach', value: 'coach' },
-]
-
-// Reihenfolge muss die sichtbare Tab-Reihenfolge widerspiegeln.
-const tabOrder: Tab[] = ['uebersicht', 'coach']
-const { onTouchStart, onTouchMove, onTouchEnd } = useTabSwipe(tabOrder, tab)
+useBackDismiss(() => finView.value === 'analyse', backToDashboard)
 
 // Offener Add/Edit-Sheet überlebt den Kaltstart (TTL). Die bearbeitete Ausgabe
 // wird über ihre ID wiederhergestellt (siehe stopEventRestore oben).
@@ -113,9 +117,9 @@ function openAddExpense() {
 }
 
 // Globaler FAB (App-Shell): nur die Übersicht kennt ein Add (Ausgabe erfassen),
-// der Finanz-Coach nicht.
-watch(tab, (t) => {
-  setFabAction(t === 'uebersicht' ? { label: 'Ausgabe erfassen', handler: openAddExpense } : null)
+// die Unteransichten (Event-Detail, Analyse) nicht.
+watch(finView, (v) => {
+  setFabAction(v === 'dashboard' ? { label: 'Ausgabe erfassen', handler: openAddExpense } : null)
 }, { immediate: true })
 onScopeDispose(() => setFabAction(null))
 
@@ -196,7 +200,10 @@ watch(
   (value) => {
     if (value !== 'settle') return
     onCoachAction('settleUp')
-    router.replace({ path: route.path, query: {} })
+    // Nur coach entfernen — tab (Segment) muss erhalten bleiben, sonst springt
+    // AlltagView zurück aufs erste Segment.
+    const { coach, ...rest } = route.query
+    router.replace({ path: route.path, query: rest })
   },
   { immediate: true }
 )
@@ -288,113 +295,141 @@ const sortedExpenses = computed(() =>
     })
 )
 
-const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value, e => e.id)
+// ── Monatsfilter + Kürzung der Ausgabenliste ─────────────────
+// Die Liste kann lang werden — deshalb je Monat filterbar und auf die letzten 8
+// gekürzt, der Rest auf Tap. Monatschips aus den ohnehin berechneten
+// financeMonths (absteigend, neuester zuerst); ohne aktive Wahl fällt es auf den
+// neuesten Monat mit Ausgaben zurück.
+const selectedExpenseMonth = ref<string | null>(null)
+const activeExpenseMonth = computed(
+  () => selectedExpenseMonth.value ?? financeMonths.value[0]?.monthKey ?? null
+)
+const monthExpenses = computed(() =>
+  activeExpenseMonth.value
+    ? sortedExpenses.value.filter(e => e.monthKey === activeExpenseMonth.value)
+    : sortedExpenses.value
+)
+
+const EXPENSE_LIMIT = 8
+const showAllExpenses = ref(false)
+// Beim Monatswechsel wieder einklappen.
+watch(activeExpenseMonth, () => { showAllExpenses.value = false })
+const visibleExpenses = computed(() =>
+  showAllExpenses.value ? monthExpenses.value : monthExpenses.value.slice(0, EXPENSE_LIMIT)
+)
+const hiddenExpenseCount = computed(() => Math.max(0, monthExpenses.value.length - EXPENSE_LIMIT))
+
+const { justAdded: justAddedExpense } = useJustAdded(() => visibleExpenses.value, e => e.id)
 </script>
 
 <template>
-  <div class="finanzen-page area-finanzen">
+  <div class="finanzen-page area-finanzen" :class="{ 'is-embedded': embedded }">
     <template v-if="finView === 'dashboard'">
-      <!-- Header -->
-      <div class="page-header">
+      <!-- Header — nur eigenständig; eingebettet trägt AlltagView den Kopf. -->
+      <div v-if="!embedded" class="page-header">
         <h1 class="page-title">Finanzen</h1>
         <ProfileButton />
       </div>
 
-      <div class="tab-bar-wrap">
-        <SegmentToggle v-model="tab" :options="tabOptions" class="tab-bar" />
-      </div>
+      <!-- Ein gescrollter Stapel, kein Segmentumschalter mehr: Saldo · Events ·
+           Ausgaben, darunter der Einstieg in die Monatsanalyse. -->
+      <div class="fin-scroll">
+        <div class="uebersicht-pane rise-stagger">
+          <BalanceCard
+            :balanceInfo="balanceInfo"
+            :couple="couple"
+            :currentUserId="user?.uid ?? ''"
+            @settle="showSettle = true"
+          />
 
-      <div
-        class="tab-area"
-        @touchstart.passive="onTouchStart"
-        @touchmove.passive="onTouchMove"
-        @touchend.passive="onTouchEnd"
-        @touchcancel.passive="onTouchEnd"
-      >
-        <div class="tab-content">
-          <Transition name="tab-fade" mode="out-in">
-            <div v-if="tab === 'uebersicht'" key="uebersicht" class="uebersicht-pane rise-stagger">
-              <!-- Balance card -->
-              <BalanceCard
-                :balanceInfo="balanceInfo"
+          <!-- Einstieg in die Monatsanalyse — präsent zwischen Saldo und Events. -->
+          <button type="button" class="analyse-link" @click="openAnalyse">
+            <span class="analyse-link__ico" aria-hidden="true">📊</span>
+            <span class="analyse-link__text">Analyse<span>Monatsvergleich &amp; Kategorien</span></span>
+            <span class="analyse-link__go" aria-hidden="true">›</span>
+          </button>
+
+          <!-- Events rail -->
+          <TransitionGroup v-if="!loading" tag="div" name="list-add" class="events-rail">
+            <EventCard
+              v-for="summary in activeEventSummaries"
+              :key="summary.event.id"
+              :summary="summary"
+              :couple="couple"
+              @click="openEvent(summary.event.id)"
+            />
+            <button key="new-event" class="new-event-card" @click="openNewEvent">
+              <span class="new-event-icon">+</span>
+              <span class="new-event-label">Neues Event</span>
+            </button>
+          </TransitionGroup>
+
+          <!-- Archiv abgeschlossener Events — direkt bei den aktiven Events -->
+          <div v-if="!loading && archivedEventSummaries.length" class="archive-section">
+            <button class="archive-toggle" type="button" @click="showArchive = !showArchive">
+              <span class="archive-caret" :class="{ 'archive-caret--open': showArchive }">›</span>
+              Archiv
+              <span class="archive-count">{{ archivedEventSummaries.length }}</span>
+            </button>
+            <div v-if="showArchive" class="events-rail archive-rail">
+              <EventCard
+                v-for="summary in archivedEventSummaries"
+                :key="summary.event.id"
+                :summary="summary"
                 :couple="couple"
-                :currentUserId="user?.uid ?? ''"
-                @settle="showSettle = true"
+                muted
+                @click="openEvent(summary.event.id)"
               />
+            </div>
+          </div>
 
-              <!-- Events rail -->
-              <TransitionGroup v-if="!loading" tag="div" name="list-add" class="events-rail">
-                <EventCard
-                  v-for="summary in activeEventSummaries"
-                  :key="summary.event.id"
-                  :summary="summary"
-                  :couple="couple"
-                  @click="openEvent(summary.event.id)"
-                />
-                <button key="new-event" class="new-event-card" @click="openNewEvent">
-                  <span class="new-event-icon">+</span>
-                  <span class="new-event-label">Neues Event</span>
-                </button>
-              </TransitionGroup>
-
-              <!-- Archiv abgeschlossener Events — direkt bei den aktiven Events -->
-              <div v-if="!loading && archivedEventSummaries.length" class="archive-section">
-                <button class="archive-toggle" type="button" @click="showArchive = !showArchive">
-                  <span class="archive-caret" :class="{ 'archive-caret--open': showArchive }">›</span>
-                  Archiv
-                  <span class="archive-count">{{ archivedEventSummaries.length }}</span>
-                </button>
-                <div v-if="showArchive" class="events-rail archive-rail">
-                  <EventCard
-                    v-for="summary in archivedEventSummaries"
-                    :key="summary.event.id"
-                    :summary="summary"
-                    :couple="couple"
-                    muted
-                    @click="openEvent(summary.event.id)"
-                  />
-                </div>
-              </div>
-
-              <!-- Expense list -->
-              <div v-if="loading" class="loading-row">Laden…</div>
-              <div v-else-if="sortedExpenses.length === 0" class="empty-state">
-                Noch keine Ausgaben. Füge die erste hinzu.
-              </div>
-              <TransitionGroup v-else tag="div" name="list-add" class="expense-list">
-                <ExpenseRow
-                  v-for="exp in sortedExpenses"
-                  :key="exp.id"
-                  :expense="exp"
-                  :couple="couple"
-                  :currentUserId="user?.uid ?? ''"
-                  :class="{ 'just-added': justAddedExpense.has(exp.id) }"
-                  @delete="onDeleteExpense"
-                  @edit="openEditExpense"
-                />
-              </TransitionGroup>
+          <!-- Expense list -->
+          <div v-if="loading" class="loading-row">Laden…</div>
+          <div v-else-if="sortedExpenses.length === 0" class="empty-state">
+            Noch keine Ausgaben. Füge die erste hinzu.
+          </div>
+          <template v-else>
+            <!-- Monatsfilter -->
+            <div v-if="financeMonths.length" class="expense-months" data-hswipe-skip>
+              <button
+                v-for="m in financeMonths"
+                :key="m.monthKey"
+                class="month-chip"
+                :class="{ 'month-chip--active': m.monthKey === activeExpenseMonth }"
+                @click="selectedExpenseMonth = m.monthKey"
+              >{{ m.label }}</button>
             </div>
 
-            <FinanzCoachView
-              v-else
-              key="coach"
-              class="rise-stagger"
-              :couple="couple"
-              :months="financeMonths"
-              :monthlySummaries="monthlySummaries"
-              :balanceInfo="balanceInfo"
-              :events="activeEventSummaries"
-              :expenses="expenses"
-              :loading="loading"
-              @action="onCoachAction"
-            />
-          </Transition>
+            <div v-if="monthExpenses.length === 0" class="empty-state">
+              In diesem Monat keine Ausgaben.
+            </div>
+            <TransitionGroup v-else tag="div" name="list-add" class="expense-list">
+              <ExpenseRow
+                v-for="exp in visibleExpenses"
+                :key="exp.id"
+                :expense="exp"
+                :couple="couple"
+                :currentUserId="user?.uid ?? ''"
+                :class="{ 'just-added': justAddedExpense.has(exp.id) }"
+                @delete="onDeleteExpense"
+                @edit="openEditExpense"
+              />
+            </TransitionGroup>
+
+            <!-- Rest einblenden, damit die Liste nicht zu lang wird. -->
+            <button
+              v-if="hiddenExpenseCount > 0 && !showAllExpenses"
+              type="button"
+              class="more-expenses"
+              @click="showAllExpenses = true"
+            >Weitere Ausgaben anzeigen ({{ hiddenExpenseCount }})</button>
+          </template>
         </div>
       </div>
     </template>
 
     <EventDetail
-      v-else-if="currentEventSummary"
+      v-else-if="finView === 'event' && currentEventSummary"
       :summary="currentEventSummary"
       :couple="couple"
       :currentUserId="user?.uid ?? ''"
@@ -406,6 +441,20 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       @setBudget="openEventBudgetSheet"
       @reopen="onReopenEvent"
     />
+
+    <!-- Monatsanalyse als gestapelte Unteransicht (Zurück-Pfeil, kein FAB). -->
+    <div v-else-if="finView === 'analyse'" class="analyse-sub">
+      <div class="sub-head">
+        <button type="button" class="sub-back" @click="backToDashboard" aria-label="Zurück">‹</button>
+        <h1 class="sub-title">Analyse</h1>
+      </div>
+      <FinanzCoachView
+        class="rise-stagger"
+        :couple="couple"
+        :months="financeMonths"
+        :loading="loading"
+      />
+    </div>
 
     <BottomSheet
       :isOpen="showEventBudget"
@@ -429,7 +478,7 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
       :isOpen="showAdd"
       :couple="couple"
       :currentUserId="user?.uid ?? ''"
-      :addContext="finView"
+      :addContext="finView === 'event' ? 'event' : 'dashboard'"
       :startInEventMode="startInEventMode"
       :editingExpense="editingExpense"
       persistKey="finance.expense"
@@ -473,63 +522,98 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
   margin: 0;
 }
 
-.tab-bar-wrap {
-  padding: 0 var(--screen-pad);
-  margin-bottom: 20px;
-}
-
-.tab-bar {
-  display: flex;
-  width: 100%;
-  border-radius: 12px;
-}
-
-.tab-bar :deep(.seg-btn) {
-  padding: 13px 0;
-  font-size: 13px;
-}
-
-.tab-area {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  touch-action: pan-y;
-  padding-bottom: 96px;
-}
-
-.tab-content {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.uebersicht-pane {
+/* Gescrollter Stapel (Saldo · Events · Ausgaben · Analyse-Link) — kein
+   Segmentumschalter mehr, seit Geld ein Alltag-Segment ist. */
+.fin-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* Nur vertikal scrollen — horizontale Gesten gehören dem Tab-Swipe. */
-  touch-action: pan-y;
+  padding-top: 4px;
 }
 
-/* Sanfter Übergang beim Tab-Wechsel (auch per Swipe) */
-.tab-fade-enter-active {
-  transition: opacity 220ms var(--ease-standard), transform 220ms var(--ease-standard);
+.uebersicht-pane {
+  padding-bottom: 8px;
 }
 
-.tab-fade-leave-active {
-  transition: opacity 140ms var(--ease-in), transform 140ms var(--ease-in);
+/* Einstieg in die Monatsanalyse — präsent zwischen Saldo und Events, im
+   Bereichs-Tint (türkis) statt neutral, damit er nicht wie eine Fußzeile wirkt. */
+.analyse-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: calc(100% - 2 * var(--screen-pad));
+  margin: 0 var(--screen-pad) 14px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: var(--radius-card);
+  background: var(--accent-tint);
+  cursor: pointer;
+  text-align: left;
+}
+.analyse-link__ico {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-tile);
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  background: var(--surface);
+}
+.analyse-link__text {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.analyse-link__text span {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-meta);
+  margin-top: 2px;
+}
+.analyse-link__go {
+  font-size: 20px;
+  color: var(--text-faint);
 }
 
-.tab-fade-enter-from {
-  opacity: 0;
-  transform: translateY(6px);
+/* Kopf der gestapelten Analyse-Unteransicht (Zurück-Pfeil). */
+.analyse-sub {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
 }
-
-.tab-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
+.sub-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px var(--screen-pad) 12px;
+}
+.sub-back {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  border: none;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  margin-right: 4px;
+}
+.sub-title {
+  font-family: var(--font-headline);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
 }
 
 .events-rail {
@@ -634,6 +718,49 @@ const { justAdded: justAddedExpense } = useJustAdded(() => sortedExpenses.value,
   flex-direction: column;
   gap: 9px;
   padding: 0 var(--screen-pad);
+}
+
+/* Monatsfilter über der Ausgabenliste (Muster wie Verlauf/Analyse). */
+.expense-months {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 0 var(--screen-pad) 12px;
+}
+.month-chip {
+  flex: none;
+  padding: 7px 13px;
+  border: 1px solid var(--border-softer);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text-meta);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+.month-chip--active {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* „Weitere Ausgaben anzeigen" — dezent, gestrichelt, damit die Liste kurz bleibt. */
+.more-expenses {
+  display: block;
+  margin: 12px auto 2px;
+  padding: 9px 18px;
+  border: 1px dashed var(--border);
+  border-radius: 100px;
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .settle-text {

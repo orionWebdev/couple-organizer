@@ -1,0 +1,180 @@
+<!-- @dsCard group="3er-Navigation" viewport="980x1080" name="00 · Struktur-Karte Ist → Soll" subtitle="5 Tabs / 10 Segmente → 3 Tabs / 4 Segmente, mit Umzugsliste" -->
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Struktur-Karte Ist → Soll</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  body { align-items: center; }
+  .sheet { width: 920px; background: var(--bg); border-radius: 26px; box-shadow: 0 16px 40px rgba(60,45,30,.16); padding: 26px 26px 30px; box-sizing: border-box; }
+  h2 { font-family: var(--font-headline); font-size: 21px; font-weight: 600; color: var(--text); margin: 0 0 4px; }
+  .lead { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin: 0 0 22px; line-height: 1.55; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .col { background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 16px 16px 18px; }
+  .col > .sl { display: block; margin-bottom: 12px; }
+
+  .tab { border-radius: 14px; padding: 9px 11px 10px; margin-bottom: 8px; border-left: 4px solid var(--tone); background: color-mix(in srgb, var(--tone) 8%, var(--surface)); }
+  .tab .n { font-family: var(--font-headline); font-size: 14.5px; font-weight: 600; color: var(--text); }
+  .tab .segs { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .tab .segs em { font-style: normal; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border-soft); color: var(--text-secondary); }
+  .tab .segs em.gone { text-decoration: line-through; opacity: .5; }
+  .tab .none { margin-top: 5px; font-size: 11px; font-weight: 700; color: var(--text-faint); }
+
+  .count { display: flex; gap: 8px; margin-top: 14px; }
+  .count div { flex: 1; background: var(--surface-deep); border-radius: 12px; padding: 9px 11px; }
+  .count b { display: block; font-family: var(--font-headline); font-size: 20px; font-weight: 700; color: var(--text); }
+  .count span { font-size: 10.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--text-meta); }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 22px; }
+  caption { text-align: left; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--text-meta); padding-bottom: 9px; }
+  th, td { text-align: left; padding: 9px 10px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-softer); vertical-align: top; }
+  th { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-meta); border-bottom: 1px solid var(--border-soft); }
+  td:first-child { color: var(--text); font-weight: 700; width: 30%; }
+  td:nth-child(2) { width: 26%; }
+  td b { color: var(--text); }
+  code { font-family: var(--font-headline); font-size: 11.5px; background: var(--surface-deep); padding: 1px 5px; border-radius: 5px; color: var(--text); }
+</style></head>
+<body>
+
+<div class="sheet">
+  <h2>Von fünf Tabs auf drei</h2>
+  <p class="lead">
+    Der Engpass ist nicht die Zahl der Tabs, sondern dass dieselbe Sache an mehreren Stellen wohnt.
+    Wenn die reflektierende Schicht — Coach, Fairness, Punktestand — vollständig nach „Wir" zieht,
+    bleibt von jedem Bereich genau ein operatives Segment übrig. Erst dann passen vier davon in
+    einen Tab.
+  </p>
+
+  <div class="cols">
+    <div class="col">
+      <span class="sl">Ist — 5 Tabs, 10 Segmente</span>
+
+      <div class="tab" style="--tone: var(--planung)">
+        <div class="n">Wir <code>/planung</code></div>
+        <div class="segs"><em>Wir</em><em>Planung</em></div>
+      </div>
+      <div class="tab" style="--tone: var(--finanzen)">
+        <div class="n">Finanzen</div>
+        <div class="segs"><em>Übersicht</em><em>Finanz-Coach</em></div>
+      </div>
+      <div class="tab" style="--tone: var(--dashboard)">
+        <div class="n">Start <code>/dashboard</code></div>
+        <div class="none">kein Segment — spiegelt alle anderen Tabs</div>
+      </div>
+      <div class="tab" style="--tone: var(--haushalt)">
+        <div class="n">Haushalt</div>
+        <div class="segs"><em>Zuweisungen</em><em>Alle</em><em>Übersicht</em></div>
+      </div>
+      <div class="tab" style="--tone: var(--food)">
+        <div class="n">Küche <code>/einkaufen</code></div>
+        <div class="segs"><em>Wochenplan</em><em>Einkaufsliste</em><em>Rezepte</em></div>
+      </div>
+
+      <div class="count">
+        <div><b>5</b><span>Tabs</span></div>
+        <div><b>10</b><span>Segmente</span></div>
+        <div><b>3×</b><span>Coach-Flächen</span></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <span class="sl">Soll — 3 Tabs, 4 Segmente</span>
+
+      <div class="tab" style="--tone: var(--dashboard)">
+        <div class="n">Heute <code>/dashboard</code></div>
+        <div class="none">kein Segment — nur was heute ansteht</div>
+      </div>
+      <div class="tab" style="--tone: var(--planung)">
+        <div class="n">Wir <code>/planung</code></div>
+        <div class="none">kein Segment — eine Spalte von Karten</div>
+      </div>
+      <div class="tab" style="--tone: var(--haushalt)">
+        <div class="n">Alltag <code>/alltag</code></div>
+        <div class="segs"><em>Aufgaben</em><em>Küche</em><em>Geld</em><em>Kalender</em></div>
+      </div>
+
+      <div class="count">
+        <div><b>3</b><span>Tabs</span></div>
+        <div><b>4</b><span>Segmente</span></div>
+        <div><b>1×</b><span>Coach, 3 Linsen</span></div>
+      </div>
+
+      <p style="margin:16px 4px 0;font-size:12px;font-weight:600;line-height:1.55;color:var(--text-secondary)">
+        „Wir" und „Heute" verlieren ihren Segmentumschalter komplett — beide werden wieder das,
+        was sie sein sollten: eine gescrollte Spalte Karten mit genau einem Thema.
+      </p>
+    </div>
+  </div>
+
+  <table>
+    <caption>Was wohin zieht</caption>
+    <tr><th>Fläche heute</th><th>Zieht nach</th><th>Warum</th></tr>
+
+    <tr>
+      <td>Fairness-Bericht<br><code>FairnessCard</code></td>
+      <td><b>Wir</b> — geht im Coach auf</td>
+      <td>Es ist dieselbe Ausgabe, nur mit Linse <code>fairness</code>.</td>
+    </tr>
+    <tr>
+      <td>Finanz-Coach, Berichtsteil<br><code>FinanzCoachView</code></td>
+      <td><b>Wir</b> — geht im Coach auf</td>
+      <td>Linse <code>money</code>. Wird heute obendrein gar nicht geteilt: die Fläche ruft
+        <code>coachInsight()</code> direkt auf statt über <code>useCoach</code>, der Bericht landet
+        nie in <code>coachReports</code> und der Partner sieht ihn nie.</td>
+    </tr>
+    <tr>
+      <td>Finanz-Coach, Monatsvergleich&nbsp;+ Kategorien</td>
+      <td><b>Alltag → Geld</b>, Unteransicht „Analyse"</td>
+      <td>Zahlen, kein Coach. Gehört zum Bereich, nicht zur Beziehung.</td>
+    </tr>
+    <tr>
+      <td>Punktestand-Leaderboard</td>
+      <td><b>Wir</b>, neben Mental Load</td>
+      <td>Wer wie viel trägt, ist ein Beziehungsthema — und steht dort neben der Wertschätzung,
+        nicht allein neben der Waage.</td>
+    </tr>
+    <tr>
+      <td>Verlauf<br><code>HaushaltVerlauf</code></td>
+      <td><b>Alltag → Aufgaben</b>, Unteransicht</td>
+      <td>Reines Protokoll. Die 30-Tage-Fensterung bleibt in der Komponente, nie im Listener —
+        der Punktestand rechnet auf der vollen Historie.</td>
+    </tr>
+    <tr>
+      <td>Segmente „Zuweisungen" und „Alle"</td>
+      <td><b>Alltag → Aufgaben</b>, als Filter-Chips</td>
+      <td>Eine Liste, zwei Sichten. Chips statt einer zweiten Tab-Ebene.</td>
+    </tr>
+    <tr>
+      <td>Rezept-Wiki<br><code>RezeptWikiView</code></td>
+      <td><b>Alltag → Küche</b>, Unteransicht</td>
+      <td>Bibliothek ohne Wochenbezug — dasselbe Muster wie die Listen-Detailansicht im Einkauf.</td>
+    </tr>
+    <tr>
+      <td>Belegungs-Kalender + Notizen<br>(heute Wir → Planung)</td>
+      <td><b>Alltag → Kalender</b></td>
+      <td>Logistik. Hatte im Beziehungs-Tab nie etwas zu suchen.</td>
+    </tr>
+    <tr>
+      <td>Reisen<br><code>ReisenBlock</code></td>
+      <td><b>Wir</b>, neben die Ideen</td>
+      <td>„Schöne Dinge, die wir vorhaben" — steht direkt neben der Bucket-List.</td>
+    </tr>
+    <tr>
+      <td>Finanz- und Belegungs-Karte auf Start</td>
+      <td>bleiben, aber <b>nur heute</b></td>
+      <td>Damit Start und Alltag nicht dasselbe zeigen: Start beantwortet „was jetzt",
+        Alltag „wie steht es".</td>
+    </tr>
+  </table>
+</div>
+
+<div class="note">
+  <b>Was bewusst nicht passiert.</b> Keine Route stirbt: <code>/haushalt</code>,
+  <code>/finanzen</code> und <code>/einkaufen</code> bleiben bestehen und leiten auf das passende
+  Alltag-Segment um — persistierte Deeplinks, der Android-Kaltstart-Zustand und die drei
+  Coach-Aktionen (<code>rebalanceChores</code>, <code>settleUp</code>, <code>setBudget</code>)
+  funktionieren weiter. Und keine Datenstruktur ändert sich; das hier ist ausschließlich ein
+  Umzug von Flächen.
+</div>
+
+</body></html>

@@ -1,0 +1,236 @@
+<!-- @dsCard group="3er-Navigation" viewport="900x1060" name="04 · Alltag › Aufgaben" subtitle="Drei Segmente werden eine Liste mit Chips — Variante einreihig/zweireihig" -->
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Alltag › Aufgaben</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./shared.css">
+<style>
+  .chips { padding-bottom: 10px; }
+  .chips--scroll { position: relative; }
+  .chips--scroll::after { content: ""; position: absolute; right: 0; top: 0; bottom: 10px; width: 28px; background: linear-gradient(90deg, transparent, var(--bg)); }
+
+  .fair { margin: 0 var(--screen-pad) 12px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 11px; border-radius: 14px; background: var(--accent-tint); font-size: 13px; font-weight: 800; color: var(--accent); }
+  .fair .plus { font-size: 10px; font-weight: 800; background: var(--accent); color: #fff; padding: 2px 6px; border-radius: 999px; }
+
+  .task { display: flex; align-items: center; gap: 11px; }
+  .task + .task { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-softer); }
+  .task .n { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
+  .task .n span { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-meta); margin-top: 2px; }
+  .task .box { flex: none; width: 26px; height: 26px; border-radius: 9px; border: 2px solid var(--border); }
+  .task .box.on { background: var(--success); border-color: transparent; color: #fff; display: grid; place-items: center; font-size: 14px; font-weight: 800; }
+  .task.done .n { color: var(--text-faint); }
+  .task .who { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 10.5px; font-weight: 800; color: #fff; }
+  .task .both { flex: none; display: flex; }
+  .task .both span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 10.5px; font-weight: 800; color: #fff; border: 2px solid var(--surface); box-sizing: border-box; }
+  .task .both span:last-child { margin-left: -9px; }
+  .rep { font-size: 10px; font-weight: 800; background: var(--surface-deep); color: var(--text-meta); padding: 2px 6px; border-radius: 999px; }
+
+  .link-row { display: flex; align-items: center; gap: 10px; margin: 0 var(--screen-pad) 12px; padding: 14px 16px; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .link-row .n { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
+  .link-row .go { font-size: 20px; color: var(--text-faint); }
+
+  /* Zweite Ebene in Variante 2: bewusst flacher als das Segment darüber —
+     kein Schatten, getönte statt voller Pille, damit die Hierarchie stimmt. */
+  .seg--sub { background: transparent; box-shadow: none; padding: 0; gap: 6px; margin-bottom: 12px; }
+  .seg--sub span { background: var(--surface); border: 1px solid var(--border-soft); padding: 8px 0; font-size: 12px; }
+  .seg--sub span.on { background: var(--accent-tint); border-color: transparent; color: var(--accent); }
+</style></head>
+<body>
+
+<div class="row">
+
+  <!-- ── Variante 1: eine Chip-Reihe ─────────────────────── -->
+  <div>
+    <div class="phone area-haushalt">
+      <div class="phone__body">
+        <div class="ph-head">
+          <h1 class="ph-title">Alltag</h1>
+          <div class="avatars"><span class="av av--c">C</span><span class="av av--s">S</span></div>
+        </div>
+
+        <div class="seg">
+          <span class="on">Aufgaben</span><span>Küche</span><span>Geld</span><span>Kalender</span>
+        </div>
+
+        <div class="chips chips--scroll">
+          <span class="chip on">Meine</span>
+          <span class="chip">Alle</span>
+          <span class="chip">Offen · 4</span>
+          <span class="chip">🍳 Küche</span>
+          <span class="chip">🛁 Bad</span>
+        </div>
+
+        <div class="fair">⚖️ Aufgaben fair verteilen <span class="plus">Plus</span></div>
+
+        <div class="c">
+          <div class="task">
+            <span class="ico">🍳</span>
+            <span class="n">Küche wischen<span>Küche · zuletzt Dienstag</span></span>
+            <span class="who" style="background:var(--chris)">C</span>
+            <span class="box"></span>
+          </div>
+          <div class="task">
+            <span class="ico">🧺</span>
+            <span class="n">Wäsche aufhängen<span>Allgemein</span></span>
+            <span class="rep">2×</span>
+            <span class="who" style="background:var(--chris)">C</span>
+            <span class="box"></span>
+          </div>
+          <div class="task done">
+            <span class="ico">🌱</span>
+            <span class="n">Pflanzen gießen<span>Heute erledigt · Chris</span></span>
+            <span class="who" style="background:var(--chris)">C</span>
+            <span class="box on">✓</span>
+          </div>
+          <div class="task">
+            <span class="ico">🛒</span>
+            <span class="n">Großeinkauf<span>Allgemein · zusammen</span></span>
+            <span class="both"><span style="background:var(--chris)">C</span><span style="background:var(--sarah)">S</span></span>
+            <span class="box"></span>
+          </div>
+        </div>
+
+        <div class="sec"><span class="sl">Ohne Zuweisung</span><span class="meta">4 im Pool</span></div>
+        <div class="c">
+          <div class="task">
+            <span class="ico">🛁</span>
+            <span class="n">Bad putzen<span>Bad · seit 6 Tagen offen</span></span>
+            <span class="box"></span>
+          </div>
+          <div class="task">
+            <span class="ico">🗑️</span>
+            <span class="n">Müll rausbringen<span>Allgemein</span></span>
+            <span class="box"></span>
+          </div>
+        </div>
+
+        <div class="link-row">
+          <span class="ico">🕘</span>
+          <span class="n">Verlauf<span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-meta);margin-top:2px">Wer hat wann was erledigt</span></span>
+          <span class="go">›</span>
+        </div>
+      </div>
+
+      <div class="fab">＋</div>
+
+      <div class="nav3">
+        <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+        <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+        <div class="it on" style="--nav-accent: var(--haushalt)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+      </div>
+    </div>
+    <div class="caption">Variante 1 · alles in einer Reihe</div>
+  </div>
+
+  <!-- ── Variante 2: Sicht und Räume getrennt ────────────── -->
+  <div>
+    <div class="phone area-haushalt">
+      <div class="phone__body">
+        <div class="ph-head">
+          <h1 class="ph-title">Alltag</h1>
+          <div class="avatars"><span class="av av--c">C</span><span class="av av--s">S</span></div>
+        </div>
+
+        <div class="seg">
+          <span class="on">Aufgaben</span><span>Küche</span><span>Geld</span><span>Kalender</span>
+        </div>
+
+        <div class="seg seg--sub">
+          <span class="on">Meine</span><span>Alle</span><span>Offen · 4</span>
+        </div>
+
+        <div class="chips chips--scroll">
+          <span class="chip on">Alle Räume</span>
+          <span class="chip">🍳 Küche</span>
+          <span class="chip">🛁 Bad</span>
+          <span class="chip">🛋️ Wohnen</span>
+        </div>
+
+        <div class="fair">⚖️ Aufgaben fair verteilen <span class="plus">Plus</span></div>
+
+        <div class="c">
+          <div class="task">
+            <span class="ico">🍳</span>
+            <span class="n">Küche wischen<span>Küche · zuletzt Dienstag</span></span>
+            <span class="who" style="background:var(--chris)">C</span>
+            <span class="box"></span>
+          </div>
+          <div class="task">
+            <span class="ico">🧺</span>
+            <span class="n">Wäsche aufhängen<span>Allgemein</span></span>
+            <span class="rep">2×</span>
+            <span class="who" style="background:var(--chris)">C</span>
+            <span class="box"></span>
+          </div>
+          <div class="task done">
+            <span class="ico">🌱</span>
+            <span class="n">Pflanzen gießen<span>Heute erledigt · Chris</span></span>
+            <span class="who" style="background:var(--chris)">C</span>
+            <span class="box on">✓</span>
+          </div>
+          <div class="task">
+            <span class="ico">🛒</span>
+            <span class="n">Großeinkauf<span>Allgemein · zusammen</span></span>
+            <span class="both"><span style="background:var(--chris)">C</span><span style="background:var(--sarah)">S</span></span>
+            <span class="box"></span>
+          </div>
+        </div>
+
+        <div class="sec"><span class="sl">Ohne Zuweisung</span><span class="meta">4 im Pool</span></div>
+        <div class="c">
+          <div class="task">
+            <span class="ico">🛁</span>
+            <span class="n">Bad putzen<span>Bad · seit 6 Tagen offen</span></span>
+            <span class="box"></span>
+          </div>
+          <div class="task">
+            <span class="ico">🗑️</span>
+            <span class="n">Müll rausbringen<span>Allgemein</span></span>
+            <span class="box"></span>
+          </div>
+        </div>
+
+        <div class="link-row">
+          <span class="ico">🕘</span>
+          <span class="n">Verlauf<span style="display:block;font-size:11.5px;font-weight:700;color:var(--text-meta);margin-top:2px">Wer hat wann was erledigt</span></span>
+          <span class="go">›</span>
+        </div>
+      </div>
+
+      <div class="fab">＋</div>
+
+      <div class="nav3">
+        <div class="it" style="--nav-accent: var(--dashboard)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></span><span class="lab">Heute</span></div>
+        <div class="it" style="--nav-accent: var(--planung)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6"/><circle cx="14.5" cy="12" r="6"/></svg></span><span class="lab">Wir</span></div>
+        <div class="it on" style="--nav-accent: var(--haushalt)"><span class="bub"></span><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span><span class="lab">Alltag</span></div>
+      </div>
+    </div>
+    <div class="caption">Variante 2 · Sicht oben, Räume darunter</div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>Aus drei Segmenten wird eine Liste.</b> „Zuweisungen" und „Alle" waren nie zwei Bereiche,
+  sondern zwei Sichten auf denselben Pool — als Chips kosten sie keine Navigationsebene mehr.
+  „Übersicht" verschwindet ganz: die Fairness-Bewertung und der Punktestand ziehen nach Wir,
+  der Verlauf wird eine Unteransicht am Fuß der Liste.
+</div>
+
+<div class="note">
+  <b>Variante 1</b> hält alles auf einer Höhe, mischt aber zwei verschiedene Filterarten in eine
+  Reihe — „Meine" und „🛁 Bad" sind kombinierbar, sehen aber gleich aus.
+  <b>Variante 2</b> trennt sauber (Sicht ist exklusiv, Räume sind multiselect wie schon heute im
+  Pool), kostet dafür 44 px und stapelt zwei Umschalter direkt untereinander.
+  <br><br>
+  Mein Vorschlag: <b>Variante 2</b> — die Doppelreihe liest sich beim ersten Blick eindeutiger,
+  und der zweite Umschalter darf deutlich flacher und ohne Schatten sitzen, damit die Hierarchie
+  zum Segment darüber stimmt.
+</div>
+
+<div class="note">
+  <b>Der FAB gehört ab jetzt dem Segment, nicht der Seite.</b> Auf „Aufgaben" legt er eine Aufgabe
+  an, auf „Küche" eine Liste, auf „Geld" eine Ausgabe, auf „Kalender" eine Belegung — dasselbe
+  <code>useFab</code>-Muster wie heute, nur eine Ebene tiefer angemeldet.
+</div>
+
+</body></html>

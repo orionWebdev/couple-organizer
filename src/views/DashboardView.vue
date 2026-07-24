@@ -166,10 +166,11 @@ async function onCheckinSubmit(payload: Parameters<typeof addCheckinEntry>[0]) {
 }
 
 // ── Navigation ─────────────────────────────────────────────────
-function goToEssen() { router.push('/einkaufen') }
-function goToPlanung() { router.push('/planung') }
-function goToKalender() { router.push('/planung?tab=planung') }
-function goToFinanzen() { router.push('/finanzen') }
+// Seit dem 3er-Umbau zeigen die Bereichsziele auf die Alltag-Segmente. Der
+// Kalender lebt jetzt in Alltag, nicht mehr im Wir-Tab.
+function goToEssen() { router.push('/alltag?tab=kueche') }
+function goToKalender() { router.push('/alltag?tab=kalender') }
+function goToFinanzen() { router.push('/alltag?tab=geld') }
 
 // ── Leerzustand: frisch angemeldetes Paar ──────────────────────
 // Ideen/Reisen zählen seit dem Wir-Umbau nicht mehr mit — deren Listener
@@ -241,7 +242,7 @@ async function saveBudget() {
         :hasBelegung="false"
         :hasBudget="false"
         @meal="goToEssen"
-        @belegung="goToPlanung"
+        @belegung="goToKalender"
         @budget="openBudgetSheet"
       />
 

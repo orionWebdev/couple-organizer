@@ -267,10 +267,11 @@ function onTabClick(e: MouseEvent, id: string) {
      dauerhafte KI-Button (AiHubButton) auf gleicher Höhe. Das nutzt den durch
      nur drei Tabs frei gewordenen Platz und löst zugleich die alte
      FAB/Bubble-Kollision — Nav und KI teilen sich die Fußzeile nebeneinander.
-     295px lässt rechts Platz für KI-Button (66) + Rand. Auf sehr schmalen
-     Screens schrumpft sie mit. */
+     Der Assistent-Button ist eine breite Pille (140) — die Formel reserviert
+     genau diesen Platz + 8px Luft; auf schmalen Screens schrumpft die Nav mit.
+     Beim Ändern der Button-Breite hier UND in AiHubButton anpassen. */
   left: 14px;
-  width: min(295px, calc(100% - 14px - 66px - 24px));
+  width: min(275px, calc(100% - 14px - 140px - 24px));
   bottom: calc(20px + var(--safe-bottom));
   height: 66px;
   background: var(--surface);

@@ -3,16 +3,19 @@ import { computed, ref } from 'vue'
 import type { Couple } from '@/types'
 import type { MentalLoadSummary } from '@/utils/mentalLoad'
 import { partnerHighlights } from '@/utils/mentalLoad'
-import { personVisual } from '@/utils/chores'
 import { useCouple } from '@/composables/useCouple'
 import { showToast } from '@/composables/useToast'
 
-// „Wer denkt mit?" — die unsichtbare Hälfte der Arbeit.
+// „Wer denkt mit?" — die unsichtbare Hälfte der Arbeit, neu gedacht.
 //
-// Zwei Blickrichtungen auf dieselben Zahlen, und die Reihenfolge ist Absicht:
-// zuerst das, was der PARTNER getragen hat (Wertschätzung), danach erst die
-// Waage (Ausgleich). Andersherum liest sich die Karte als Abrechnung — und
-// „du machst zu wenig" ist das Gegenteil davon, eine Beziehung atmen zu lassen.
+// Früher trug diese Karte eine zweite Waage (Prozent-Balken, wer trägt mehr).
+// Genau das fühlte sich wertend an und führte zu nichts. Die Waage ist raus;
+// geblieben ist der wertvolle Teil: das Unsichtbare SICHTBAR machen — konkret
+// benennen, was der Partner diese Woche im Kopf behalten hat — und die einzige
+// Geste, die daraus folgt: sich bedanken.
+//
+// Bewusst keine Zahlen über „wer mehr". Wertschätzung vor Bilanz, ohne das
+// „vor" überhaupt noch aufzumachen.
 const props = defineProps<{
   summary: MentalLoadSummary
   couple: Couple | null
@@ -31,24 +34,10 @@ const highlights = computed(() =>
   partnerUid.value ? partnerHighlights(props.summary, partnerUid.value) : []
 )
 
-const shares = computed(() =>
-  props.summary.people.map((p) => ({
-    ...p,
-    color: personVisual(p.uid, props.couple).color,
-    isMe: p.uid === props.currentUserId,
-  }))
-)
-
-// Erst ab einer spürbaren Schieflage überhaupt thematisieren. Bei 55/45 eine
-// Ungerechtigkeit zu behaupten, erzeugt den Konflikt, den die App verhindern soll.
-const skewed = computed(() => shares.value.some((s) => s.sharePct >= 65))
-
-const myShare = computed(() => shares.value.find((s) => s.isMe) ?? null)
-
 // ── Danke sagen ──────────────────────────────────────────────
-// Der Knopf steht bewusst direkt unter dem, was der Partner getragen hat: Das
-// ist der Moment, in dem man es liest — und die einzige Stelle, an der ein
-// „Danke" nicht wie eine Aufforderung wirkt.
+// Der Knopf steht direkt unter dem, was der Partner getragen hat: Das ist der
+// Moment, in dem man es liest — und die einzige Stelle, an der ein „Danke"
+// nicht wie eine Aufforderung wirkt.
 const { sayThanks } = useCouple()
 const sending = ref(false)
 const justSent = ref(false)
@@ -63,26 +52,24 @@ function daysAgo(value: unknown): number | null {
 
 // Habe ICH kürzlich gedankt? Dann kein zweiter Knopf — sonst wird aus einer
 // Geste eine Aufgabe.
-const myThanksAge = computed(() =>
-  daysAgo(props.couple?.thanks?.[props.currentUserId])
-)
+const myThanksAge = computed(() => daysAgo(props.couple?.thanks?.[props.currentUserId]))
 const canThank = computed(
   () => !!partnerUid.value && (myThanksAge.value === null || myThanksAge.value >= THANKS_FRESH_DAYS)
 )
 
-// Hat der Partner mir gedankt? Das ist die Belohnung, nicht die Statistik.
-const thanksReceived = computed(() => {
+// Hat der Partner MIR gedankt? Das ist die Belohnung, nicht die Statistik.
+const thanksReceivedLabel = computed(() => {
   if (!partnerUid.value) return null
   const age = daysAgo(props.couple?.thanks?.[partnerUid.value])
-  return age !== null && age < THANKS_FRESH_DAYS ? age : null
-})
-
-const thanksReceivedLabel = computed(() => {
-  const age = thanksReceived.value
-  if (age === null) return null
+  if (age === null || age >= THANKS_FRESH_DAYS) return null
   const when = age === 0 ? 'heute' : age === 1 ? 'gestern' : `vor ${age} Tagen`
   return `${partnerName.value} hat sich ${when} bei dir bedankt`
 })
+
+// Nichts Warmes zu zeigen → gar keine Karte, statt einer hohlen Hülle.
+const hasContent = computed(
+  () => (highlights.value.length > 0 && !!partnerName.value) || !!thanksReceivedLabel.value
+)
 
 async function thank() {
   if (sending.value || !canThank.value) return
@@ -99,13 +86,12 @@ async function thank() {
 </script>
 
 <template>
-  <div v-if="summary.hasData" class="ml">
+  <div v-if="hasContent" class="ml">
     <!-- Was zurückkommt, steht ganz oben — es ist das Wichtigere auf dieser Karte. -->
     <p v-if="thanksReceivedLabel" class="ml-received">
       <span aria-hidden="true">💛</span> {{ thanksReceivedLabel }}
     </p>
 
-    <!-- Wertschätzung zuerst -->
     <template v-if="highlights.length && partnerName">
       <div class="ml-head">
         <span class="ml-lab">Das hat {{ partnerName }} mitgedacht</span>
@@ -131,31 +117,6 @@ async function thank() {
         Gesendet — {{ partnerName }} sieht das beim nächsten Öffnen.
       </p>
     </template>
-
-    <!-- Waage danach, und bewusst schmal -->
-    <div class="ml-balance">
-      <div class="ml-bar">
-        <div
-          v-for="s in shares"
-          :key="s.uid"
-          class="ml-seg"
-          :style="{ width: s.sharePct + '%', background: s.color }"
-        />
-      </div>
-      <div class="ml-legend">
-        <span v-for="s in shares" :key="s.uid" class="ml-leg">
-          <i class="ml-dot" :style="{ background: s.color }" />
-          {{ s.isMe ? 'Du' : s.name }} <b>{{ s.sharePct }} %</b>
-        </span>
-      </div>
-    </div>
-
-    <p v-if="skewed && myShare && myShare.sharePct < 40" class="ml-note">
-      {{ partnerName }} hält gerade den größeren Teil im Kopf — das sieht man sonst nirgends.
-    </p>
-    <p v-else-if="skewed && myShare && myShare.sharePct >= 65" class="ml-note">
-      Du hältst gerade den größeren Teil im Kopf.
-    </p>
   </div>
 </template>
 
@@ -269,58 +230,5 @@ async function thank() {
   border-radius: 12px;
   background: var(--accent-tint);
   color: var(--text);
-}
-
-/* Die Waage ist absichtlich das leisere Element: schmaler Balken, kleine
-   Schrift. Sie ordnet ein, sie klagt nicht an. */
-.ml-balance {
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border-softer);
-}
-
-.ml-bar {
-  display: flex;
-  height: 8px;
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--surface-deep);
-}
-
-.ml-seg {
-  transition: width 0.4s var(--ease-standard, ease);
-}
-
-.ml-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 8px;
-}
-
-.ml-leg {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.ml-leg b {
-  color: var(--text);
-}
-
-.ml-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex: none;
-}
-
-.ml-note {
-  margin: 10px 0 0;
-  font-size: 12.5px;
-  color: var(--text-meta);
-  line-height: 1.5;
 }
 </style>

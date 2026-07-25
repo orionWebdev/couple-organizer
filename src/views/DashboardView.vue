@@ -265,8 +265,9 @@ async function saveBudget() {
           @open="showCheckinSheet = true"
         />
 
-        <!-- Offene Aufgaben zum Übernehmen. Erscheint nur bei der Person, die
-             gerade weniger trägt — der anderen wäre es zusätzlicher Druck. -->
+        <!-- Optionale Einladung, etwas abzunehmen — erscheint NUR bei spürbarer
+             Schieflage (Partner trägt mehr, ich habe Luft), sonst gar nicht.
+             Ein offener Pool allein ist kein Grund; nicht alles wird verteilt. -->
         <OpenChoresCard
           :chores="chores"
           :history="history"
@@ -300,17 +301,22 @@ async function saveBudget() {
         />
 
         <!-- Finanzen -->
-        <FinanceCard
-          v-if="showFinance"
-          :couple="couple"
-          :currentUserId="currentUserId"
-          :monthLabel="monthLabel"
-          :spent="currentMonthSpent"
-          :budget="budgetCents"
-          :balances="balanceInfo.balances"
-          @open="goToFinanzen"
-          @addExpense="showAddExpense = true"
-        />
+        <template v-if="showFinance">
+          <div class="sec">
+            <span class="sec-lab">Finanzen</span>
+            <button type="button" class="sec-act" @click="goToFinanzen">Details</button>
+          </div>
+          <FinanceCard
+            :couple="couple"
+            :currentUserId="currentUserId"
+            :monthLabel="monthLabel"
+            :spent="currentMonthSpent"
+            :budget="budgetCents"
+            :balances="balanceInfo.balances"
+            @open="goToFinanzen"
+            @addExpense="showAddExpense = true"
+          />
+        </template>
 
       </template>
     </div>

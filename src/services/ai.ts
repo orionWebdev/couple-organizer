@@ -61,6 +61,12 @@ export interface CoachReport {
   headline: string
   suggestion: { text: string; action: CoachAction }
   talkingPoint: string
+  /** Ein konkreter, GEGENSEITIGER kleiner Vorschlag, wie ihr diese Woche gut
+   *  zueinander seid — orientiert an dem, was schwer wog (Check-in-Thema,
+   *  ungleiche Last, volle Woche). Immer „ihr", Einladung, kein Therapie-Ton;
+   *  strikt nach den Check-in-Regeln (nie zuordnen). Weglassen, wenn die Woche
+   *  ruhig war und es nichts zu stützen gibt. */
+  supportHint?: string
 }
 
 // Eine gemessene Kennzahl als Slider. Wird NICHT von der KI erzeugt, sondern

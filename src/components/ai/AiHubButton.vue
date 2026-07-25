@@ -1,14 +1,20 @@
 <script setup lang="ts">
-// Der dauerhaft sichtbare KI-Button — global im App-Shell (TabsView), rechts
+// Der dauerhaft sichtbare KI-Einstieg — global im App-Shell (TabsView), rechts
 // neben der schmalen 3er-Nav auf gleicher Fußzeilenhöhe. Bereichs-neutral
-// (Gradient), damit KI überall gleich aussieht. Ein Tap öffnet den KI-Hub.
+// (Gradient), damit die KI überall gleich aussieht. Ein Tap öffnet den KI-Hub.
+//
+// Bewusst eine BREITE, waagerechte Pille mit Wort („✨ Helfer") statt eines
+// kleinen Quadrats: so hebt sie sich klar vom kontextbezogenen ＋-FAB darüber
+// ab (der bleibt ein Icon-Quadrat) und liest sich als eigenständige Funktion.
+// Die feste Breite (140) ist Teil des Fußzeilen-Layouts — die Nav-Breite in
+// TabsView reserviert genau diesen Platz; beim Ändern beide anpassen.
 import { openAiHub } from '@/composables/useAiHub'
 </script>
 
 <template>
-  <button class="ki-fab" type="button" aria-label="KI öffnen" @click="openAiHub">
+  <button class="ki-fab" type="button" aria-label="Helfer öffnen" @click="openAiHub">
     <span class="spark" aria-hidden="true">✨</span>
-    <span class="lab">KI</span>
+    <span class="lab">Helfer</span>
   </button>
 </template>
 
@@ -17,7 +23,7 @@ import { openAiHub } from '@/composables/useAiHub'
   position: fixed;
   right: 16px;
   bottom: calc(20px + var(--safe-bottom));
-  width: 66px;
+  width: 140px;
   height: 66px;
   border-radius: 24px;
   z-index: 100;
@@ -30,16 +36,16 @@ import { openAiHub } from '@/composables/useAiHub'
   border: none;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 8px;
   animation: aiShift 6s ease-in-out infinite;
   transition: transform 0.15s var(--ease-overshoot);
 }
 
 .ki-fab:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .ki-fab .spark {
@@ -49,9 +55,10 @@ import { openAiHub } from '@/composables/useAiHub'
 }
 
 .ki-fab .lab {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.3px;
+  font-family: var(--font-headline);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   text-shadow: var(--ai-textshadow);
 }
 </style>

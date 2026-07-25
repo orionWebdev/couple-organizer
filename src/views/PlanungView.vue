@@ -21,8 +21,9 @@ import TripDetailSheet from '@/components/planung/TripDetailSheet.vue'
 import CoachCard from '@/components/dashboard/CoachCard.vue'
 import CheckinCard from '@/components/dashboard/CheckinCard.vue'
 import CheckinSheet from '@/components/dashboard/CheckinSheet.vue'
+import TogetherHeroCard from '@/components/dashboard/TogetherHeroCard.vue'
 import MentalLoadCard from '@/components/dashboard/MentalLoadCard.vue'
-import TogetherStatsCard from '@/components/dashboard/TogetherStatsCard.vue'
+import { rangeLabel } from '@/utils/dateLabels'
 
 // Der Wir-Tab (Route unverändert /planung): der Beziehungs-Bereich in EINER
 // Spalte. Seit dem 3er-Umbau ohne Segmentumschalter — die Logistik (Belegung,
@@ -41,14 +42,45 @@ const { trips, loading: planungLoading, addTrip, updateTrip, deleteTrip } = useP
 // weil die Liste beim ersten Lauf noch leer ist).
 const listsLoading = computed(() => ideenLoading.value || planungLoading.value)
 
-// ── Coach (drei Linsen: Woche · Fairness · Geld) — nur Anzeige ─
-// Erzeugt werden die Berichte seit dem KI-Hub über den globalen KI-Button;
-// hier läuft useCoachRun nur noch als Leser (reportFor/metricsFor) + für
-// mentalLoad/togetherStats.
+// ── Coach (drei Linsen: Woche · Fairness · Geld) ──────────────
+// Anzeige UND Erzeugung: leere Linsen (Fairness/Geld — und Woche) werden in der
+// CoachCard selbst erzeugt (startCoach), da wo man sie ansieht. Der globale
+// KI-Button ist nur noch die Abkürzung für den Wochen-Rückblick.
+// mentalLoad kommt aus denselben Listenern — die Wertschätzungs-Karte darunter
+// benennt, was der Partner mitgedacht hat (keine Waage mehr).
 const {
   mentalLoad, togetherStats,
   coachReportFor, coachMetricsFor, coachCreatedByNameFor, coachLoading,
+  startCoach, coachThinking,
 } = useCoachRun(coupleId)
+
+// Eine warme, datengetragene Zeile fürs Herzstück: das nächste geplante
+// Gemeinsame nach vorn (motivierend), sonst eine Wertschätzung des Erreichten.
+const weeklyHighlight = computed(() => {
+  const todayKey = new Date().toISOString().slice(0, 10)
+
+  // Nächste datierte Idee (offen) ODER Reise mit Startdatum in der Zukunft.
+  const nextIdea = ideen.value
+    .filter((i) => i.date && !i.done && i.date >= todayKey)
+    .sort((a, b) => (a.date! < b.date! ? -1 : 1))[0]
+  const nextTrip = trips.value
+    .filter((t) => t.startDate && t.startDate >= todayKey)
+    .sort((a, b) => (a.startDate! < b.startDate! ? -1 : 1))[0]
+
+  const ideaTs = nextIdea?.date ?? null
+  const tripTs = nextTrip?.startDate ?? null
+  if (ideaTs && (!tripTs || ideaTs <= tripTs)) return `Als Nächstes zu zweit: ${nextIdea!.name}.`
+  if (nextTrip) {
+    const when = nextTrip.startDate
+      ? rangeLabel(nextTrip.startDate, nextTrip.endDate ?? null)
+      : nextTrip.when
+    return `Bald unterwegs: ${nextTrip.title}${when ? ` · ${when}` : ''}.`
+  }
+
+  const ideasDone = ideen.value.filter((i) => i.done).length
+  if (ideasDone > 0) return `Ihr habt schon ${ideasDone} ${ideasDone === 1 ? 'Idee' : 'Ideen'} zusammen umgesetzt.`
+  return 'Schön, dass ihr euren Alltag gemeinsam angeht.'
+})
 
 const {
   entries: checkinEntries,
@@ -173,27 +205,39 @@ async function onPatchTrip(id: string, patch: { links?: string[]; checklist?: Tr
     </div>
 
     <div class="wir-body rise-stagger">
+      <!-- Herzstück: das Erreichte, warm — Wertschätzung vor Bilanz. -->
+      <TogetherHeroCard :stats="togetherStats" :highlight="weeklyHighlight" />
+
+      <!-- Die Deutungsfläche: alle drei Linsen, leere erzeugt man hier inline. -->
       <CoachCard
         :reportFor="(l: CoachLens) => coachReportFor(l)"
         :metricsFor="(l: CoachLens) => coachMetricsFor(l)"
         :createdByNameFor="(l: CoachLens) => coachCreatedByNameFor(l)"
+        :generate="startCoach"
+        :thinking="coachThinking"
         :loading="coachLoading"
         @action="onCoachAction"
       />
 
-      <CheckinCard
-        :entries="checkinEntries"
-        :optedIn="checkinOptedIn"
-        @open="showCheckinSheet = true"
-        @remove="onCheckinRemove"
-      />
-
+      <!-- Mental Load, neu: was der Partner mitgedacht hat + „Danke sagen"
+           (keine Prozent-Waage mehr — Wertschätzung statt Bilanz). -->
       <MentalLoadCard
         :summary="mentalLoad"
         :couple="couple"
         :currentUserId="currentUserId"
       />
 
+      <!-- Check-in kompakt: eine Ein-Tap-Zeile (private Einträge verwaltet man
+           in den Einstellungen). -->
+      <CheckinCard
+        compact
+        :entries="checkinEntries"
+        :optedIn="checkinOptedIn"
+        @open="showCheckinSheet = true"
+        @remove="onCheckinRemove"
+      />
+
+      <!-- Was ihr vorhabt -->
       <IdeenBlock
         :items="ideen"
         :couple="couple"
@@ -210,8 +254,6 @@ async function onPatchTrip(id: string, patch: { links?: string[]; checklist?: Tr
         @open="openTripDetail"
         @delete="onDeleteTrip"
       />
-
-      <TogetherStatsCard :stats="togetherStats" />
     </div>
 
     <AddIdeaSheet

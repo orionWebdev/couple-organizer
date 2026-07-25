@@ -4,10 +4,10 @@ import type { CoachAction, CoachLens, CoachMetric, CoachReport } from '@/service
 import CoachReportCard from '@/components/ai/CoachReportCard.vue'
 
 // Der Paar-Coach im Wir-Tab — die EINE Anzeige für alle drei Blickwinkel
-// (Woche · Fairness · Geld). Seit dem KI-Hub ist diese Karte REIN ANZEIGEND:
-// erzeugt werden die Berichte über den globalen KI-Button (Kacheln
-// Wochenrückblick/Aufgaben/Budget → coachInsight). Liegt für eine Linse noch
-// kein Bericht dieser Woche vor, steht hier ein Hinweis auf den KI-Button.
+// (Woche · Fairness · Geld). Liegt für die aktive Linse noch kein Bericht
+// dieser Woche vor, erzeugt man ihn HIER inline (`generate(lens)`) — genau da,
+// wo man ihn ansieht. Der Wochen-Check-in (week) ist zusätzlich als schnelle
+// Abkürzung im globalen KI-Button; Fairness/Geld gibt es nur noch hier.
 //
 // Pro Woche und Linse genau ein Bericht, für beide.
 const props = defineProps<{
@@ -15,6 +15,11 @@ const props = defineProps<{
   reportFor: (lens: CoachLens) => CoachReport | null
   metricsFor: (lens: CoachLens) => CoachMetric[]
   createdByNameFor: (lens: CoachLens) => string | null
+  /** Erzeugt den Bericht der Linse (useCoachRun.startCoach) — meldet Paywall/
+   *  Fehler selbst, gibt den Ausgang zurück. */
+  generate: (lens: CoachLens) => Promise<'ok' | 'paywall' | 'error' | 'cancelled'>
+  /** Läuft gerade eine Erzeugung? (global, es kann nur eine zur Zeit laufen) */
+  thinking?: boolean
   /** Solange die Berichte laden, ist "kein Bericht" noch keine Aussage. */
   loading?: boolean
 }>()
@@ -36,13 +41,30 @@ const hasReport = computed(() => !!report.value)
 
 const showEntry = computed(() => !report.value && !props.loading)
 
-// Kachel-Name im KI-Hub je Linse — für den Hinweistext.
-const HUB_TILE: Record<CoachLens, string> = {
-  week: 'Wochenrückblick',
-  fairness: 'Aufgaben',
-  money: 'Budget-Blick',
+// Leerzustand je Linse: eine Zeile, was fehlt, + der Knopf, der es erzeugt.
+const EMPTY_LEAD: Record<CoachLens, string> = {
+  week: 'Noch kein Rückblick dieser Woche.',
+  fairness: 'Noch keine Fairness-Einschätzung dieser Woche.',
+  money: 'Noch kein Budget-Blick dieser Woche.',
 }
-const entryHint = computed(() => HUB_TILE[activeLens.value])
+const GEN_LABEL: Record<CoachLens, string> = {
+  week: 'Rückblick schreiben',
+  fairness: 'Lastverteilung einschätzen',
+  money: 'Ausgaben einordnen',
+}
+const emptyLead = computed(() => EMPTY_LEAD[activeLens.value])
+const genLabel = computed(() => GEN_LABEL[activeLens.value])
+
+// Welche Linse gerade erzeugt wird — nur ihr Knopf zeigt den Spinner.
+const genLens = ref<CoachLens | null>(null)
+const busyHere = computed(() => props.thinking && genLens.value === activeLens.value)
+
+async function runGen() {
+  if (props.thinking) return
+  genLens.value = activeLens.value
+  await props.generate(activeLens.value)
+  genLens.value = null
+}
 
 // Punkt an einer Linse: für sie liegt noch kein Bericht dieser Woche vor.
 function pending(lens: CoachLens) {
@@ -88,13 +110,20 @@ function pending(lens: CoachLens) {
             @action="$emit('action', $event)"
           />
 
-          <!-- Noch kein Bericht dieser Linse — Verweis auf den KI-Button. -->
-          <div v-else-if="showEntry" :key="'entry-' + activeLens" class="entry-hint">
-            <span class="entry-hint__spark" aria-hidden="true">✨</span>
-            <p>
-              Noch kein Bericht dieser Woche. Tippe den <b>KI-Button</b> und wähle
-              <b>„{{ entryHint }}"</b>.
-            </p>
+          <!-- Noch kein Bericht dieser Linse — hier direkt erzeugen. -->
+          <div v-else-if="showEntry" :key="'entry-' + activeLens" class="entry-gen">
+            <p class="entry-gen__lead">{{ emptyLead }}</p>
+            <button
+              type="button"
+              class="entry-gen__btn"
+              :class="{ 'is-busy': busyHere }"
+              :disabled="thinking"
+              @click="runGen"
+            >
+              <span v-if="busyHere" class="entry-gen__spin" aria-hidden="true" />
+              <span v-else class="entry-gen__spark" aria-hidden="true">✨</span>
+              {{ busyHere ? 'Einen Moment …' : genLabel }}
+            </button>
           </div>
         </Transition>
       </div>
@@ -156,24 +185,49 @@ function pending(lens: CoachLens) {
 .lens-swap-enter-from { opacity: 0; transform: translateY(6px); }
 .lens-swap-leave-to { opacity: 0; transform: translateY(-6px); }
 
-.entry-hint {
+.entry-gen {
   display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 4px 2px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 4px 2px 2px;
 }
-.entry-hint__spark {
-  font-size: 20px;
-  flex: none;
-}
-.entry-hint p {
+.entry-gen__lead {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.5;
   color: var(--text-secondary);
 }
-.entry-hint b { color: var(--text); font-weight: 800; }
+/* Erzeugen-Knopf: dezent KI-getönt (Akzent der Fläche = Wir-Blau), aber ruhig
+   — kein Vollgradient, das wäre für einen Leerzustand zu laut. */
+.entry-gen__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.18s ease;
+}
+.entry-gen__btn:active { transform: scale(0.97); }
+.entry-gen__btn:disabled { cursor: default; }
+.entry-gen__btn.is-busy { opacity: 0.85; }
+.entry-gen__spark { font-size: 15px; }
+.entry-gen__spin {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in srgb, var(--on-accent) 40%, transparent);
+  border-top-color: var(--on-accent);
+  animation: aiSpin 0.8s linear infinite;
+}
 
 /* Linsen-Umschalter — drei gleich breite Pillen, INNEN im Widget-Kopf. */
 .lenses {

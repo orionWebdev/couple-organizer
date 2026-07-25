@@ -44,7 +44,7 @@ function whenLabel(entry: CheckinEntry): string {
       <span class="sec-priv">🔒 privat</span>
     </div>
 
-    <div class="ci-card">
+    <div class="ci-card" :class="{ 'ci-card--compact': compact }">
       <!-- Teaser, solange die Einwilligung fehlt -->
       <template v-if="!optedIn">
         <p class="ci-teaser">
@@ -56,29 +56,44 @@ function whenLabel(entry: CheckinEntry): string {
       </template>
 
       <template v-else>
-        <button type="button" class="ci-ask" @click="$emit('open')">
-          <span class="ci-ask-icon" aria-hidden="true">🪷</span>
-          <span class="ci-ask-text">
+        <!-- Kompakt (Dashboard/Wir): eine fröhliche Ein-Tap-Zeile mit klarem
+             „Eintragen"-Knopf. Der ganze Streifen ist tappbar, der Knopf ist
+             die sichtbare Einladung. -->
+        <div v-if="compact" class="ci-happy" @click="$emit('open')">
+          <span class="ci-happy-emoji" aria-hidden="true">🪷</span>
+          <span class="ci-happy-text">
             <b>Wie geht’s dir gerade?</b>
-            <i>Nur für dich — fließt anonym in euren Wochenbericht ein.</i>
+            <i>Nur für dich — fließt anonym in euren Wochenbericht.</i>
           </span>
-        </button>
+          <button type="button" class="ci-happy-btn" @click.stop="$emit('open')">Eintragen</button>
+        </div>
 
-        <ul v-if="recent.length" class="ci-list">
-          <li v-for="e in recent" :key="e.id" class="ci-row">
-            <span class="ci-row-emoji" aria-hidden="true">{{ checkinAreaDef(e.area).emoji }}</span>
-            <span class="ci-row-main">
-              <b>{{ checkinAreaDef(e.area).label }}</b>
-              <i>{{ CHECKIN_LEVEL_LABELS[e.level] }} · {{ whenLabel(e) }}</i>
+        <!-- Vollform mit Eintragsliste (falls irgendwo nicht kompakt genutzt). -->
+        <template v-else>
+          <button type="button" class="ci-ask" @click="$emit('open')">
+            <span class="ci-ask-icon" aria-hidden="true">🪷</span>
+            <span class="ci-ask-text">
+              <b>Wie geht’s dir gerade?</b>
+              <i>Nur für dich — fließt anonym in euren Wochenbericht ein.</i>
             </span>
-            <button
-              type="button"
-              class="ci-row-del"
-              aria-label="Eintrag löschen"
-              @click="$emit('remove', e.id)"
-            >✕</button>
-          </li>
-        </ul>
+          </button>
+
+          <ul v-if="recent.length" class="ci-list">
+            <li v-for="e in recent" :key="e.id" class="ci-row">
+              <span class="ci-row-emoji" aria-hidden="true">{{ checkinAreaDef(e.area).emoji }}</span>
+              <span class="ci-row-main">
+                <b>{{ checkinAreaDef(e.area).label }}</b>
+                <i>{{ CHECKIN_LEVEL_LABELS[e.level] }} · {{ whenLabel(e) }}</i>
+              </span>
+              <button
+                type="button"
+                class="ci-row-del"
+                aria-label="Eintrag löschen"
+                @click="$emit('remove', e.id)"
+              >✕</button>
+            </li>
+          </ul>
+        </template>
       </template>
     </div>
   </div>
@@ -122,6 +137,18 @@ function whenLabel(entry: CheckinEntry): string {
   padding: 14px 16px;
 }
 
+/* Kompaktform fröhlicher: ein warmer Verlauf (Bereichsakzent → Terrakotta),
+   damit die Stimmungs-Frage einlädt statt neutral zu wirken. Passt sich per
+   --accent dem Tab an (Dashboard indigo, Wir blau). */
+.ci-card--compact {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 16%, var(--surface)),
+    color-mix(in srgb, var(--chris) 15%, var(--surface))
+  );
+  border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
 .ci-teaser {
   margin: 0 0 12px;
   font-size: 13.5px;
@@ -139,6 +166,74 @@ function whenLabel(entry: CheckinEntry): string {
   font-weight: 700;
   color: var(--text);
   cursor: pointer;
+}
+
+/* Teaser-Knopf im fröhlichen Kontext: gefüllt statt umrandet. */
+.ci-card--compact .ci-cta {
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 800;
+}
+
+/* ── Fröhliche Ein-Tap-Zeile (compact + opted-in) ──────────────── */
+.ci-happy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.ci-happy-emoji {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.ci-happy-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ci-happy-text b {
+  font-family: var(--font-headline);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ci-happy-text i {
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.ci-happy-btn {
+  flex: none;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.ci-happy-btn:active {
+  transform: scale(0.95);
 }
 
 .ci-ask {

@@ -60,6 +60,16 @@ const actionLabel = computed(() => ACTION_LABELS[props.report.suggestion?.action
       </div>
     </div>
 
+    <!-- Gegenseitiger Stütz-Vorschlag: eine Geste füreinander, aus dem was
+         diese Woche schwer wog — präsent, warm, immer „ihr". -->
+    <div v-if="report.supportHint" class="cr-support">
+      <span class="cr-support-ico" aria-hidden="true">💛</span>
+      <div>
+        <span class="cr-support-lab">Für euch diese Woche</span>
+        <p class="cr-support-text">{{ report.supportHint }}</p>
+      </div>
+    </div>
+
     <p v-if="report.talkingPoint" class="cr-talk">
       <span class="cr-talk-lab">Sagt euch das mal</span>
       „{{ report.talkingPoint }}"
@@ -170,6 +180,37 @@ const actionLabel = computed(() => ACTION_LABELS[props.report.suggestion?.action
 .cr-metric--good { --m-tone: var(--success); }
 .cr-metric--watch { --m-tone: var(--accent); }
 .cr-metric--act { --m-tone: var(--danger); }
+
+/* Stütz-Vorschlag: warm, präsent, mit 💛 — eine Geste, kein App-Tap. Bewusst
+   getönt (nicht akzent-gefüllt wie der Aktionsbutton), damit es einladend
+   statt fordernd wirkt. */
+.cr-support {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin: 16px 0 0;
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: var(--planung-tint);
+  border: 1px solid color-mix(in srgb, var(--planung) 20%, transparent);
+}
+.cr-support-ico { font-size: 19px; line-height: 1.2; flex: none; }
+.cr-support-lab {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--planung);
+  margin-bottom: 3px;
+}
+.cr-support-text {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+}
 
 .cr-talk {
   margin: 14px 0 0;

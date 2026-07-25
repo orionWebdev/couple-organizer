@@ -3,14 +3,22 @@
 // Einmal im TabsView gemountet (global), geöffnet über den dauerhaften
 // AiHubButton. Ersetzt alle früheren verstreuten KI-Einstiege.
 //
+// Bewusst schlank gehalten (vier Kacheln statt sieben): der Hub ist ein
+// Alltags-Knopf, keine Funktionswand. Zwei Aufräum-Entscheidungen:
+//   • Die drei Coach-Linsen sind EINE Sache — hier steht nur der schnelle
+//     Wochen-Rückblick (week). Fairness/Budget erzeugt man da, wo man sie
+//     ansieht: pro Linse in der CoachCard im Wir-Tab.
+//   • „Rezept" ist EINE Kachel; das Ziel (auf einen Tag / in die Sammlung)
+//     wählt man im Schritt danach.
+//
 // Aufteilung der Flows:
-//   • Coach-Linsen (Wochenrückblick · Aufgaben · Budget) laufen DIREKT hier —
-//     `startCoach(lens)`; das Modal selbst glüht im Denk-Zustand, der Bericht
-//     erscheint im Wir-Tab.
-//   • Rezept/Wochenplan/Einkaufsliste sind eine Weiche: sie öffnen den
+//   • Wochen-Rückblick läuft DIREKT hier — `startCoach('week')`; das Modal
+//     glüht im Denk-Zustand, der Bericht erscheint im Wir-Tab.
+//   • Wochenplan/Rezept(Tag)/Einkaufsliste sind eine Weiche: sie öffnen den
 //     bestehenden, polierten Küchen-Flow (KitchenAiSheet mit Vorschau/Re-Roll)
 //     per Navigation nach /alltag?tab=kueche&ai=… — kein dupliziertes
 //     Meal-Plan-Wiring.
+//   • Rezept(Sammlung) generiert direkt hier ins Wiki (AiRecipeSheet library).
 //   • Der private Stimmungs-Check öffnet das bestehende CheckinSheet
 //     (Consent, Bereich, Stufe, Text) — kein Parallel-System.
 //
@@ -55,16 +63,18 @@ const { suggestRecipes, createRecipe, canCreateRecipe } = useMealPlan(coupleId)
 const recipeCategories = computed(() => resolveRecipeCategories(couple.value))
 
 // ── Steps ────────────────────────────────────────────────────
-type Step = 'hub' | 'thinking'
+type Step = 'hub' | 'thinking' | 'recipeTarget'
 const step = ref<Step>('hub')
 const thinkTitle = ref('')
 
 // Denk-Zustand des Modals (Glow + Denk-Zeile). Der Scrim ist dabei gesperrt.
 const thinking = computed(() => step.value === 'thinking' || coachThinking.value)
 
-// Android-Zurück / Scrim schließen — im Denk-Zustand blockiert.
+// Android-Zurück / Scrim: aus dem Rezept-Ziel-Schritt zurück zum Hub, sonst
+// schließen. Im Denk-Zustand blockiert.
 function tryClose() {
   if (thinking.value) return
+  if (step.value === 'recipeTarget') { step.value = 'hub'; return }
   closeAiHub()
   step.value = 'hub'
 }
@@ -92,11 +102,18 @@ async function runCoach(lens: CoachLens) {
   // paywall/error hat startCoach selbst gemeldet.
 }
 
-// ── Küchen-Weiche (Rezept/Wochenplan/Einkaufsliste) ──────────
+// ── Küchen-Weiche (Wochenplan/Rezept/Einkaufsliste) ──────────
 function toKitchen(ai: 'week' | 'recipe' | 'list') {
   closeAiHub()
   step.value = 'hub'
   router.push(`/alltag?tab=kueche&ai=${ai}`)
+}
+
+// „Rezept" ist eine Kachel, das Ziel folgt im nächsten Schritt: auf einen
+// Wochentag (Küchen-Flow) oder in die Wiki-Sammlung (AiRecipeSheet library).
+function chooseRecipeTarget(target: 'day' | 'library') {
+  if (target === 'day') toKitchen('recipe')
+  else openCollect()
 }
 
 // ── „Rezept sammeln" — generiert direkt hier in die Wiki-Sammlung ──
@@ -133,16 +150,15 @@ async function onCheckinSubmit(payload: Parameters<typeof addCheckinEntry>[0]) {
   showToast('Gespeichert — nur für dich 🔒')
 }
 
-// ── Aktions-Registry (die Kacheln) ───────────────────────────
+// ── Aktions-Registry (die Kacheln) — bewusst vier ────────────
+// Fairness/Budget sind KEINE eigenen Kacheln mehr: die erzeugt man pro Linse
+// in der CoachCard (Wir-Tab). „Rezept" führt in den Ziel-Schritt.
 interface HubAction { id: string; label: string; sub: string; icon: string; tint: string; run: () => void }
 const actions: HubAction[] = [
   { id: 'wochenplan', label: 'Wochenplan', sub: 'Ganze Woche vorschlagen', icon: '🍽️', tint: 'var(--food-tint)', run: () => toKitchen('week') },
-  { id: 'rezept', label: 'Rezept finden', sub: 'Für einen Tag', icon: '📖', tint: 'var(--food-tint)', run: () => toKitchen('recipe') },
-  { id: 'sammeln', label: 'Rezept sammeln', sub: 'In eure Sammlung', icon: '✨', tint: 'var(--food-tint)', run: openCollect },
+  { id: 'rezept', label: 'Rezept', sub: 'Für einen Tag oder die Sammlung', icon: '📖', tint: 'var(--food-tint)', run: () => { step.value = 'recipeTarget' } },
   { id: 'einkauf', label: 'Einkaufsliste', sub: 'Aus dem Plan erzeugen', icon: '🛒', tint: 'var(--einkauf-tint)', run: () => toKitchen('list') },
-  { id: 'rueckblick', label: 'Wochenrückblick', sub: 'Wie lief eure Woche', icon: '💛', tint: 'var(--planung-tint)', run: () => runCoach('week') },
-  { id: 'aufgaben', label: 'Aufgaben', sub: 'Fair einordnen', icon: '⚖️', tint: 'var(--haushalt-tint)', run: () => runCoach('fairness') },
-  { id: 'budget', label: 'Budget-Blick', sub: 'Ausgaben einordnen', icon: '💶', tint: 'var(--finanzen-tint)', run: () => runCoach('money') },
+  { id: 'rueckblick', label: 'Wochen-Check-in', sub: 'Wie lief eure Woche', icon: '💛', tint: 'var(--planung-tint)', run: () => runCoach('week') },
 ]
 </script>
 
@@ -166,6 +182,22 @@ const actions: HubAction[] = [
           <div class="miniload" aria-hidden="true" />
         </div>
         <div class="progress"><i /></div>
+      </div>
+
+      <!-- Rezept-Ziel-Schritt: Tag oder Sammlung -->
+      <div v-else-if="step === 'recipeTarget'" class="targetview">
+        <button type="button" class="tv-back" @click="step = 'hub'">‹ Zurück</button>
+        <h2 class="tv-title">Rezept — wohin?</h2>
+        <button type="button" class="tv-opt" @click="chooseRecipeTarget('day')">
+          <span class="tv-e" :style="{ background: 'var(--food-tint)' }">📅</span>
+          <span class="tv-txt"><b>Auf einen Tag</b><span>Direkt in den Wochenplan</span></span>
+          <span class="tv-arr" aria-hidden="true">›</span>
+        </button>
+        <button type="button" class="tv-opt" @click="chooseRecipeTarget('library')">
+          <span class="tv-e" :style="{ background: 'var(--food-tint)' }">✨</span>
+          <span class="tv-txt"><b>In eure Sammlung</b><span>Ins Rezept-Wiki</span></span>
+          <span class="tv-arr" aria-hidden="true">›</span>
+        </button>
       </div>
 
       <!-- Hub: alle KI-Aktionen + privater Stimmungs-Check -->
@@ -414,6 +446,69 @@ const actions: HubAction[] = [
   font-size: 24px;
   display: grid;
   place-items: center;
+}
+
+/* ── Rezept-Ziel-Schritt ────────────────────────────────────── */
+.targetview { padding: 2px 0 4px; }
+.tv-back {
+  border: none;
+  background: none;
+  padding: 4px 2px;
+  margin-bottom: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.tv-title {
+  margin: 0 0 14px;
+  font-family: var(--font-headline);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tv-opt {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border-softer);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  text-align: left;
+}
+.tv-opt:active { transform: scale(0.99); }
+.tv-e {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  font-size: 21px;
+  flex: none;
+}
+.tv-txt { flex: 1; }
+.tv-txt b {
+  display: block;
+  font-family: var(--font-headline);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tv-txt span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-meta);
+}
+.tv-arr {
+  font-size: 22px;
+  color: var(--text-faint);
+  flex: none;
 }
 
 /* ── Denk-Zeile ─────────────────────────────────────────────── */

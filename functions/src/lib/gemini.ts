@@ -130,7 +130,8 @@ const COACH_RESPONSE_SCHEMA = {
       },
       required: ['text', 'action']
     },
-    talkingPoint: { type: 'STRING' }
+    talkingPoint: { type: 'STRING' },
+    supportHint: { type: 'STRING' }
   },
   required: ['headline', 'suggestion', 'talkingPoint']
 }
@@ -139,12 +140,13 @@ export interface CoachReport {
   headline: string
   suggestion: { text: string; action: string }
   talkingPoint: string
+  supportHint?: string
 }
 
 const LENS_TASK: Record<CoachLens, string> = {
-  week: `Schreibe das Wochen-Check-in des Paares: EINE headline zum wichtigsten Befund, dazu Vorschlag und Gesprächssatz. Die Zahlen (Last, Geld, Check-in-Thema) zeigt die App selbst als Balken daneben — wiederhole sie nicht, deute sie.`,
-  fairness: `Schau NUR auf die Aufgabenverteilung im Haushalt. EINE headline dazu, plus Vorschlag und Gesprächssatz.`,
-  money: `Schau NUR auf die Finanzen. EINE headline dazu, plus Vorschlag und Gesprächssatz.`
+  week: `Schreibe das Wochen-Check-in des Paares: EINE headline zum wichtigsten Befund, dazu Vorschlag, Gesprächssatz und supportHint. Die Zahlen (Last, Geld, Check-in-Thema) zeigt die App selbst als Balken daneben — wiederhole sie nicht, deute sie.`,
+  fairness: `Schau NUR auf die Aufgabenverteilung im Haushalt. EINE headline dazu, plus Vorschlag, Gesprächssatz und supportHint.`,
+  money: `Schau NUR auf die Finanzen. EINE headline dazu, plus Vorschlag, Gesprächssatz und supportHint.`
 }
 
 // Der Grund, warum dieses Feature überhaupt existiert. Ohne diese Priorität
@@ -185,6 +187,7 @@ const COACH_RULES = `REGELN — halte dich strikt daran:
 2. Stelle NIE einen der beiden ins Unrecht. Eine ungleiche Verteilung ist eine Frage der Last, nicht des Charakters. Sprich immer beide an ("ihr"), nie einen von beiden vorwurfsvoll ("du machst zu wenig").
 3. "headline": EIN Satz, der den wichtigsten Befund BENENNT. Kein Etikett, keine Überschrift — "Eure Finanzen im Blick" oder "Wochenrückblick" ist wertlos, "Sarah hat diesen Monat drei Viertel ausgelegt" ist richtig. Nenne die Zahl, die den Punkt trägt.
 4. "talkingPoint": GENAU EIN Satz in der ICH-Form, den einer der beiden dem anderen sagen kann — das ist die EINZIGE Ausnahme von Regel 2, hier also bewusst nicht "ihr". Als Einladung formuliert, nie als Vorwurf oder Forderung. Der Ton (nicht der Inhalt) soll so klingen: "Mir ist aufgefallen, dass ich gerade viel vorstrecke — wollen wir das mal zusammen anschauen?"
+4b. "supportHint": EIN konkreter, kleiner, GEGENSEITIGER Vorschlag, wie ihr diese Woche gut zueinander seid — orientiert an dem, was gerade schwer wog (das Check-in-Thema, die ungleiche Last, eine volle Woche). IMMER "ihr", nie an eine Person gerichtet, nie zugeordnet (der supportHint fällt unter die CHECK-IN-REGELN unten). Eine warme Einladung zu etwas Machbarem, KEIN App-Tap und keine Aufgabe — sondern eine Geste füreinander. Ton: "Nehmt euch diese Woche einen Abend ohne Termine — nur ihr zwei." oder "Fragt euch abends kurz, wie der Tag war." Lass das Feld WEG, wenn die Woche ruhig war und es nichts zu stützen gibt; erfinde keinen Kummer.
 5. Ist die Lage unauffällig, sag das in der headline ruhig und positiv. Suche dir kein Problem, nur damit du etwas zu sagen hast.
 6. "suggestion.action" nur setzen, wenn sie zur Lage passt — sonst "none":
    - "settleUp": es steht ein offener Ausgleich zwischen euch (openBalanceEuros > 0), besonders wenn er schon alt ist.

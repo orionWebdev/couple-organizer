@@ -4,21 +4,18 @@ import type { Chore, ChoreHistoryEntry, Couple } from '@/types'
 import { recentPoints } from '@/utils/choreBalance'
 import { roomDef, roomOf } from '@/utils/rooms'
 
-// „Übernehmen statt zuweisen" — der Gegenentwurf zur Delegation.
+// „Magst du eine abnehmen?" — die optionale Einladung, wenn die Last schief liegt.
 //
-// Mental Load entsteht auch dadurch, dass eine Person Aufgaben VERTEILEN muss.
-// Wer ohnehin alles im Kopf hat, soll nicht zusätzlich Aufseherin sein. Also
-// dreht die App die Richtung um: offene Aufgaben liegen in einem Pool, und
-// derjenige mit der GERINGEREN Last wird eingeladen, sich etwas zu nehmen.
+// Ursprünglich zeigte diese Karte JEDE unzugewiesene Aufgabe als „wartet auf
+// jemanden". Das war falsch gerahmt: Ein offener Pool ist der Normalzustand —
+// nicht alles soll zugewiesen werden, und es gibt immer Aufgaben, die einfach
+// im Pool liegen. Die Karte las sich dadurch als Dauer-Mahnung.
 //
-// Nicht die Sichtbarkeit unterscheidet sich zwischen den beiden, sondern die
-// ANSPRACHE. Ein erster Entwurf blendete die Karte bei der stärker belasteten
-// Person komplett aus — das war zu clever: Die Aufgaben verschwanden aus dem
-// Blick, und das Feature war nicht auffindbar. Jetzt sehen es beide:
-//   wer weniger trägt → Einladung mit „Ich nehm's"
-//   wer mehr trägt    → nur die Info, dass der Pool gefüllt ist, ohne Knöpfe
-//                       und mit dem ausdrücklichen Hinweis, dass es nicht an
-//                       ihr oder ihm hängt. Das ist die Entlastung.
+// Jetzt hängt sie nicht mehr an „gibt es offene Aufgaben", sondern an der
+// LASTVERTEILUNG: Sie erscheint nur, wenn der Partner gerade spürbar mehr trägt
+// und man selbst Luft hat — als freundliche, ausdrücklich freiwillige Einladung,
+// etwas abzunehmen. Bei Balance (oder wenn man selbst mehr trägt) rendert sie
+// gar nicht; der volle Pool lebt ohnehin im Alltag-Tab.
 const props = defineProps<{
   chores: readonly Chore[]
   history: readonly ChoreHistoryEntry[]
@@ -28,7 +25,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{ claim: [chore: Chore] }>()
 
-const MAX_SHOWN = 3
+const MAX_SHOWN = 2
+// Spürbare Schieflage: mindestens so viele Punkte hinter dem Partner UND
+// höchstens 75 % seiner Last. Beides zusammen filtert Rauschen (0 vs. 1) und
+// Fast-Gleichstand weg — die Einladung kommt nur, wenn Abnehmen wirklich hilft.
+const MIN_GAP = 3
 
 const open = computed(() =>
   props.chores
@@ -45,48 +46,38 @@ const partnerName = computed(() =>
   partnerUid.value ? props.couple?.memberNames[partnerUid.value] ?? 'Dein Partner' : null
 )
 
-// Trage ich gerade weniger? Gleichstand zählt als „ja" — im Zweifel einladen.
-// Ohne Partner (Paar noch allein) gibt es niemanden, der mehr trägt: dann ist
-// der Pool ganz normal die eigene Liste.
-const iAmLighter = computed(() => {
+// Habe ich gerade Luft? Nur bei echter Schieflage zu meinen Gunsten (Partner
+// trägt mehr). Ohne Partner oder ohne Historie: nein — dann keine Einladung.
+const iHaveRoom = computed(() => {
   const ids = props.couple?.memberIds ?? []
-  if (!props.currentUserId) return false
-  if (ids.length < 2 || !partnerUid.value) return true
+  if (ids.length < 2 || !partnerUid.value || !props.currentUserId) return false
   const points = recentPoints(props.history, ids)
-  return (points[props.currentUserId] ?? 0) <= (points[partnerUid.value] ?? 0)
+  const mine = points[props.currentUserId] ?? 0
+  const theirs = points[partnerUid.value] ?? 0
+  return theirs - mine >= MIN_GAP && mine <= theirs * 0.75
 })
 
-const visible = computed(() => open.value.length > 0)
-
+const visible = computed(() => iHaveRoom.value && open.value.length > 0)
 const shown = computed(() => open.value.slice(0, MAX_SHOWN))
-const rest = computed(() => Math.max(0, open.value.length - MAX_SHOWN))
 </script>
 
 <template>
   <div v-if="visible" class="oc">
     <div class="oc-head">
-      <span class="oc-lab">{{ iAmLighter ? 'Wartet auf jemanden' : 'Liegt im Pool' }}</span>
-      <span v-if="rest" class="oc-rest">+{{ rest }} weitere</span>
+      <span class="oc-lab">Du hast gerade Luft</span>
     </div>
+    <p class="oc-intro">
+      {{ partnerName }} trägt gerade etwas mehr. Nichts muss — aber wenn du magst,
+      nimm eine ab.
+    </p>
 
     <div class="oc-list">
       <div v-for="c in shown" :key="c.id" class="oc-row">
         <span class="oc-emoji">{{ roomDef(roomOf(c)).icon }}</span>
         <span class="oc-name">{{ c.name }}</span>
-        <button
-          v-if="iAmLighter"
-          type="button"
-          class="oc-take"
-          @click="emit('claim', c)"
-        >Ich nehm's</button>
+        <button type="button" class="oc-take" @click="emit('claim', c)">Ich nehm's</button>
       </div>
     </div>
-
-    <!-- Wer ohnehin mehr trägt, bekommt keine Knöpfe, sondern die Auskunft,
-         dass es nicht an ihm oder ihr hängt. Genau das ist die Entlastung. -->
-    <p v-if="!iAmLighter && partnerName" class="oc-note">
-      Das ist gerade nicht an dir — {{ partnerName }} sieht diese Aufgaben auch.
-    </p>
   </div>
 </template>
 
@@ -104,7 +95,6 @@ const rest = computed(() => Math.max(0, open.value.length - MAX_SHOWN))
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 11px;
 }
 
 .oc-lab {
@@ -115,10 +105,11 @@ const rest = computed(() => Math.max(0, open.value.length - MAX_SHOWN))
   color: var(--text-meta);
 }
 
-.oc-rest {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--text-faint);
+.oc-intro {
+  margin: 6px 0 13px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 .oc-list {
@@ -172,12 +163,5 @@ const rest = computed(() => Math.max(0, open.value.length - MAX_SHOWN))
 
 .oc-take:active {
   transform: scale(0.94);
-}
-
-.oc-note {
-  margin: 12px 0 0;
-  font-size: 12.5px;
-  color: var(--text-meta);
-  line-height: 1.5;
 }
 </style>

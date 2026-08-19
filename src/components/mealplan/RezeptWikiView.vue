@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import type { Recipe } from '@/types'
 import { usePersistedRef, DRAFT_TTL_MS } from '@/composables/usePersistedRef'
-import { useMealPlan } from '@/composables/useMealPlan'
+import { useMealPlan, type AssignRecipeInput } from '@/composables/useMealPlan'
 import { useShopping } from '@/composables/useShopping'
 import { useCouple } from '@/composables/useCouple'
 import { useAuth } from '@/composables/useAuth'
@@ -12,6 +12,8 @@ import { primaryTagMeta, resolveRecipeCategories } from '@/utils/recipeTags'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import InitialChip from '@/components/ui/InitialChip.vue'
 import RecipeDetailModal from './RecipeDetailModal.vue'
+import AiRecipeSheet from './AiRecipeSheet.vue'
+import AiButton from '@/components/ai/AiButton.vue'
 
 const props = defineProps<{
   coupleId: string | null
@@ -19,7 +21,7 @@ const props = defineProps<{
 
 const coupleIdRef = computed(() => props.coupleId)
 const {
-  recipes, week, canCreateRecipe, createRecipe, updateRecipe,
+  recipes, week, canCreateRecipe, suggestRecipes, createRecipe, updateRecipe,
   deleteRecipe, toggleRecipeLike, assignExistingRecipe,
 } = useMealPlan(coupleIdRef)
 const { activeListId, addItem: addShoppingItem } = useShopping(coupleIdRef)
@@ -144,8 +146,33 @@ async function addIngredientsToShopping(r: Recipe) {
   showToast('Zutaten zur Einkaufsliste hinzugefügt')
 }
 
-// KI-Rezeptvorschlag „in die Sammlung" lebt seit dem KI-Hub dort (Kachel
-// „Rezept sammeln") — kein eigener Einstieg mehr auf diesem Screen.
+// ── KI-Vorschlag → direkt in die Sammlung ─────────────────────
+// Der Einstieg sitzt wieder hier, wo das Rezept auch landet (der globale
+// KI-Hub ist aufgelöst). AiRecipeSheet trägt im library-Modus die Vorschau
+// UND die Kategorie-Auswahl selbst.
+const showAiSheet = ref(false)
+
+function openAiSheet() {
+  if (!canCreateRecipe.value) {
+    showPaywall('recipeCount')
+    return
+  }
+  showAiSheet.value = true
+}
+
+async function saveAiRecipe(input: AssignRecipeInput) {
+  if (!canCreateRecipe.value) {
+    showAiSheet.value = false
+    showPaywall('recipeCount')
+    return false
+  }
+  return createRecipe(input)
+}
+
+function onAiSaved(success: boolean) {
+  showAiSheet.value = false
+  showToast(success ? 'Rezept gespeichert' : 'Fehler beim Speichern')
+}
 
 // ── Rezept anlegen/bearbeiten (ein Formular für beides) ───────
 // Das lange manuelle Formular überlebt den Android-Kaltstart. formTags bleibt
@@ -268,6 +295,12 @@ defineExpose({ openCreateForm, showForm })
 <template>
   <div class="wiki">
     <div class="wiki-scroll">
+      <AiButton
+        title="Rezept-Idee"
+        subtitle="Direkt in eure Sammlung, mit eigener Kategorie"
+        @click="openAiSheet"
+      />
+
       <input
         v-model="search"
         class="app-field search-field"
@@ -431,6 +464,16 @@ defineExpose({ openCreateForm, showForm })
         {{ editingId ? 'Änderungen speichern' : 'Rezept speichern' }}
       </button>
     </BottomSheet>
+
+    <AiRecipeSheet
+      :isOpen="showAiSheet"
+      mode="library"
+      :suggest="suggestRecipes"
+      :categories="categories"
+      :save="saveAiRecipe"
+      @close="showAiSheet = false"
+      @assigned="onAiSaved"
+    />
 
     <RecipeDetailModal
       :isOpen="showDetail"

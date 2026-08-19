@@ -314,6 +314,21 @@ async function confirmDanger() {
         </div>
       </div>
 
+      <!-- Wir: Wochen-Rückblick, Mental Load, Ideen & Reisen. Seit dem 2er-Umbau
+           kein eigener Tab mehr, sondern eine Unterseite wie /settings/essprofil
+           — Route (/planung) und Inhalt sind unverändert. -->
+      <div class="section-label section-gap">Wir</div>
+      <div class="card cat-card">
+        <button class="cat-link" type="button" @click="router.push('/planung')">
+          <span class="cat-link-icon">💛</span>
+          <span class="profile-text">
+            <span class="cat-link-title">Wochen-Rückblick & Wir</span>
+            <span class="profile-hint">Paar-Coach, Mental Load, Ideen & Reisen</span>
+          </span>
+          <span class="chevron">›</span>
+        </button>
+      </div>
+
       <!-- Check-in: private Einträge — Datenhoheit komplett beim Verfasser.
            Export & Löschung sind bewusst nicht Premium-gated (DSGVO). -->
       <div class="section-label section-gap">Check-in</div>

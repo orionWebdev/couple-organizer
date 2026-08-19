@@ -14,7 +14,7 @@
 // Shell Kopf + Segmentleiste aus, damit die Unteransicht sie überdeckt. Die
 // Bottom-Nav (in TabsView) bleibt wie gewohnt stehen.
 import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useTabSwipe } from '@/composables/useTabSwipe'
 import { usePersistedRef } from '@/composables/usePersistedRef'
 import ProfileButton from '@/components/ui/ProfileButton.vue'
@@ -25,6 +25,7 @@ import GeldPane from '@/components/alltag/GeldPane.vue'
 import KalenderPane from '@/components/alltag/KalenderPane.vue'
 
 const route = useRoute()
+const router = useRouter()
 
 type Tab = 'aufgaben' | 'kueche' | 'geld' | 'kalender'
 const tabOptions = [
@@ -43,6 +44,22 @@ const tab = usePersistedRef<Tab>('alltag.tab', 'aufgaben')
 watch(
   () => route.query.tab,
   (q) => { if (typeof q === 'string' && tabOrder.includes(q as Tab)) tab.value = q as Tab },
+  { immediate: true }
+)
+
+// Gegenrichtung: das aktive Segment steht IMMER in der Query. Seit die Nav
+// eigene Slots für Aufgaben/Küche/Geld hat, ist `?tab=` ihre einzige Quelle für
+// „welcher Slot leuchtet" — ohne das wüsste sie bei einem Sprung auf /alltag
+// (oder nach dem Kaltstart aus `alltag.tab`) nichts. `replace`, damit der
+// Zurück-Stapel nicht pro Segmentwechsel wächst; die übrige Query bleibt
+// erhalten (?coach= wird von den Panes selbst abgeräumt). Kein Zyklus: der
+// Watcher oben setzt denselben Wert und löst nichts weiter aus.
+watch(
+  tab,
+  (t) => {
+    if (route.query.tab === t) return
+    router.replace({ path: route.path, query: { ...route.query, tab: t } })
+  },
   { immediate: true }
 )
 

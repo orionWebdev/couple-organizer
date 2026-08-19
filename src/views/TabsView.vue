@@ -10,8 +10,6 @@ import BottomSheet from '@/components/ui/BottomSheet.vue'
 import InviteCodeBox from '@/components/couple/InviteCodeBox.vue'
 import PaywallSheet from '@/components/premium/PaywallSheet.vue'
 import AiThinkingHost from '@/components/ai/AiThinkingHost.vue'
-import AiHubButton from '@/components/ai/AiHubButton.vue'
-import AiHubModal from '@/components/ai/AiHubModal.vue'
 
 // useCouple ist ein Modul-Singleton und startet seinen Listener selbst, sobald
 // user.coupleId gesetzt ist — hier ist nichts mehr anzustoßen.
@@ -38,31 +36,44 @@ interface NavItem { id: string; label: string; icon: string; iconName: string; c
 // zugleich die Anzeigereihenfolge (die Nav ist index-unabhängig, jedes Item
 // trägt seine eigene Bubble).
 const NAV_ITEMS: readonly NavItem[] = [
-  // Drei Slots: Heute (was jetzt ansteht) · Wir (wie es uns geht) · Alltag (die
-  // Maschinerie). „Heute" behält id/Route 'dashboard', „Wir" behält 'planung' —
-  // nur Label/Icon änderten sich, das erspart Route-Churn und hält persistierte
-  // Deeplinks gültig.
+  // Vier Slots: Heute plus die drei täglich benutzten Bereiche. Die drei zeigen
+  // NICHT auf eigene Routen, sondern auf die Segmente der bestehenden
+  // Alltag-Hülle — `AlltagView`, die vier Panes und der Segment-Swipe bleiben
+  // unangetastet, ein Slot ist nur eine Abkürzung dorthin. Der frühere
+  // „Wir"-Slot ist weg (/planung hängt unter den Einstellungen), und „Kalender"
+  // hat bewusst KEINEN Slot: es bleibt das vierte Segment, erreichbar per Swipe
+  // und über die „Heute belegt"-Karte auf Heute.
+  // Die id ist hier NICHT mehr durchgängig das Routen-Segment, sondern für die
+  // drei Alltag-Slots der Wert von `?tab=` — siehe activeId.
   { id: 'dashboard', label: 'Heute', icon: '🏠', iconName: 'start', color: 'var(--dashboard)', href: '/dashboard' },
-  { id: 'planung', label: 'Wir', icon: '💛', iconName: 'wir', color: 'var(--planung)', href: '/planung' },
-  { id: 'alltag', label: 'Alltag', icon: '🗂️', iconName: 'alltag', color: 'var(--haushalt)', href: '/alltag' },
+  { id: 'aufgaben', label: 'Aufgaben', icon: '🧹', iconName: 'haushalt', color: 'var(--haushalt)', href: '/alltag?tab=aufgaben' },
+  { id: 'kueche', label: 'Küche', icon: '🍽️', iconName: 'essen', color: 'var(--food)', href: '/alltag?tab=kueche' },
+  { id: 'geld', label: 'Geld', icon: '💶', iconName: 'finanzen', color: 'var(--finanzen)', href: '/alltag?tab=geld' },
 ]
 
 // Routen ohne eigenen Nav-Slot leihen sich den Slot ihres Bereichs. Die drei
 // alten Bereichsrouten (haushalt/finanzen/einkaufen) leben nur noch als
 // Redirects auf /alltag?tab=… — landet man doch einmal direkt auf ihnen (alter
 // Deeplink, bevor der Redirect greift), soll die Bubble schon auf „Alltag"
-// stehen. Die Einstellungen (Profil-Avatare im Header) haben keinen Bereich —
-// dort bleibt die Bubble auf „Heute".
+// stehen. Die Einstellungen (Profil-Avatare im Header) und /planung (nur noch
+// von dort erreichbar) haben keinen Bereich — dort bleibt die Bubble auf
+// „Heute".
 const SLOT_ALIASES: Record<string, string> = {
-  haushalt: 'alltag',
-  finanzen: 'alltag',
-  einkaufen: 'alltag',
+  haushalt: 'aufgaben',
+  finanzen: 'geld',
+  einkaufen: 'kueche',
 }
 
-const activeId = computed(() => {
+// Auf /alltag entscheidet das Segment, nicht der Pfad — `AlltagView` hält `?tab=`
+// dafür immer aktuell. Passt nichts (Kalender-Segment, /settings, /planung,
+// /premium), leuchtet BEWUSST kein Slot: eine Bubble auf „Heute" zu setzen,
+// während man nachweislich woanders ist, war die unehrlichere Variante.
+const activeId = computed<string | null>(() => {
   const seg = route.path.split('/')[1] || 'dashboard'
-  const id = SLOT_ALIASES[seg] ?? seg
-  return NAV_ITEMS.find(i => i.id === id)?.id ?? 'dashboard'
+  const id = seg === 'alltag'
+    ? String(route.query.tab ?? '')
+    : (SLOT_ALIASES[seg] ?? seg)
+  return NAV_ITEMS.find(i => i.id === id)?.id ?? null
 })
 
 // ── Globaler FAB ─────────────────────────────────────────────
@@ -71,15 +82,34 @@ const activeId = computed(() => {
 // da der Shell außerhalb der area-*-Klasse liegt und --accent sonst der Default
 // wäre).
 const { action: fabAction } = useFabState()
-const activeColor = computed(
-  () => NAV_ITEMS.find(i => i.id === activeId.value)?.color ?? 'var(--accent)'
-)
+// Bereichsfarbe für den globalen FAB. Nicht jede Route hat einen Nav-Slot —
+// /planung hängt seit dem 2er-Umbau unter den Einstellungen, registriert dort
+// aber weiter ein „Idee hinzufügen". Ohne eigene Karte fiele der FAB über
+// activeId auf das Indigo von „Heute" zurück statt auf das Blau seines Bereichs.
+// Slotlose Flächen: das Kalender-Segment nimmt den festen Ton der Alltag-Hülle
+// (Variante A), /planung sein Blau. Alles mit Slot färbt sich aus NAV_ITEMS,
+// damit FAB und leuchtende Bubble nie in zwei Farben stehen.
+const AREA_COLORS: Record<string, string> = {
+  alltag: 'var(--haushalt)',
+  planung: 'var(--planung)',
+}
+const activeColor = computed(() => {
+  const active = NAV_ITEMS.find(i => i.id === activeId.value)
+  if (active) return active.color
+  const seg = route.path.split('/')[1] || 'dashboard'
+  return AREA_COLORS[seg] ?? 'var(--accent)'
+})
 
 // Navigationslogik unverändert: gleiche Items, gleiche Routen. Die frühere
 // index/prozentbasierte Positionsmathematik (slotCenterPercent, Gleit-Bubble,
 // Droplets, Collar) entfällt — im Contract trägt jedes Item seine eigene Bubble,
 // die beim Aktivieren erscheint, statt einer einzigen wandernden.
 function selectNav(id: string) {
+  // Erneuter Tap auf den aktiven Slot: nichts tun. Drei der vier Slots zeigen
+  // auf dieselbe Route (/alltag) und unterscheiden sich nur in ?tab= — ein
+  // push auf die identische Ziel-URL quittiert vue-router mit einer abgelehnten
+  // Navigation, die als unbehandelte Rejection in der Konsole landet.
+  if (id === activeId.value) return
   const item = NAV_ITEMS.find(i => i.id === id)
   if (item) router.push(item.href)
 }
@@ -141,8 +171,6 @@ function onTabClick(e: MouseEvent, id: string) {
 
     <!-- Der EINE KI-Einstieg der App: dauerhafter Button rechts, zentraler Hub.
          Der frühere verstreute AiButton/AiTriggerBadge ist eingesammelt. -->
-    <AiHubButton />
-    <AiHubModal />
 
     <nav class="mnav">
       <button
@@ -263,22 +291,18 @@ function onTabClick(e: MouseEvent, id: string) {
    die globale Base-Regel in app.css (Transition-Dauer → 0.01ms). */
 .mnav {
   position: fixed;
-  /* Mit dem KI-Hub sitzt die 3er-Leiste schmal LINKS; rechts daneben der
-     dauerhafte KI-Button (AiHubButton) auf gleicher Höhe. Das nutzt den durch
-     nur drei Tabs frei gewordenen Platz und löst zugleich die alte
-     FAB/Bubble-Kollision — Nav und KI teilen sich die Fußzeile nebeneinander.
-     Der Assistent-Button ist eine breite Pille (140) — die Formel reserviert
-     genau diesen Platz + 8px Luft; auf schmalen Screens schrumpft die Nav mit.
-     Beim Ändern der Button-Breite hier UND in AiHubButton anpassen. */
+  /* Volle Breite: der globale KI-Button ist weg (die KI-Auslöser sitzen jetzt in
+     der Küche), also braucht die Leiste rechts nichts mehr freizuhalten. Der
+     FAB stapelt darüber (siehe .fab), nicht daneben. */
   left: 14px;
-  width: min(275px, calc(100% - 14px - 140px - 24px));
+  right: 14px;
   bottom: calc(20px + var(--safe-bottom));
   height: 66px;
   background: var(--surface);
   border: 1px solid var(--border-softer);
   border-radius: 26px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   box-shadow: var(--shadow-float);
   z-index: 100;
 }
@@ -308,6 +332,10 @@ function onTabClick(e: MouseEvent, id: string) {
    `display:none` oder `visibility:hidden` würden beides kaputt machen. */
 .mnav__label {
   opacity: 0;
+  /* Bei vier Slots ist ein Slot auf 320px nur noch ~73px breit — „Aufgaben"
+     passt, darf aber unter keinen Umständen umbrechen und die Zeilenhöhe
+     verschieben. */
+  white-space: nowrap;
   transition: opacity 0.25s var(--ease-standard);
 }
 
@@ -405,10 +433,12 @@ function onTabClick(e: MouseEvent, id: string) {
 .fab {
   position: fixed;
   right: 20px;
-  /* Seit dem KI-Hub sitzt rechts unten der dauerhafte KI-Button (66px hoch,
-     bottom 20). Der kontextbezogene ＋-FAB rückt darüber, mit klarer Lücke —
-     beide stapeln sich am rechten Rand, nichts überlappt. */
-  bottom: calc(100px + var(--safe-bottom));
+  /* Über der ÜBERSTEHENDEN Nav-Bubble, nicht nur über der Leiste: Oberkante der
+     Leiste 20+66 = 86px, die aktive Bubble ragt 26px darüber hinaus (top:8 +
+     translateY(-34)), ihr surface-Ring nochmal 6px → 118px. Bei nur zwei Slots
+     sitzt die rechte Bubble bei 75 % der Leistenbreite und überlappt den FAB
+     seitlich — der vertikale Abstand muss also wirklich stimmen. 124 lässt 6px. */
+  bottom: calc(124px + var(--safe-bottom));
   width: 64px;
   height: 64px;
   border-radius: 22px;

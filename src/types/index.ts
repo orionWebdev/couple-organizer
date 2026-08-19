@@ -381,6 +381,9 @@ export interface Trip {
   updatedAt: Timestamp
 }
 
+// Die Notizen-Fläche ist seit dem 2er-Umbau entfernt (kein Listener, kein CRUD).
+// Der Typ bleibt als Schema-Beleg für die Dokumente, die noch in `notes` liegen —
+// firestore.rules schützt sie weiterhin.
 export interface Note {
   id: string
   coupleId: string

@@ -5,7 +5,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useAuth } from './useAuth'
-import type { Note, Trip, TripChecklistItem } from '@/types'
+import type { Trip, TripChecklistItem } from '@/types'
 
 export interface TripDraft {
   title: string
@@ -30,18 +30,14 @@ export function usePlanung(coupleId: Ref<string | null>) {
   const { user } = useAuth()
 
   const trips = ref<Trip[]>([])
-  const notes = ref<Note[]>([])
   const loading = ref(true)
   const error = ref<string | null>(null)
 
   let unsubTrips: (() => void) | null = null
-  let unsubNotes: (() => void) | null = null
 
   function stopListening() {
     if (unsubTrips) unsubTrips()
-    if (unsubNotes) unsubNotes()
     unsubTrips = null
-    unsubNotes = null
   }
 
   function startListening(id: string) {
@@ -62,25 +58,12 @@ export function usePlanung(coupleId: Ref<string | null>) {
       }
     )
 
-    unsubNotes = onSnapshot(
-      query(collection(db, 'notes'), where('coupleId', '==', id), orderBy('createdAt', 'desc')),
-      (snap) => {
-        notes.value = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Note)
-        loading.value = false
-      },
-      (err) => {
-        console.error('Notes listener error:', err)
-        error.value = err.message
-        loading.value = false
-      }
-    )
   }
 
   watch(coupleId, (id) => {
     if (!id) {
       stopListening()
       trips.value = []
-      notes.value = []
       loading.value = false
       return
     }
@@ -154,51 +137,15 @@ export function usePlanung(coupleId: Ref<string | null>) {
     }
   }
 
-  async function addNote(text: string): Promise<boolean> {
-    if (!coupleId.value || !user.value) return false
-    const clean = text.trim()
-    if (!clean) return false
-
-    try {
-      await addDoc(collection(db, 'notes'), {
-        coupleId: coupleId.value,
-        text: clean,
-        createdBy: user.value.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      })
-      error.value = null
-      return true
-    } catch (err: any) {
-      console.error('Failed to add note:', err)
-      error.value = err.message
-      return false
-    }
-  }
-
-  async function deleteNote(id: string): Promise<boolean> {
-    try {
-      await deleteDoc(doc(db, 'notes', id))
-      error.value = null
-      return true
-    } catch (err: any) {
-      console.error('Failed to delete note:', err)
-      error.value = err.message
-      return false
-    }
-  }
 
   onScopeDispose(stopListening)
 
   return {
     trips: readonly(trips),
-    notes: readonly(notes),
     loading: readonly(loading),
     error: readonly(error),
     addTrip,
     updateTrip,
-    deleteTrip,
-    addNote,
-    deleteNote
+    deleteTrip
   }
 }

@@ -12,7 +12,6 @@ import { setFabAction } from '@/composables/useFab'
 import { showToast } from '@/composables/useToast'
 import type { BucketListItem, IdeaCategory, Trip, TripChecklistItem } from '@/types'
 import type { CoachAction, CoachLens } from '@/services/ai'
-import ProfileButton from '@/components/ui/ProfileButton.vue'
 import IdeenBlock from '@/components/planung/IdeenBlock.vue'
 import ReisenBlock from '@/components/planung/ReisenBlock.vue'
 import AddIdeaSheet from '@/components/planung/AddIdeaSheet.vue'
@@ -25,9 +24,10 @@ import TogetherHeroCard from '@/components/dashboard/TogetherHeroCard.vue'
 import MentalLoadCard from '@/components/dashboard/MentalLoadCard.vue'
 import { rangeLabel } from '@/utils/dateLabels'
 
-// Der Wir-Tab (Route unverändert /planung): der Beziehungs-Bereich in EINER
-// Spalte. Seit dem 3er-Umbau ohne Segmentumschalter — die Logistik (Belegung,
-// Notizen) zog nach Alltag, die Reisen zogen von dort hierher zu den Ideen.
+// „Wir" (Route unverändert /planung): der Beziehungs-Bereich in EINER Spalte.
+// Seit dem 2er-Umbau KEIN Tab mehr, sondern eine Unterseite der Einstellungen —
+// erreichbar über die „Wir"-Zeile dort und über „Balance in Wir ›" in der
+// ScoreCard. Inhalt und Route sind unverändert, nur der Nav-Slot ist weg.
 const router = useRouter()
 const { user } = useAuth()
 const { couple, setCheckinConsent } = useCouple()
@@ -200,8 +200,8 @@ async function onPatchTrip(id: string, patch: { links?: string[]; checklist?: Tr
 <template>
   <div class="planung-page area-planung">
     <div class="page-header">
+      <button class="back-caret" type="button" @click="router.push('/settings')" aria-label="Zurück">‹</button>
       <h1 class="page-title">Wir</h1>
-      <ProfileButton :size="34" />
     </div>
 
     <div class="wir-body rise-stagger">
@@ -301,9 +301,29 @@ async function onPatchTrip(id: string, patch: { links?: string[]; checklist?: Tr
 .page-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   padding: calc(var(--safe-top) + 20px) var(--screen-pad) 12px;
+}
+
+/* Zurück zu den Einstellungen — dieselbe Form wie auf den anderen
+   Settings-Unterseiten (FoodProfileView, QuickTasksSettingsView). */
+.back-caret {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.back-caret:active {
+  color: var(--text);
 }
 
 .page-title {

@@ -184,6 +184,10 @@ async function handleSave() {
 
 <template>
   <BottomSheet :isOpen="isOpen" title="✨ KI-Rezeptvorschlag" :thinking="thinking" @close="emit('close')">
+    <!-- Teleport nach <body>: ohne .area-food fiele --accent auf Terrakotta
+         zurück. `display: contents` erzeugt keine Box — das Layout bleibt exakt
+         wie vorher, nur die Custom Properties erben. -->
+    <div class="area-food ai-recipe-area">
     <!-- Denk-Zustand: das Sheet glüht, nur die Denk-Zeile + Abbrechen -->
     <template v-if="thinking">
       <AiThinkingRow
@@ -285,10 +289,13 @@ async function handleSave() {
 
     <p v-if="quotaLabel" class="quota-hint">{{ quotaLabel }}</p>
     </template>
+    </div>
   </BottomSheet>
 </template>
 
 <style scoped>
+.ai-recipe-area { display: contents; }
+
 .air-cancel {
   display: block;
   width: 100%;

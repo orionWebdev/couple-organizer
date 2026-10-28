@@ -212,6 +212,37 @@ service cloud.firestore {
     // anonymisiert (heute: Enum-Digest unten, später: Admin SDK in der
     // coachInsight-Function, die die Rules umgeht). Kein update — ein Eintrag
     // ist eine Momentaufnahme.
+    // ── Neu mit der Flutter-App (2026-10). Die PWA liest und schreibt sie nicht.
+
+    // Fixkosten: am Tag X jedes Monats als Ausgabe gebucht. Wie expenses.
+    match /fixedCosts/{fixedId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
+    // Momente der Zeitleiste „Unsere Geschichte“ (Reisen mit Stopps im Dokument).
+    match /moments/{momentId} {
+      allow read: if isCoupleMember(resource.data.coupleId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update, delete: if isCoupleMember(resource.data.coupleId);
+    }
+
+    // Geheime Geschenkideen: nur die Person, die sie anlegt — der Partner kann
+    // sie nie lesen, auch keinen Zähler. Wie checkinEntries: Privatheit über
+    // die Regeln, nicht über die Oberfläche. authorId ist unveränderlich.
+    match /giftIdeas/{giftId} {
+      allow read, delete: if isSelf(resource.data.authorId);
+      allow create: if isSelf(request.resource.data.authorId)
+        && isCoupleMember(request.resource.data.coupleId);
+      allow update: if isSelf(resource.data.authorId)
+        && request.resource.data.authorId == resource.data.authorId;
+    }
+
     match /checkinEntries/{entryId} {
       allow read, delete: if isSelf(resource.data.authorId);
       allow create: if isSelf(request.resource.data.authorId)

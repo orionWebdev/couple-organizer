@@ -18,6 +18,10 @@ The same codebase ships as a **web PWA** and as an **Android app via Capacitor**
 >
 > **Once the functions are deployed:** remove `VITE_GEMINI_API_KEY` from Vercel *and* `.env.local`, then delete `aiDirect.ts` — the switch falls through to the callables on its own. Rotate the key at the same time; the current one is in the git history.
 
+## Privates Projekt
+
+Commits und Pushes nur als `Christian Müller <136067659+orionWebdev@users.noreply.github.com>` (per `git config` im Repo gesetzt), GitHub-Konto `orionWebdev`. Keine Firmen-Adressen, -Pakete oder -Konten in Code, Doku oder Git. Der Nachfolger in Flutter heißt **Zweiklang** (`../twodo`, `app.zweiklang`); das Capacitor-Projekt hier trägt `app.zweiklang.pwa`.
+
 ## Commands
 
 - `npm run dev` — start Vite dev server
